@@ -1355,14 +1355,11 @@ patch("src/main.ts",
 "        rig.set('free'); // freeze the avatar and let the camera fly independently",
 "        rig.set('first'); // eye-level view; the avatar keeps walking under the movement joystick.\n        player.root.visible = false;\n        if (buildViewModel) buildViewModel.visible = true;",
 "enter grounded first-person construction")
-patch("src/main.ts",
+patch_many("src/main.ts",
 "    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
 "    if (rig.mode === 'free' || rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;",
-"restore avatar when leaving construction")
-patch("src/main.ts",
-"    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
-"    if (rig.mode === 'free' || rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;",
-"restore avatar when opening another game panel")
+2,
+"restore avatar and follow camera on both construction exit paths")
 patch_many("src/main.ts",
 "buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
 "if (rig.mode === 'first') buildPointer.set(0,0); else buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
