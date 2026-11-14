@@ -26,20 +26,31 @@ def patch_many(path, old, new, expected, label):
 patch("src/world/layout.ts",
 "/** small islands and sea stacks, each its own closed coast */",
 """// ILOX prairie profile: expand usable land and soften the rocky coastline.
-COAST.forEach((point) => {
-  point.p[0] *= 1.14;
-  point.p[1] *= 1.14;
-  point.kind = Math.min(point.kind, 0.55);
-});
+// Replace the closed island ring with a mainland-sized prairie that reaches
+// the north, south and west map edges. The only open-sea shoreline is on the east.
+COAST.splice(0, COAST.length,
+  { p: [-1200, -1200], kind: 0.15 },
+  { p: [620, -1200], kind: 0.15 },
+  { p: [760, -1080], kind: 0.15 },
+  { p: [850, -820], kind: 0.15 },
+  { p: [900, -500], kind: 0.15 },
+  { p: [880, -180], kind: 0.15 },
+  { p: [900, 160], kind: 0.15 },
+  { p: [870, 480], kind: 0.15 },
+  { p: [800, 800], kind: 0.15 },
+  { p: [680, 1080], kind: 0.15 },
+  { p: [560, 1200], kind: 0.15 },
+  { p: [-1200, 1200], kind: 0.15 },
+);
 
 /** small islands and sea stacks, each its own closed coast */""",
 "expand prairie land and soften coast")
 patch("src/world/layout.ts",
 "/** river from the spring under the peak to its mouth at the north end of the spawn beach */",
 """// Retain gentle natural relief, but remove the tall volcanic mountain walls.
-HILLS.forEach((hill) => { hill.h *= 0.28; hill.r *= 1.2; });
-PEAK.h = 42;
-LIGHTHOUSE.base = 42;
+HILLS.forEach((hill) => { hill.h *= 0.06; hill.r *= 1.2; });
+PEAK.h = 8;
+LIGHTHOUSE.base = 8;
 
 /** river from the spring under the peak to its mouth at the north end of the spawn beach */""",
 "convert volcanic relief to rolling prairie")
@@ -79,6 +90,12 @@ patch("src/main.ts",
 "  setPlantSkyMaps(hf.mask0Tex, hf.heightTex, HALF_WORLD, WORLD_SIZE);\n  const veg = new Vegetation(hf, colliders);\n  const tv = performance.now();\n  veg.build();\n  // the plants (helpers' GLBs) load and scatter while the rest of the island comes up\n  const plantsReady = veg.buildGlb().then(() => {\n    console.log(`plants in ${(performance.now() - tv).toFixed(0)} ms`);\n    mark('plants');\n  }, (e) => console.warn('plants', e));\n  mark('vegetation built');\n  if (!skip.has('veg')) scene.add(veg.group);\n  if (!skip.has('canopy')) scene.add(buildCanopy(hf, renderer));\n  // rocks stream in with the props: the helper's jointed basalt blocks (the island's own dark volcanic rock, the cliff\n  // kit's palette), each set into the ground by its buried part rather than resting on its lowest point\n  const rocksReady = (async () => {\n    const set = await loadVariants('assets/rocks/boulders.glb');\n    const mats = new Map<THREE.Material, THREE.Material>();\n    const model = (name: string, big: boolean): RockModel | null => {\n      const v = set.get(name);\n      const near = v?.lods[0]?.[0], far = (v?.lods[1] ?? v?.lods[0])?.[0];\n      if (!v || !near || !far) return null;\n      let mat = mats.get(near.src);\n      if (!mat) mats.set(near.src, (mat = rockMaterial(near.src)));\n      for (const g of [near.geometry, far.geometry]) g.computeBoundingSphere();\n      return { geometry: near.geometry, far: far.geometry, material: mat, radius: Math.max(0.3, v.radius), big, sink: 0.4 };\n    };\n    const out = [model('basalt_a', false), model('basalt_b', false), model('basalt_c', true), model('basalt_d', true)].filter((m): m is RockModel => !!m);\n    veg.addRocks(out);\n    mark('rocks');\n  })().catch((e) => console.warn('rocks', e));\n  // cliff faces, sea stacks and the gorge of the falls\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('rock kit'), (e) => console.warn('rock kit', e));",
 "  // Open plain: no grass, plants, tree canopy or scattered boulders are generated or loaded.\n  const veg = new Vegetation(hf, colliders);\n  const plantsReady = Promise.resolve();\n  const rocksReady = Promise.resolve();\n  mark('open plain: foliage and scattered rocks disabled');\n  // Keep the rock kit only for the natural waterfall gorge and cliff support.\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('waterfall gorge ready'), (e) => console.warn('waterfall gorge', e));",
 "disable foliage canopy and scattered boulders")
+// Flatten the lowland noise as well as the authored hills; retain only subtle natural variation.
+patch("tools/gen-island.ts",
+"m += 2.2 * noise.fbm(x / 85, z / 85, 4) + 0.6 * noiseB.fbm(x / 23, z / 23, 3);",
+"m += 0.55 * noise.fbm(x / 125, z / 125, 3) + 0.12 * noiseB.fbm(x / 32, z / 32, 2);",
+"flatten prairie micro-relief")
+
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
