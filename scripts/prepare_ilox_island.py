@@ -17,7 +17,7 @@ def patch(path, old, new, label):
 # Keep only the waterfall's gorge rock faces; remove coastal rock props and offshore stacks.
 patch("src/main.ts",
 "import { SPOTS, LIGHTHOUSE, HALF_WORLD, WORLD_SIZE } from './world/layout';",
-"import { SPOTS, LIGHTHOUSE } from './world/layout';",
+"import { SPOTS, LIGHTHOUSE, HALF_WORLD } from './world/layout';",
 "remove unused world dimensions imports")
 
 patch("src/main.ts",
@@ -304,4 +304,87 @@ for unused in [root / "public" / "assets" / "props", root / "public" / "assets" 
 unused_shelves = root / "public" / "assets" / "rocks" / "shelves.glb"
 if unused_shelves.exists():
     unused_shelves.unlink()
+
+# Experimental 2,000,000 m² world: a 1,414.2136 m square.
+# Keep the original authored layout intact in source control, and apply one
+# deterministic transform to its exported coordinates at build time.
+patch("src/world/layout.ts",
+"export const WORLD_SIZE = 2048;",
+"export const WORLD_SIZE = Math.sqrt(2_000_000);",
+"set 2 million square metre world")
+patch("src/world/layout.ts",
+"export const SPAWN = SPOTS[0];",
+"""export const SPAWN = SPOTS[0];
+
+// ILOX map experiment: uniformly compress all authored horizontal coordinates
+// into the new world bounds. The source values above remain intact and auditable.
+const ILOX_MAP_SCALE = WORLD_SIZE / 2048;
+const scalePoint = (p: V2): V2 => [p[0] * ILOX_MAP_SCALE, p[1] * ILOX_MAP_SCALE];
+for (const p of COAST) p.p = scalePoint(p.p);
+for (const p of ISLETS) { p.c = scalePoint(p.c); p.rx *= ILOX_MAP_SCALE; p.rz *= ILOX_MAP_SCALE; }
+PEAK.p = scalePoint(PEAK.p);
+LIGHTHOUSE.p = scalePoint(LIGHTHOUSE.p);
+LIGHTHOUSE.platformR *= ILOX_MAP_SCALE;
+for (const p of HILLS) { p.p = scalePoint(p.p); p.r *= ILOX_MAP_SCALE; }
+for (const p of RIVER) { p.p = scalePoint(p.p); p.w *= ILOX_MAP_SCALE; }
+POOL.p = scalePoint(POOL.p);
+POOL.r *= ILOX_MAP_SCALE;
+for (const p of ESCARPMENT) p.p = scalePoint(p.p);
+VILLAGE.center = scalePoint(VILLAGE.center);
+VILLAGE.r *= ILOX_MAP_SCALE;
+for (const path of PATHS) for (const p of path) { p[0] *= ILOX_MAP_SCALE; p[1] *= ILOX_MAP_SCALE; }
+for (const spot of SPOTS) {
+  spot.player[0] *= ILOX_MAP_SCALE;
+  spot.player[1] *= ILOX_MAP_SCALE;
+  if (spot.cam) {
+    spot.cam.pos[0] *= ILOX_MAP_SCALE; spot.cam.pos[2] *= ILOX_MAP_SCALE;
+    spot.cam.target[0] *= ILOX_MAP_SCALE; spot.cam.target[2] *= ILOX_MAP_SCALE;
+  }
+}""",
+"scale all authored map coordinates")
+# Match the fixed 128x128 quadtree leaf grid to the resized physical world.
+patch("src/world/Terrain.ts",
+"const LEAF = 16; // metres\nconst LEVELS = 8; // 16 m .. 2048 m nodes",
+"const LEAF_CELLS = 16; // heightmap texels per leaf; physical size follows WORLD_SIZE\nconst LEVELS = 8; // 128 mappable leaf cells per side, across 8 levels",
+"terrain leaf grid uses map texels")
+patch("src/world/Terrain.ts",
+"    let res = WORLD_SIZE / LEAF;",
+"    let res = N / LEAF_CELLS;",
+"terrain minmax grid resolution")
+patch("src/world/Terrain.ts",
+"      const step = LEAF;",
+"      const step = LEAF_CELLS;",
+"terrain minmax sample stride")
+patch("src/world/Terrain.ts",
+"      const size = LEAF * Math.pow(2, lod);",
+"      const size = (WORLD_SIZE / (this.hf.n / LEAF_CELLS)) * Math.pow(2, lod);",
+"terrain node physical size")
+patch("src/world/Terrain.ts",
+"      const res = WORLD_SIZE / size;",
+"      const res = (this.hf.n / LEAF_CELLS) / Math.pow(2, lod);",
+"terrain minmax lookup resolution")
+# Height samples now use the actual sub-metre texel spacing.
+patch("src/world/Heightfield.ts",
+"    const fx = (x + HALF_WORLD) - 0.5, fz = (z + HALF_WORLD) - 0.5;",
+"    const cell = WORLD_SIZE / N;\n    const fx = (x + HALF_WORLD) / cell - 0.5, fz = (z + HALF_WORLD) / cell - 0.5;",
+"heightfield scaled texel coordinates")
+# RockKit writes into the same resized heightmap using its real texel spacing.
+patch("src/world/RockKit.ts",
+"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
+"rock kit heightmap coordinates 1")
+patch("src/world/RockKit.ts",
+"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
+"rock kit heightmap coordinates 2")
+patch("src/world/RockKit.ts",
+"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
+"rock kit heightmap coordinates 3")
+# A real invisible perimeter keeps the player inside the 2,000,000 m² square.
+patch("src/main.ts",
+"  const colliders = new Colliders();",
+"  const colliders = new Colliders();\n  const mapEdge = HALF_WORLD - 2;\n  // Four invisible, full-height perimeter walls; no visual props or branches are removed.\n  colliders.box(-mapEdge, 0, 2, HALF_WORLD, 0, -1000, 1000);\n  colliders.box(mapEdge, 0, 2, HALF_WORLD, 0, -1000, 1000);\n  colliders.box(0, -mapEdge, HALF_WORLD, 2, 0, -1000, 1000);\n  colliders.box(0, mapEdge, HALF_WORLD, 2, 0, -1000, 1000);",
+"add invisible 2m world perimeter")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
