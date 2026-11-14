@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
-      - 'styles.css'
-      - 'app.js'
       - 'manifest.webmanifest'
-      - 'scripts/fetch_polyhaven_assets.py'
+      - 'scripts/prepare_ilox_forest.py'
+      - 'ilox-forest-index.html'
+      - 'ilox-forest.css'
+      - 'LICENSE-TheForest.txt'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -28,26 +28,54 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Obtener código
+      - name: Obtener ILOX
         uses: actions/checkout@v4
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v5
+
+      - name: Obtener la base The Forest (MIT)
+        uses: actions/checkout@v4
         with:
-          enablement: true
-      - name: Descargar modelo 3D gratuito CC0 de Poly Haven
-        run: python3 scripts/fetch_polyhaven_assets.py
-      - name: Validar JavaScript
-        run: node --check app.js
-      - name: Preparar sitio
+          repository: jalexiscv/TheForest
+          ref: d343fe58a1bd6b72c4fadcc09eec332519ec41e1
+          path: vendor/theforest
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: vendor/theforest/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: vendor/theforest
+        run: npm ci
+
+      - name: Aplicar adaptación ILOX
+        run: |
+          python3 scripts/prepare_ilox_forest.py vendor/theforest
+          mkdir -p vendor/theforest/public
+          cp manifest.webmanifest vendor/theforest/public/manifest.webmanifest
+          cp LICENSE-TheForest.txt vendor/theforest/LICENSE-TheForest.txt
+
+      - name: Verificar TypeScript
+        working-directory: vendor/theforest
+        run: npm run typecheck
+
+      - name: Compilar mundo natural 3D
+        working-directory: vendor/theforest
+        run: npm run build
+
+      - name: Preparar sitio PWA
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js manifest.webmanifest _site/
-          cp -R assets _site/assets
+          cp -R vendor/theforest/dist/. _site/
+          cp LICENSE-TheForest.txt THIRD_PARTY_LICENSES.md _site/
           touch _site/.nojekyll
+
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+
       - name: Publicar sitio
         id: deployment
         uses: actions/deploy-pages@v4
