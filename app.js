@@ -533,6 +533,7 @@ function animate() {
 
 try {
   init();
+  loadFreeNatureAssets();
 } catch (error) {
   console.error(error);
   loading.innerHTML = '<div class="loading-mark">ILOX</div><p>No se pudo iniciar el mundo 3D. Revisá la conexión y volvé a intentar.</p>';
