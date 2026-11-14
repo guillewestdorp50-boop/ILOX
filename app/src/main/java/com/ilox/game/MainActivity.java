@@ -42,7 +42,10 @@ public class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient());
         setContentView(webView);
-        webView.loadUrl("https://guillewestdorp50-boop.github.io/ILOX/");
+
+        // Abrir los archivos incluidos en ESTE APK, no la web publicada.
+        // El dominio appassets permite resolver CSS, JS y modelos 3D locales.
+        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
     }
 
     private void enterImmersiveMode() {
