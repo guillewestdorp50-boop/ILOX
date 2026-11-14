@@ -9,6 +9,7 @@ on:
       - 'ilox-forest.css'
       - 'manifest.webmanifest'
       - '.github/workflows/test-ilox-forest.yml'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
