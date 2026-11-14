@@ -441,4 +441,14 @@ patch("tools/gen-island.ts",
 "  const lipPoint = RIVER[FALLS_INDEX].p;\n  lipWater = Math.min(lipBed + 0.55, sampleRaw(lipPoint[0], lipPoint[1]) - 1.65);",
 "keep waterfall lip below the terrain crest")
 
+
+patch("src/world/Heightfield.ts",
+"falls: { lip: [number, number]; toward: [number, number]; s: number; top: number; bottom: number; width: number };",
+"falls: { lip: [number, number]; toward: [number, number]; s: number; top: number; bottom: number; width: number; lipGround: number };",
+"record waterfall lip terrain height")
+patch("tools/gen-island.ts",
+"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w },",
+"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w, lipGround: sampleRaw(lip[0], lip[1]) },",
+"write waterfall lip terrain height into metadata")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
