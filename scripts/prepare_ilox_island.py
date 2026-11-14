@@ -684,8 +684,8 @@ patch("src/main.ts",
 # It detects only the existing downstream channel after the plunge pool (sample 9+).
 patch("src/player/Player.ts",
 "  state: 'ground' | 'air' | 'swim' = 'ground';",
-"  state: 'ground' | 'air' | 'swim' | 'ride' = 'ground';\n  private channelRide = false;",
-"add dedicated river ride state")
+"  state: 'ground' | 'air' | 'swim' | 'ride' = 'ground';\n  private channelRide = false;\n  private rideEntryT = -1;\n  private rideTime = 0;\n  private rideArms: { bone: THREE.Object3D; base: THREE.Quaternion; side: number; forearm: boolean }[] = [];\n  private rideArmEuler = new THREE.Euler();\n  private rideArmOffset = new THREE.Quaternion();",
+"add controllable channel ride state and arm pose")
 patch("src/player/Player.ts",
 "  onSplash: ((strength: number, pos: THREE.Vector3) => void) | null = null;",
 "  onSplash: ((strength: number, pos: THREE.Vector3) => void) | null = null;\n  onChannelRide: (() => void) | null = null;",
@@ -693,54 +693,101 @@ patch("src/player/Player.ts",
 patch("src/player/Player.ts",
 "    if (!this.ready) return;\n    const refYaw = intent.worldYaw ?? camYaw;",
 """    if (!this.ready) return;
+    // Detect the lower river after the plunge pool. Entering it transfers control
+    // to a grounded, seated water-slide state; the normal swim state is untouched.
     this.updateWater();
-    const nr = this.hf.nearestRiver(this.pos.x, this.pos.z);
-    const sample = this.hf.river[nr.i];
+    let nr = this.hf.nearestRiver(this.pos.x, this.pos.z);
+    let sample = this.hf.river[nr.i];
     const inLowerChannel = nr.i >= 9 && nr.i < this.hf.river.length - 1
       && nr.d < sample.w / 2 + 1.35 && sample.water > 0.05 && this.waterDepth > 0.18;
     if (!this.channelRide && inLowerChannel && this.state !== 'air') {
       this.channelRide = true;
       this.state = 'ride';
-      this.vel.set(0, 0, 0);
+      this.rideEntryT = 0;
+      this.rideTime = 0;
+      this.vel.y = 0;
       this.onChannelRide?.();
     }
     if (this.channelRide) {
-      const i = Math.min(this.hf.river.length - 1, nr.i);
-      if (i >= this.hf.river.length - 1 || sample.water <= 0.05 || nr.d > sample.w / 2 + 2.2) {
+      // Jump is the explicit escape from the channel. Keep the player's momentum
+      // and hand the next frame back to the ordinary airborne controller.
+      if (intent.jump) {
         this.channelRide = false;
-        this.state = this.waterDepth > SWIM_DEPTH ? 'swim' : 'ground';
+        this.rideEntryT = -1;
+        this.state = 'air';
+        this.vel.y = JUMP_V * 1.12;
+        this.airTime = 0;
+        this.jumpT = 0;
       } else {
-        const a = this.hf.river[Math.max(8, i - 1)];
-        const b = this.hf.river[Math.min(this.hf.river.length - 1, i + 1)];
-        const dx = b.x - a.x, dz = b.z - a.z;
-        const len = Math.hypot(dx, dz) || 1;
-        const vx = dx / len, vz = dz / len;
-        const rideSpeed = 5.2;
-        this.moveA = Math.atan2(vx, -vz);
-        let turn = this.moveA - this.heading;
-        turn = Math.atan2(Math.sin(turn), Math.cos(turn));
-        this.heading += turn * (1 - Math.exp(-dt * 7));
-        this.vel.set(vx * rideSpeed, 0, vz * rideSpeed);
-        this.pos.x += this.vel.x * dt;
-        this.pos.z += this.vel.z * dt;
-        this.updateWater();
-        this.pos.y += (this.waterLevel - 0.55 - this.pos.y) * (1 - Math.exp(-dt * 5));
-        this.speed = rideSpeed;
-        this.surface = 'water';
-        this.wetness = Math.max(this.wetness, 0.95);
-        playerU.wet.value = Math.max(this.wetness, this.rainWet);
-        this.animate(dt);
-        this.syncRoot();
-        this.updateContact();
-        return;
+        const i = Math.min(this.hf.river.length - 1, nr.i);
+        if (i >= this.hf.river.length - 1 || sample.water <= 0.05) {
+          this.channelRide = false;
+          this.rideEntryT = -1;
+          this.state = this.waterDepth > SWIM_DEPTH ? 'swim' : 'ground';
+          if (this.state === 'swim') this.pos.y = this.waterLevel - SWIM_SINK;
+          else this.pos.y = this.groundAt(this.pos.x, this.pos.z, 1e9).y;
+        } else {
+          const a = this.hf.river[Math.max(8, i - 1)];
+          const b = this.hf.river[Math.min(this.hf.river.length - 1, i + 1)];
+          const dx = b.x - a.x, dz = b.z - a.z;
+          const len = Math.hypot(dx, dz) || 1;
+          const vx = dx / len, vz = dz / len;
+          const rx = -vz, rz = vx;
+          const refYaw = intent.worldYaw ?? camYaw;
+          const fx = Math.sin(refYaw) * intent.moveY + Math.cos(refYaw) * intent.moveX;
+          const fz = -Math.cos(refYaw) * intent.moveY + Math.sin(refYaw) * intent.moveX;
+          const along = fx * vx + fz * vz;
+          const across = fx * rx + fz * rz;
+          const forwardSpeed = THREE.MathUtils.clamp(5.2 + along * 3.4, -1.2, 8.6);
+          const sideSpeed = across * 3.0;
+          this.vel.set(vx * forwardSpeed + rx * sideSpeed, 0, vz * forwardSpeed + rz * sideSpeed);
+          let nx = this.pos.x + this.vel.x * dt;
+          let nz = this.pos.z + this.vel.z * dt;
+          nr = this.hf.nearestRiver(nx, nz);
+          sample = this.hf.river[nr.i];
+          if (nr.i >= 9 && nr.i < this.hf.river.length - 1) {
+            const maxOffset = Math.max(0.25, sample.w / 2 - 0.42);
+            if (nr.d > maxOffset) {
+              const k = maxOffset / Math.max(nr.d, 1e-4);
+              nx = sample.x + (nx - sample.x) * k;
+              nz = sample.z + (nz - sample.z) * k;
+            }
+          }
+          this.pos.x = nx;
+          this.pos.z = nz;
+          this.moveA = Math.atan2(vx, -vz);
+          let turn = this.moveA - this.heading;
+          turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+          this.heading += turn * (1 - Math.exp(-dt * 7));
+          const bed = this.hf.height(nx, nz);
+          this.pos.y = bed + 0.035;
+          this.updateWater();
+          this.speed = Math.hypot(this.vel.x, this.vel.z);
+          this.surface = 'water';
+          this.wetness = Math.max(this.wetness, 0.95);
+          this.rideTime += dt;
+          this.rideEntryT += dt;
+          playerU.wet.value = Math.max(this.wetness, this.rainWet);
+          this.animate(dt);
+          this.syncRoot();
+          this.updateContact();
+          return;
+        }
       }
     }
     const refYaw = intent.worldYaw ?? camYaw;""",
-"automatic downstream channel ride")
+"controllable seated channel ride with grounded exit")
 patch("src/player/Player.ts",
 "    if (this.state === 'swim') {\n      const m = THREE.MathUtils.smoothstep(sp, 0.2, 1.0);",
-"    if (this.state === 'ride') {\n      this.setW('sit', 1);\n      this.setW('idle_arms', 0.32);\n    } else if (this.state === 'swim') {\n      const m = THREE.MathUtils.smoothstep(sp, 0.2, 1.0);",
-"sit and celebrate animation while riding")
+"""    if (this.state === 'ride') {
+      const settled = THREE.MathUtils.smoothstep(this.rideEntryT, 0.08, 0.55);
+      this.setW('fall', (1 - settled) * 0.72);
+      this.setW('sit', settled * 0.9);
+      this.setW('swim', settled * 0.18);
+      this.phase += dt / (c.swim?.duration ?? 1.33);
+    } else if (this.state === 'swim') {
+      const m = THREE.MathUtils.smoothstep(sp, 0.2, 1.0);""",
+"fall-to-sit entry and moving water-slide pose")
 
 # Add a joyful Spanish cheer on channel entry using the device's available speech voice.
 # No external audio assets or network requests are required.
@@ -773,3 +820,33 @@ patch("src/main.ts",
 
 
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
+
+
+# Keep the avatar grounded at the channel bed, steerable in the current, and able to jump out.
+patch("src/player/Player.ts",
+"    this.model = g.scene;",
+"""    this.model = g.scene;
+    this.model.traverse((o) => {
+      const n = o.name.replace(/[ _]/g, '').toLowerCase();
+      const match = n.match(/^bip01([lr])(upperarm|forearm)$/);
+      if (match) this.rideArms.push({
+        bone: o, base: o.quaternion.clone(), side: match[1] === 'l' ? -1 : 1,
+        forearm: match[2] === 'forearm',
+      });
+    });""",
+"capture avatar arm bones for ride celebration")
+
+patch("src/player/Player.ts",
+"    this.mixer.update(0);",
+"""    this.mixer.update(0);
+    // Layer a small shoulder/forearm celebration over the seated animation.
+    if (this.state === 'ride') {
+      const wave = Math.sin(this.rideTime * 5.4);
+      for (const arm of this.rideArms) {
+        const raise = arm.forearm ? 0.55 + wave * 0.28 : 1.12 + wave * 0.16;
+        this.rideArmEuler.set(arm.forearm ? -0.82 : -0.12, 0, arm.side * raise);
+        this.rideArmOffset.setFromEuler(this.rideArmEuler);
+        arm.bone.quaternion.copy(arm.base).multiply(this.rideArmOffset);
+      }
+    }""",
+"procedural moving celebratory arms during channel ride")
