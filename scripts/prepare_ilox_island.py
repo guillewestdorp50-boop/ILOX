@@ -46,6 +46,13 @@ patch("src/core/Engine.ts",
 "    const dpr = Math.min(window.devicePixelRatio || 1, 2);",
 "    const dpr = Math.min(window.devicePixelRatio || 1, preset === 'low' ? 1.25 : 2);",
 "mobile pixel ratio")
+
+# Cap the mobile camera horizon: the upstream 30 km far plane wastes visibility work
+# on terrain and scenery far beyond ILOX's playable island.
+patch("src/core/Engine.ts",
+"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 30000);",
+"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, preset === 'low' ? 1800 : 30000);",
+"mobile camera far plane")
 patch("src/main.ts",
 "  sunLight.castShadow = !new URLSearchParams(location.search).has('noshadow');",
 "  sunLight.castShadow = preset !== 'low' && !new URLSearchParams(location.search).has('noshadow');",
