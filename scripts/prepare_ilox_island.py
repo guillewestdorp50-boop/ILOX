@@ -438,7 +438,7 @@ patch("src/player/Player.ts",
 # above the escarpment, making the sheet appear to start in mid-air.
 patch("tools/gen-island.ts",
 "  lipWater = lipBed + 0.55;",
-"  const lipPoint = RIVER[FALLS_INDEX].p;\n  lipWater = Math.min(lipBed + 0.55, sampleRaw(lipPoint[0], lipPoint[1]) - 1.65);",
+"  const lipPoint = RIVER[FALLS_INDEX].p;\n  const lipGround = sampleRaw(lipPoint[0], lipPoint[1]);\n  lipWater = Math.min(lipBed + 0.55, lipGround - 1.65);,
 "keep waterfall lip below the terrain crest")
 
 
@@ -448,7 +448,7 @@ patch("src/world/Heightfield.ts",
 "record waterfall lip terrain height")
 patch("tools/gen-island.ts",
 "falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w },",
-"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w, lipGround: sampleRaw(lip[0], lip[1]) },",
+"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w, lipGround },",
 "write waterfall lip terrain height into metadata")
 
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
