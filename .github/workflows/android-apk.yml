@@ -39,7 +39,7 @@ jobs:
       - name: Validar JavaScript y preparar archivos web dentro de la app
         run: |
           node --check app.js
-          mkdir -p app/src/main/assets/www/assets
+          mkdir -p app/src/main/assets/www
           cp index.html styles.css app.js manifest.webmanifest app/src/main/assets/www/
           cp -R assets app/src/main/assets/www/assets
 
