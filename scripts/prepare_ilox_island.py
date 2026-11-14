@@ -397,4 +397,62 @@ patch("src/main.ts",
 "  const colliders = new Colliders();\n  const mapEdge = HALF_WORLD - 2;\n  // Four invisible, full-height perimeter walls; no visual props or branches are removed.\n  colliders.box(-mapEdge, 0, 2, HALF_WORLD, 0, -1000, 1000);\n  colliders.box(mapEdge, 0, 2, HALF_WORLD, 0, -1000, 1000);\n  colliders.box(0, -mapEdge, HALF_WORLD, 2, 0, -1000, 1000);\n  colliders.box(0, mapEdge, HALF_WORLD, 2, 0, -1000, 1000);",
 "add invisible 2m world perimeter")
 
+
+# Keep every graphics control at its lowest supported setting for the mobile test.
+patch("index.html",
+'  <label>Vegetación lejana <output id="ilox-vegetation-value">100%</output><input id="ilox-vegetation" type="range" min="10" max="100" step="5" value="100"></label>',
+'  <label>Vegetación lejana <output id="ilox-vegetation-value">0%</output><input id="ilox-vegetation" type="range" min="0" max="100" step="5" value="0"></label>',
+"set vegetation slider to minimum")
+patch("index.html",
+'  <label>Resolución de render <output id="ilox-resolution-value">68%</output><input id="ilox-resolution" type="range" min="40" max="85" step="5" value="68"></label>',
+'  <label>Resolución de render <output id="ilox-resolution-value">40%</output><input id="ilox-resolution" type="range" min="40" max="85" step="5" value="40"></label>',
+"set render scale to minimum")
+
+# Mobile camera look stays under the player's finger; never auto-turn behind the avatar.
+patch("src/player/Input.ts",
+"  worldYaw?: number;\n}",
+"  worldYaw?: number;\n  /** Mobile users steer the camera manually; do not auto-recenter. */\n  manualLook?: boolean;\n}",
+"add manual look intent")
+patch("src/player/Input.ts",
+"  private touchSprint = false;",
+"  private touchSprint = false;\n  private touchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;",
+"detect touch device for manual camera")
+patch("src/player/Input.ts",
+"    const intent: Intent = { moveX: mx, moveY: my, lookX: lx, lookY: ly, sprint, jump, walk, zoom, up };",
+"    const intent: Intent = { moveX: mx, moveY: my, lookX: lx, lookY: ly, sprint, jump, walk, zoom, up, manualLook: this.touchDevice };",
+"mobile look stays manual")
+patch("src/player/CameraRig.ts",
+"    if (this.idleLook > 1.2 && playerSpeed > 0.6) {",
+"    if (!intent.manualLook && this.idleLook > 1.2 && playerSpeed > 0.6) {",
+"disable mobile automatic camera recenter")
+
+# Bring run and sprint clip playback closer to the natural speed encoded in the animation metadata.
+patch("src/player/Player.ts",
+"const WALK = 1.35, RUN = 4.1, SPRINT = 6.6, SWIM = 1.35, SWIM_FAST = 2.1;",
+"const WALK = 1.35, RUN = 5.0, SPRINT = 8.0, SWIM = 1.35, SWIM_FAST = 2.1;",
+"match run speeds to locomotion clips")
+
+
+# Anchor the waterfall lip to the actual pre-carve terrain crest.
+# On the 2M map, the river-distance sampling can otherwise place the lip water
+# above the escarpment, making the sheet appear to start in mid-air.
+patch("tools/gen-island.ts",
+"let poolLevel = 0, lipWater = 0;",
+"let poolLevel = 0, lipWater = 0, lipGround = 0;",
+"preserve waterfall lip ground height")
+patch("tools/gen-island.ts",
+"  lipWater = lipBed + 0.55;",
+"  const lipPoint = RIVER[FALLS_INDEX].p;\n  lipGround = sampleRaw(lipPoint[0], lipPoint[1]);\n  lipWater = Math.min(lipBed + 0.55, lipGround - 1.65);",
+"keep waterfall lip below the terrain crest")
+
+
+patch("src/world/Heightfield.ts",
+"falls: { lip: [number, number]; toward: [number, number]; s: number; top: number; bottom: number; width: number };",
+"falls: { lip: [number, number]; toward: [number, number]; s: number; top: number; bottom: number; width: number; lipGround: number };",
+"record waterfall lip terrain height")
+patch("tools/gen-island.ts",
+"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w },",
+"falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w, lipGround },",
+"write waterfall lip terrain height into metadata")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
