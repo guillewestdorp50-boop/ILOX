@@ -33,10 +33,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Preparar archivos web dentro de la app
+      - name: Descargar recursos 3D gratuitos CC0
+        run: python3 scripts/fetch_polyhaven_assets.py
+
+      - name: Validar JavaScript y preparar archivos web dentro de la app
         run: |
-          mkdir -p app/src/main/assets/www
+          node --check app.js
+          mkdir -p app/src/main/assets/www/assets
           cp index.html styles.css app.js manifest.webmanifest app/src/main/assets/www/
+          cp -R assets app/src/main/assets/www/assets
 
       - name: Compilar APK de prueba
         run: gradle --no-daemon assembleDebug
