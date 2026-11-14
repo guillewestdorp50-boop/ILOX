@@ -617,4 +617,24 @@ patch("src/water/Ocean.ts",
     const shade = (() => {""",
 "add reversible low-cost water fragment shader")
 
+
+# Reversible sky-only A/B controls. The original atmosphere and cloud paths remain
+# the default; each experiment can be enabled independently from the URL.
+patch("src/sky/Atmosphere.ts",
+"const S_W = 192, S_H = 128;",
+"const ATMO_LITE = new URLSearchParams(location.search).has('atmolite');\nconst S_W = ATMO_LITE ? 144 : 192, S_H = ATMO_LITE ? 96 : 128;",
+"add reversible lower-cost sky-view LUT")
+patch("src/sky/Sky.ts",
+"const CLOUD_RES = 1024;",
+"const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
+"add reversible lower-cost cloud map")
+patch("src/sky/Sky.ts",
+"const STEPS = withSun ? Math.round(Q.cloudSteps * 1.5) : 9;",
+"const STEPS = withSun ? Math.max(1, Math.round(Q.cloudSteps * (CLOUD_LITE ? 1 : 1.5))) : (CLOUD_LITE ? 6 : 9);",
+"reduce cloud raymarch steps only in cloud A/B")
+patch("src/sky/Sky.ts",
+"    if (force || this.n % 3 === 0) renderAtmosphereLUTs(this.renderer);",
+"    if (force || this.n % (new URLSearchParams(location.search).has('atmolite') ? 6 : 3) === 0) renderAtmosphereLUTs(this.renderer);",
+"reduce sky LUT refresh cadence only in atmosphere A/B")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
