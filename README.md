@@ -38,3 +38,16 @@ El frontend podrá publicarse con GitHub Pages desde la rama `main`, carpeta ra�
 El repositorio contiene únicamente el código de la aplicación. Esta versión inicial es un prototipo público y **no implementa todavía cuentas, autorización familiar, multijugador ni guardado privado**. No ingreses datos personales ni uses esta versión para alojar un mundo familiar real hasta implementar y verificar un backend con autenticación y controles de acceso del lado del servidor.
 
 ILOX no está pensado como un servicio comercial ni incluye compras, anuncios o chat público.
+
+
+## Vista previa Android
+
+El proyecto incluye una app Android de prueba que abre la escena web 3D en una ventana inmersiva. Cada actualización de la rama `main` ejecuta una compilación automática y publica el APK de depuración como artefacto de GitHub Actions.
+
+- Identificador Android: `com.ilox.game`
+- Versión inicial de prueba: `0.1.0-preview`
+- Nombre visible: `ILOX · Mundo de Eli`
+- El APK requiere conexión a internet para descargar Three.js desde CDN.
+- Es una vista previa para revisar el aspecto y los controles; no es todavía una versión final ni incluye guardado persistente o mundos privados.
+
+El personaje inicial lleva ropa de explorador, pantalón largo, botas y una mochila compacta de lona vintage con bolsillos. La historia comienza en una pradera abierta, sin explicar todavía cómo llegó allí.
