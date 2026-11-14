@@ -1613,3 +1613,8 @@ patch("src/main.ts",
 "      const y=42;\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
 "place every adjacent floor tile on the exact common plane")
 
+
+# Temporary build diagnostic: print the generated TypeScript around the current
+# compiler-reported line so syntax repairs target the exact generated source.
+generated_main = (root / "src/main.ts").read_text(encoding="utf-8").splitlines()
+print("ILOX generated src/main.ts lines 824-838:\n" + "\n".join(f"{i+1}: {generated_main[i]}" for i in range(823, min(838, len(generated_main)))))
