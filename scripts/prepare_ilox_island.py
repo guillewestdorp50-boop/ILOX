@@ -1469,11 +1469,11 @@ patch_many("src/main.ts",
 
 # Keep the centre-reticle ray independent of pointer coordinates; no stale rect locals.
 patch_many("src/main.ts",
-"    const rect=renderer.domElement.getBoundingClientRect();\\n    buildPointer.set(0,0);",
+"    const rect=renderer.domElement.getBoundingClientRect();\n    buildPointer.set(0,0);",
 "    buildPointer.set(0,0);",
 2,
 "remove unused pointer rectangles from centred preview rays");
 patch("src/main.ts",
-"    const rect = renderer.domElement.getBoundingClientRect();\\n    buildPointer.set(0,0);",
+"    const rect = renderer.domElement.getBoundingClientRect();\n    buildPointer.set(0,0);",
 "    buildPointer.set(0,0);",
 "remove unused pointer rectangle from centred placement ray");
