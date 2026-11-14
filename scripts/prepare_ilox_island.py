@@ -1748,3 +1748,22 @@ patch("src/core/quality.ts",
 "lodScale: 0.36",
 "lodScale: 0.95",
 "reduce excessive terrain patch density on mobile while retaining heightmap relief")
+
+
+# Restore visible island terrain on mobile and keep the construction clearing local.
+# A 50 m camera far plane clipped almost the entire island while the ocean remained visible.
+patch("src/core/Engine.ts",
+"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, preset === 'low' ? 50 : 30000);",
+"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 30000);",
+"restore full island visibility on mobile")
+# Keep a useful building plateau without flattening the summit and most of the island.
+patch("src/world/Heightfield.ts",
+"    const flatRadius = 410, fadeRadius = 120, outerRadius = flatRadius + fadeRadius;",
+"    const flatRadius = 85, fadeRadius = 55, outerRadius = flatRadius + fadeRadius;",
+"confine flat construction plateau and restore surrounding mountains")
+# Use the original full terrain material by default; the lite material remains available
+# for deliberate A/B testing with ?terrainlite=1.
+patch("src/main.ts",
+"  const terrainLite = terrainParams.has('terrainlite') || (Q.renderScale < 0.7 && !terrainParams.has('terrainfull'));",
+"  const terrainLite = terrainParams.has('terrainlite') && !terrainParams.has('terrainfull');",
+"restore full terrain material by default")
