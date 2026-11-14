@@ -1601,7 +1601,7 @@ patch("src/main.ts",
 
 # Apply the floor tolerance after the original construction code has been generated.
 patch("src/main.ts",
-"    };\n    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
 "    };\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
 "allow small ground imperfections on the shared construction plane")
 patch("src/main.ts",
