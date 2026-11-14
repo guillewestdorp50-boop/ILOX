@@ -66,10 +66,8 @@ replacements = [
      '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />\n    <meta name="theme-color" content="#101b16" />\n    <link rel="manifest" href="./manifest.webmanifest" />'),
     ('An open-world tropical island in the browser: beach, jungle, waterfall, fishing village and a lighthouse on the peak.',
      'ILOX: explorá un mundo natural 3D con bosques, acantilados, ríos y cascadas.'),
-    ('<h1>Island</h1>', '<h1>ILOX</h1>'),
-    ('From the reef to the lighthouse, on foot.', 'Un mundo natural. Exploralo a tu manera.'),
-    ('/loader/sunrise.avif', './loader/sunrise.avif'),
-    ('/loader/island-title.woff2', './loader/island-title.woff2'),
+    ('<h1>ISLAND</h1>', '<h1>ILOX</h1>'),
+    ('      <div class="bar">', '      <p class="line">Un mundo natural. Exploralo a tu manera.</p>\n      <div class="bar">'),
     ('<script type="module" src="/src/main.ts"></script>',
      '<div id="ilox-touch" aria-label="Controles táctiles">\n'
      '      <div id="ilox-look-zone" aria-label="Mirar alrededor"></div>\n'
