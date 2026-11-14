@@ -1619,3 +1619,92 @@ patch("src/main.ts",
 "    const spread=Math.max(...hs)-Math.min(...hs);\n    };\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
 "    const spread=Math.max(...hs)-Math.min(...hs);\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
 "remove stray floor preview closure")
+
+
+# Replace the procedural placeholder ATV with the real CC0 Scavenger Quad Bike GLB.
+# The original procedural implementation remains above as a reversible historical
+# build step; this final adapter changes only the generated vehicle visual/runtime.
+patch("src/main.ts",
+"import * as THREE from 'three/webgpu';",
+"import * as THREE from 'three/webgpu';\nimport { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';",
+"load real CC0 quad model with Three.js GLTFLoader")
+
+main_path = root / "src/main.ts"
+main_source = main_path.read_text(encoding="utf-8")
+quad_start = "  // ILOX functional quad: parked beside the village spawn; player input drives it when mounted."
+quad_end = "  quadButton?.addEventListener('click', toggleQuad);"
+if main_source.count(quad_start) != 1 or main_source.count(quad_end) != 1:
+    raise SystemExit("real quad replacement: expected one existing ATV block")
+a = main_source.index(quad_start)
+b = main_source.index(quad_end, a) + len(quad_end)
+real_quad = """  // Real imported Scavenger Quad Bike (CC0), not procedural geometry.
+  const quadBike = new THREE.Group();
+  quadBike.name = 'ilox-quad-bike';
+  scene.add(quadBike);
+  const quadButton = document.getElementById('ilox-vehicle-toggle');
+  let quadMounted = false;
+  let quadLoaded = false;
+  let quadMixer: THREE.AnimationMixer | null = null;
+  quadBike.position.set(spot.player[0] + 3, hf.height(spot.player[0] + 3, spot.player[1] + 3), spot.player[1] + 3);
+  quadBike.rotation.y = spot.yaw;
+  const quadLoader = new GLTFLoader();
+  quadLoader.load(
+    'https://cdn.3dassets.dev/assets/32681/v1/model.glb',
+    (gltf) => {
+      const importedQuad = gltf.scene;
+      importedQuad.name = 'scavenger-quad-bike-model';
+      // The source model is metre-scaled, +Y up, +Z forward, origin at ground centre.
+      // Turn it to the game's -Z forward convention and avoid extra shadow passes.
+      importedQuad.rotation.y = Math.PI;
+      importedQuad.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.castShadow = false;
+          object.receiveShadow = false;
+          object.frustumCulled = true;
+        }
+      });
+      quadBike.add(importedQuad);
+      if (gltf.animations.length) {
+        quadMixer = new THREE.AnimationMixer(importedQuad);
+        for (const clip of gltf.animations) quadMixer.clipAction(clip).play();
+      }
+      quadLoaded = true;
+      if (quadButton && !quadMounted) quadButton.textContent = 'SUBIR ATV';
+      console.info('ILOX: Scavenger Quad Bike loaded', gltf.animations.length, 'animations');
+    },
+    undefined,
+    (error) => {
+      console.error('ILOX: no se pudo cargar el modelo Scavenger Quad Bike', error);
+      if (quadButton) quadButton.textContent = 'ATV NO DISPONIBLE';
+    },
+  );
+  const toggleQuad = () => {
+    if (quadMounted) {
+      quadMounted = false;
+      player.vehicleMode = false;
+      player.root.visible = true;
+      if (quadButton) quadButton.textContent = 'SUBIR ATV';
+      return;
+    }
+    if (!quadLoaded) {
+      if (quadButton) quadButton.textContent = 'CARGANDO ATV…';
+      return;
+    }
+    if (Math.hypot(player.pos.x - quadBike.position.x, player.pos.z - quadBike.position.z) > 5.5) {
+      if (quadButton) quadButton.textContent = 'ACERCATE AL ATV';
+      window.setTimeout(() => { if (quadButton && !quadMounted) quadButton.textContent = 'SUBIR ATV'; }, 1500);
+      return;
+    }
+    quadMounted = true;
+    player.vehicleMode = true;
+    player.root.visible = false;
+    if (quadButton) quadButton.textContent = 'BAJAR ATV';
+  };
+  quadButton?.addEventListener('click', toggleQuad);"""
+main_source = main_source[:a] + real_quad + main_source[b:]
+main_path.write_text(main_source, encoding="utf-8")
+
+patch("src/main.ts",
+"      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;",
+"      quadBike.rotation.y = player.heading;\n    }\n    quadMixer?.update(dt);",
+"drive imported quad and advance its real wheel-roll animation")
