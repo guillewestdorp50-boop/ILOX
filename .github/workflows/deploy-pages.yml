@@ -8,6 +8,7 @@ on:
       - 'styles.css'
       - 'app.js'
       - 'manifest.webmanifest'
+      - 'scripts/fetch_polyhaven_assets.py'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -33,10 +34,13 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Descargar modelo 3D gratuito CC0 de Poly Haven
+        run: python3 scripts/fetch_polyhaven_assets.py
       - name: Preparar sitio
         run: |
           mkdir -p _site
           cp index.html styles.css app.js manifest.webmanifest _site/
+          cp -R assets _site/assets
           touch _site/.nojekyll
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v3
