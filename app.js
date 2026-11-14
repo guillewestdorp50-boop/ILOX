@@ -142,13 +142,13 @@ function makeTree(x, z, scale, random) {
 }
 async function fetchPolyHavenModel(assetId, maxBytes = 18000000) {
   // Poly Haven publica modelos CC0. Se consulta su catálogo y se elige una variante glTF ligera.
-  const response = await fetch(`https://api.polyhaven.com/files/${assetId}`, { headers: { Accept: "application/json" } });
+  const response = await fetch(`https://api.polyhaven.com/files/${assetId}`, { headers: { Accept: "application/json", "X-ILOX-Client": "ILOX/0.1" } });
   if (!response.ok) throw new Error(`Poly Haven respondió ${response.status}`);
   const files = await response.json();
   const candidates = [];
   const walk = (node, path = []) => {
     if (!node || typeof node !== "object") return;
-    if (typeof node.url === "string" && /\\.(glb|gltf)(\\?|$)/i.test(node.url)) {
+    if (typeof node.url === "string" && /\.(glb|gltf)(\?|$)/i.test(node.url)) {
       candidates.push({ url: node.url, size: Number(node.size || 0), path: path.join("/") });
       return;
     }
