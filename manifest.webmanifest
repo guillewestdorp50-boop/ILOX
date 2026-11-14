@@ -1,12 +1,12 @@
 {
-  "name": "ILOX — Tu propio mundo",
+  "name": "ILOX — Mundo natural",
   "short_name": "ILOX",
-  "description": "Construí, explorá y jugá en tu propio mundo.",
+  "description": "Explorá bosques, acantilados, ríos y cascadas en un mundo 3D.",
   "lang": "es-AR",
-  "start_url": "./",
+  "start_url": "./?spot=jungle&hud=0",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",
-  "background_color": "#172b26",
-  "theme_color": "#162b24"
+  "background_color": "#101b16",
+  "theme_color": "#101b16"
 }
