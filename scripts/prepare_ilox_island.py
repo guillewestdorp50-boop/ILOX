@@ -1312,3 +1312,77 @@ patch("src/main.ts",
 "        showBuildStatus(activeBuild === 'flatten' ? 'Tocá el terreno: la pala lo va a nivelar' : activeBuild === 'floor' ? 'Mové el piso fantasma; verde significa que encaja' : 'Elegí un lado de un piso existente');",
 "        showBuildStatus(activeBuild === 'flatten' ? 'La parcela punteada mide 4 × 4 m. Tocá varias veces con la pala' : activeBuild === 'floor' ? 'El piso solo estará verde sobre una parcela preparada' : 'Elegí un lado de un piso existente');",
 "explain repeated shovel taps and floor compatibility")
+
+
+# First-person construction mode: preserve the player's movement joystick and
+# the proven 4x4 m plot workflow, but replace the free-flying camera with an
+# eye-level camera driven only by direct touch drags.
+patch("src/player/CameraRig.ts",
+"export type CamMode = 'follow' | 'orbit' | 'free' | 'pose';",
+"export type CamMode = 'follow' | 'orbit' | 'free' | 'pose' | 'first';",
+"add first-person camera mode")
+patch("src/player/CameraRig.ts",
+"      if (m === 'free') {",
+"      if (m === 'free' || m === 'first') {",
+"preserve view direction when entering first person")
+patch("src/player/CameraRig.ts",
+"    if (this.mode === 'free') {\n      // smoothed fly camera (photo mode): velocity eases toward the wish so recordings glide",
+"    if (this.mode === 'first') {\n      // Eye-level camera follows the actual avatar position; touch look changes only yaw/pitch.\n      const forward = tmp.set(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));\n      cam.position.copy(playerPos).add(tmp2.set(0, 1.62, 0));\n      cam.lookAt(tmp.copy(cam.position).add(forward));\n      return;\n    }\n    if (this.mode === 'free') {\n      // smoothed fly camera (photo mode): velocity eases toward the wish so recordings glide",
+"implement grounded first-person camera")
+
+patch("src/player/Input.ts",
+"    let movePointer = -1, lookPointer = -1, lookX = 0, lookY = 0;",
+"    let movePointer = -1, lookPointer = -1, lookX = 0, lookY = 0, lookStartX = 0, lookStartY = 0;",
+"track look gesture movement")
+patch("src/player/Input.ts",
+"      e.preventDefault(); lookPointer = e.pointerId; lookX = e.clientX; lookY = e.clientY;\n      lookZone.setPointerCapture(e.pointerId);",
+"      e.preventDefault(); lookPointer = e.pointerId; lookX = lookStartX = e.clientX; lookY = lookStartY = e.clientY;\n      lookZone.dataset.lookDragged = '0';\n      lookZone.setPointerCapture(e.pointerId);",
+"distinguish a look swipe from a construction tap")
+patch("src/player/Input.ts",
+"      e.preventDefault(); this.mdx += e.clientX - lookX; this.mdy += e.clientY - lookY;\n      lookX = e.clientX; lookY = e.clientY;",
+"      e.preventDefault(); this.mdx += e.clientX - lookX; this.mdy += e.clientY - lookY;\n      if (Math.hypot(e.clientX - lookStartX, e.clientY - lookStartY) > 8) lookZone.dataset.lookDragged = '1';\n      lookX = e.clientX; lookY = e.clientY;",
+"mark camera drags without blocking taps")
+patch("src/player/Input.ts",
+"    const endLook = (e: PointerEvent) => { if (e.pointerId === lookPointer) lookPointer = -1; };",
+"    const endLook = (e: PointerEvent) => { if (e.pointerId === lookPointer) { lookPointer = -1; lookZone!.dataset.lookDragged = '0'; } };",
+"reset look gesture after release")
+
+patch("src/main.ts",
+"  const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x9a7045, roughness: 0.88 });",
+"  let buildViewModel: THREE.Group | null = null;\n  const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x9a7045, roughness: 0.88 });\n  // A light first-person viewmodel: sleeves, hands and a readable construction blueprint.\n  buildViewModel = new THREE.Group(); buildViewModel.visible = false; camera.add(buildViewModel);\n  const sleeveMaterial = new THREE.MeshStandardMaterial({ color: 0x455d50, roughness: 0.92 });\n  const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xc58f6b, roughness: 0.88 });\n  const addForearm = (x: number, zRot: number) => {\n    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.105, 0.48, 10), sleeveMaterial);\n    sleeve.position.set(x, -0.57, -0.72); sleeve.rotation.set(-0.34, 0, zRot); sleeve.frustumCulled = false; buildViewModel!.add(sleeve);\n    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 8), skinMaterial);\n    hand.position.set(x * 0.48, -0.405, -0.91); hand.scale.set(1.05, 0.78, 1.25); hand.frustumCulled = false; buildViewModel!.add(hand);\n  };\n  addForearm(-0.39, -0.62); addForearm(0.39, 0.62);\n  const blueprintCanvas = document.createElement('canvas'); blueprintCanvas.width = 512; blueprintCanvas.height = 340;\n  const bp = blueprintCanvas.getContext('2d')!;\n  bp.fillStyle = '#173b55'; bp.fillRect(0, 0, 512, 340);\n  bp.strokeStyle = 'rgba(206,231,238,.22)'; bp.lineWidth = 1;\n  for (let x = 0; x <= 512; x += 24) { bp.beginPath(); bp.moveTo(x, 0); bp.lineTo(x, 340); bp.stroke(); }\n  for (let y = 0; y <= 340; y += 24) { bp.beginPath(); bp.moveTo(0, y); bp.lineTo(512, y); bp.stroke(); }\n  bp.strokeStyle = '#e5f0e9'; bp.lineWidth = 5; bp.strokeRect(100, 74, 312, 190);\n  bp.lineWidth = 3; bp.strokeRect(132, 105, 248, 128); bp.beginPath(); bp.moveTo(256, 105); bp.lineTo(256, 233); bp.moveTo(132, 169); bp.lineTo(380, 169); bp.stroke();\n  bp.fillStyle = '#e5f0e9'; bp.font = 'bold 22px system-ui'; bp.fillText('ILOX · PLANO', 20, 34);\n  bp.font = '16px system-ui'; bp.fillText('4 × 4 m', 20, 316);\n  const blueprintTexture = new THREE.CanvasTexture(blueprintCanvas); blueprintTexture.colorSpace = THREE.SRGBColorSpace;\n  const blueprint = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.37), new THREE.MeshBasicMaterial({ map: blueprintTexture, side: THREE.DoubleSide, depthTest: false }));\n  blueprint.position.set(0, -0.46, -0.94); blueprint.rotation.set(-0.22, 0, 0); blueprint.renderOrder = 1000; blueprint.frustumCulled = false; buildViewModel.add(blueprint);",
+"add first-person hands and blueprint viewmodel")
+patch("src/main.ts",
+"        rig.set('free'); // freeze the avatar and let the camera fly independently",
+"        rig.set('first'); // eye-level view; the avatar keeps walking under the movement joystick.\n        player.root.visible = false;\n        if (buildViewModel) buildViewModel.visible = true;",
+"enter grounded first-person construction")
+patch("src/main.ts",
+"    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
+"    if (rig.mode === 'free' || rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;",
+"restore avatar when leaving construction")
+patch("src/main.ts",
+"    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
+"    if (rig.mode === 'free' || rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;",
+"restore avatar when opening another game panel")
+patch_many("src/main.ts",
+"buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
+"if (rig.mode === 'first') buildPointer.set(0,0); else buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
+3,
+"aim construction previews and placement from the first-person screen center")
+patch("src/main.ts",
+"    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select, #ilox-look-zone, #ilox-stick-zone')) return;",
+"    const target = event.target as Element | null;\n    const lookSurface = target?.closest<HTMLElement>('#ilox-look-zone');\n    if (!activeBuild || target?.closest('button, input, textarea, select, #ilox-stick-zone') || (lookSurface?.dataset.lookDragged === '1')) return;",
+"allow taps to build while swipes only turn the camera")
+patch("src/main.ts",
+"  window.addEventListener('pointermove', (event) => {\n    if ((event.target as Element | null)?.closest('#ilox-look-zone, #ilox-stick-zone, button')) return;\n    if (activeBuild === 'floor') updateFloorPreview(event);\n    if (activeBuild === 'flatten') updateFlattenPreview(event);\n  }, true);",
+"  window.addEventListener('pointermove', (event) => {\n    if (rig.mode === 'first') return;\n    if ((event.target as Element | null)?.closest('#ilox-look-zone, #ilox-stick-zone, button')) return;\n    if (activeBuild === 'floor') updateFloorPreview(event);\n    if (activeBuild === 'flatten') updateFlattenPreview(event);\n  }, true);",
+"keep first-person previews fixed to the center reticle")
+patch("src/main.ts",
+"    rig.update(dt, rig.mode === 'follow' || rig.mode === 'free' ? intent : { ...intent, lookX: 0, lookY: 0 }, player.pos, player.speed, player.heading);",
+"    rig.update(dt, rig.mode === 'follow' || rig.mode === 'free' || rig.mode === 'first' ? intent : { ...intent, lookX: 0, lookY: 0 }, player.pos, player.speed, player.heading);\n    if (rig.mode === 'first') {\n      if (activeBuild === 'floor') updateFloorPreview({} as PointerEvent);\n      if (activeBuild === 'flatten') updateFlattenPreview({} as PointerEvent);\n    }",
+"refresh first-person ghost previews at the reticle every frame")
+
+patch("index.html",
+"      body.ilox-building #ilox-build-camera { display:flex; }\n      body.ilox-building #ilox-look-zone { display:none !important; }",
+"      body.ilox-building #ilox-build-camera { display:none !important; }\n      body.ilox-building #ilox-look-zone { display:block !important; pointer-events:auto !important; }",
+"remove camera arrows and restore swipe-to-look in construction")
+
