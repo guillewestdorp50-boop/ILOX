@@ -5,6 +5,7 @@ on:
     branches: [rebuild-realistic-island]
     paths:
       - 'scripts/prepare_ilox_island.py'
+      - 'LICENSE-Island.txt'
       - 'manifest.webmanifest'
       - '.github/workflows/test-ilox-forest.yml'
       - '.github/workflows/deploy-pages.yml'
@@ -48,7 +49,7 @@ jobs:
         run: |
           python3 scripts/prepare_ilox_island.py island-source
           cp manifest.webmanifest island-source/public/manifest.webmanifest
-          cp island-source/LICENSE island-source/public/LICENSE-Island.txt
+          cp LICENSE-Island.txt island-source/public/LICENSE-Island.txt
 
       - name: Compilar y verificar
         working-directory: island-source
