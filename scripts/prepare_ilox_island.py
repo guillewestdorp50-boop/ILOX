@@ -55,6 +55,20 @@ patch("src/main.ts",
 "    veg.update(camera, preset === 'low' ? 18 : 60);",
 "reduce mobile vegetation culling radius")
 
+# Thin redundant tree layers while preserving the main rainforest canopy and scanned assets.
+patch("src/veg/Vegetation.ts",
+"const TS = 11 / Math.sqrt(D);",
+"const TS = 14 / Math.sqrt(D);",
+"reduce secondary canopy tree count")
+patch("src/veg/Vegetation.ts",
+"const MS = 8.5 / Math.sqrt(D);",
+"const MS = 12.5 / Math.sqrt(D);",
+"reduce midstorey tree count")
+patch("src/veg/Vegetation.ts",
+"if (r.next() < 0.08) {",
+"if (r.next() < 0.04) {",
+"reduce extra palms among rainforest trees")
+
 # Keep water visually alive while halving its expensive compute dispatch cadence on phones.
 patch("src/main.ts",
 "  let canopyK = 0, glareK = 0;",
