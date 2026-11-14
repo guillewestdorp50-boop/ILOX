@@ -672,4 +672,104 @@ patch("src/sky/Sky.ts",
     }""",
 "add simplified sky shader early return")
 
+
+# Slightly reduce ocean FFT dispatch frequency only for the explicit 15 Hz A/B.
+# Wave geometry, amplitude, current and every water material remain unchanged.
+patch("src/main.ts",
+"      if (oceanAccumulator >= (new URLSearchParams(location.search).has('ocean20') ? 1 / 20 : 1 / 30)) {",
+"      const oceanRate = new URLSearchParams(location.search).has('ocean15') ? 1 / 15 : new URLSearchParams(location.search).has('ocean20') ? 1 / 20 : 1 / 30;\n      if (oceanAccumulator >= oceanRate) {",
+"add reversible 15 Hz ocean simulation test")
+
+# A dedicated ride state for the lower river, separate from ordinary swimming.
+# It detects only the existing downstream channel after the plunge pool (sample 9+).
+patch("src/player/Player.ts",
+"  state: 'ground' | 'air' | 'swim' = 'ground';",
+"  state: 'ground' | 'air' | 'swim' | 'ride' = 'ground';\n  private channelRide = false;",
+"add dedicated river ride state")
+patch("src/player/Player.ts",
+"  onSplash: ((strength: number, pos: THREE.Vector3) => void) | null = null;",
+"  onSplash: ((strength: number, pos: THREE.Vector3) => void) | null = null;\n  onChannelRide: (() => void) | null = null;",
+"channel ride sound callback")
+patch("src/player/Player.ts",
+"    if (!this.ready) return;\n    const refYaw = intent.worldYaw ?? camYaw;",
+"""    if (!this.ready) return;
+    this.updateWater();
+    const nr = this.hf.nearestRiver(this.pos.x, this.pos.z);
+    const sample = this.hf.river[nr.i];
+    const inLowerChannel = nr.i >= 9 && nr.i < this.hf.river.length - 1
+      && nr.d < sample.w / 2 + 1.35 && sample.water > 0.05 && this.waterDepth > 0.18;
+    if (!this.channelRide && inLowerChannel && this.state !== 'air') {
+      this.channelRide = true;
+      this.state = 'ride';
+      this.vel.set(0, 0, 0);
+      this.onChannelRide?.();
+    }
+    if (this.channelRide) {
+      const i = Math.min(this.hf.river.length - 1, nr.i);
+      if (i >= this.hf.river.length - 1 || sample.water <= 0.05 || nr.d > sample.w / 2 + 2.2) {
+        this.channelRide = false;
+        this.state = this.waterDepth > SWIM_DEPTH ? 'swim' : 'ground';
+      } else {
+        const a = this.hf.river[Math.max(8, i - 1)];
+        const b = this.hf.river[Math.min(this.hf.river.length - 1, i + 1)];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const vx = dx / len, vz = dz / len;
+        const rideSpeed = 5.2;
+        this.moveA = Math.atan2(vx, -vz);
+        let turn = this.moveA - this.heading;
+        turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+        this.heading += turn * (1 - Math.exp(-dt * 7));
+        this.vel.set(vx * rideSpeed, 0, vz * rideSpeed);
+        this.pos.x += this.vel.x * dt;
+        this.pos.z += this.vel.z * dt;
+        this.updateWater();
+        this.pos.y += (this.waterLevel - 0.55 - this.pos.y) * (1 - Math.exp(-dt * 5));
+        this.speed = rideSpeed;
+        this.surface = 'water';
+        this.wetness = Math.max(this.wetness, 0.95);
+        playerU.wet.value = Math.max(this.wetness, this.rainWet);
+        this.animate(dt);
+        this.syncRoot();
+        this.updateContact();
+        return;
+      }
+    }
+    const refYaw = intent.worldYaw ?? camYaw;""",
+"automatic downstream channel ride")
+patch("src/player/Player.ts",
+"    if (this.state === 'swim') {\n      const m = THREE.MathUtils.smoothstep(sp, 0.2, 1.0);",
+"    if (this.state === 'ride') {\n      this.setW('sit', 1);\n      this.setW('idle_arms', 0.32);\n    } else if (this.state === 'swim') {\n      const m = THREE.MathUtils.smoothstep(sp, 0.2, 1.0);",
+"sit and celebrate animation while riding")
+
+# Add a joyful Spanish cheer on channel entry using the device's available speech voice.
+# No external audio assets or network requests are required.
+patch("src/audio/Audio.ts",
+"  swimStroke(pos: THREE.Vector3) {\n    const list = STEP_FILES.water;\n    this.play(list[Math.floor(Math.random() * list.length)], 0.35, 0.9 + Math.random() * 0.2, 0, pos);\n  }",
+"""  swimStroke(pos: THREE.Vector3) {
+    const list = STEP_FILES.water;
+    this.play(list[Math.floor(Math.random() * list.length)], 0.35, 0.9 + Math.random() * 0.2, 0, pos);
+  }
+
+  /** A playful one-shot cheer when the current catches the player in the lower channel. */
+  cheer() {
+    if (this.muted || !('speechSynthesis' in window)) return;
+    const say = new SpeechSynthesisUtterance('¡Yujuuu!');
+    say.lang = 'es-AR';
+    say.rate = 1.18;
+    say.pitch = 1.85;
+    say.volume = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const spanish = voices.find((v) => v.lang.toLowerCase().startsWith('es-ar'))
+      ?? voices.find((v) => v.lang.toLowerCase().startsWith('es'));
+    if (spanish) say.voice = spanish;
+    window.speechSynthesis.speak(say);
+  }""",
+"add joyful channel cheer")
+patch("src/main.ts",
+"  player.onSplash = (s, p) => audio.splash(s, p);",
+"  player.onSplash = (s, p) => audio.splash(s, p);\n  player.onChannelRide = () => audio.cheer();",
+"connect channel ride cheer")
+
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
