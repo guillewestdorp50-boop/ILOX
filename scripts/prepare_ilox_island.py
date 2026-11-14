@@ -13,6 +13,40 @@ def patch(path, old, new, label):
         raise SystemExit(f"{label}: expected 1 match, found {n}")
     p.write_text(s.replace(old, new, 1), encoding="utf-8")
 
+# Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
+patch("src/core/quality.ts",
+"  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
+"  low: { renderScale: 0.52, shadowMap: 512, cascades: 1, shadowFar: 95, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.28, grassFar: 18, lodScale: 0.55, oceanSegments: 80, cloudSteps: 4, rainParticles: 700 },",
+"mobile low preset")
+patch("src/core/quality.ts",
+"export const preset: Preset = forced && PRESETS.includes(forced) ? forced : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
+"const mobileDevice = typeof window !== 'undefined' && (window.matchMedia('(pointer: coarse)').matches || Math.min(window.innerWidth, window.innerHeight) < 600);\nexport const preset: Preset = forced && PRESETS.includes(forced) ? forced : mobileDevice ? 'low' : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
+"force mobile low")
+
+# Carve several broad, naturally irregular grass clearings into the forest mask.
+patch("src/world/Heightfield.ts",
+"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
+"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);\n    const meadowCenters = [\n      [-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86],\n    ] as const;\n    for (let j = 0; j < this.m; j++) for (let i = 0; i < this.m; i++) {\n      const x = (i + 0.5) * 2 - HALF_WORLD, z = (j + 0.5) * 2 - HALF_WORLD;\n      const o = (j * this.m + i) * 4;\n      const hX = Math.max(0, Math.min(N - 1, Math.round(x + HALF_WORLD)));\n      const hZ = Math.max(0, Math.min(N - 1, Math.round(z + HALF_WORLD)));\n      const h = heights[hZ * N + hX];\n      if (h < 2 || this.mask1[o + 2] > 18 || this.mask1[o] > 210 || this.mask0[o + 2] > 175 || this.mask0[o] > 190) continue;\n      let meadow = 0;\n      for (const [cx, cz, radius] of meadowCenters) {\n        const dx = (x - cx) / (radius * (1.0 + 0.09 * Math.sin(z * 0.035)));\n        const dz = (z - cz) / (radius * (1.0 + 0.08 * Math.sin(x * 0.031)));\n        const d = Math.hypot(dx, dz);\n        const f = Math.max(0, Math.min(1, (1.0 - d) / 0.24));\n        meadow = Math.max(meadow, f * f * (3 - 2 * f));\n      }\n      if (meadow < 0.03) continue;\n      this.mask0[o + 3] = Math.round(this.mask0[o + 3] * (1 - meadow * 0.98));\n      this.mask0[o + 1] = Math.max(this.mask0[o + 1], Math.round(meadow * 205));\n    }",
+"bake meadows")
+
+# Keep clearings open at ground level, not merely as holes in the distant canopy.
+patch("src/veg/Vegetation.ts",
+"const CELL = 32;",
+"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
+"meadow scatter mask")
+patch("src/veg/Vegetation.ts",
+"      mesh.castShadow = lod.shadow;\n      mesh.receiveShadow = true;",
+"      mesh.castShadow = lod.shadow && Q.cascades > 1;\n      mesh.receiveShadow = Q.cascades > 1;",
+"vegetation shadow budget")
+patch("src/veg/Vegetation.ts",
+"      if ((f < 0.22 && g < 0.45) || clearing(px, pz, -8)) continue;",
+"      if (inMeadow(px, pz) || (f < 0.22 && g < 0.45) || clearing(px, pz, -8)) continue;",
+"keep understory out of meadows")
+patch("src/veg/Vegetation.ts",
+"      if (f < 0.3 || clearing(px, pz, -10) || hf.water(px, pz) > 0.05 || hf.height(px, pz) < 1.5) continue;",
+"      if (f < 0.3 || inMeadow(px, pz) || clearing(px, pz, -10) || hf.water(px, pz) > 0.05 || hf.height(px, pz) < 1.5) continue;",
+"keep floor litter out of meadows")
+
 # Remove man-made structures from the rendered world and collision set.
 patch("src/main.ts",
 "import { Village } from './world/Village';\nimport { Lighthouse } from './world/Lighthouse';",
