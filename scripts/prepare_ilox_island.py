@@ -159,8 +159,7 @@ patch("src/main.ts",
 "remove buildings")
 patch("src/main.ts",
 "  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'beach')) ?? SPOTS[0];",
-"  // ILOX spawn: place the player at the authored waterfall-side spot, beside the plunge pool.
-  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'waterfall')) ?? SPOTS[0];",
+"  // ILOX spawn: place the player at the authored waterfall-side spot, beside the plunge pool.\n  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'waterfall')) ?? SPOTS[0];",
 "natural spawn")
 patch("src/main.ts",
 "  const hud = new Hud(params.hud);",
