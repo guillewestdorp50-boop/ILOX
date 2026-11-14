@@ -902,7 +902,7 @@ patch("src/main.ts",
 
 # A readable wooden wayfinding sign beside the waterfall approach.
 patch("src/main.ts",
-"  const river = new River(hf);\n  if (!skip.has('river')) scene.add(river.group);",
+"  const river = new River(hf);",
 """  const river = new River(hf);
   if (!skip.has('river')) scene.add(river.group);
   const fallsSign = new THREE.Group();
