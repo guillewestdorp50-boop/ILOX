@@ -821,6 +821,13 @@ patch("src/audio/Audio.ts",
     if (distance > 42 || !this.fallsCheerArmed || this.fallsCheerPending || this.muted) return;
     this.fallsCheerArmed = false; this.fallsCheerPending = true;
     const playCrowd = () => {
+      const buffer = this.buffers.get('channel_cheer');
+      let peak = 0;
+      if (buffer) for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const samples = buffer.getChannelData(channel);
+        for (let i = 0; i < samples.length; i += 16) peak = Math.max(peak, Math.abs(samples[i]));
+      }
+      if (peak < 0.001) { this.speakFallsCrowd(); this.fallsCheerPending = false; return; }
       const p = this.fallsPos;
       const voices = [
         { x: p.x - 4.5, y: p.y + 2, z: p.z - 2.5, gain: 0.72, rate: 0.88, delay: 0 },
@@ -832,13 +839,31 @@ patch("src/audio/Audio.ts",
     };
     const attempt = (remaining: number) => {
       if (this.buffers.has('channel_cheer')) { playCrowd(); return; }
-      if (remaining <= 0) { this.fallsCheerPending = false; return; }
+      if (remaining <= 0) { this.speakFallsCrowd(); this.fallsCheerPending = false; return; }
       void this.load('channel_cheer').then((buffer) => {
         if (buffer) playCrowd();
         else window.setTimeout(() => attempt(remaining - 1), 250);
       });
     };
     attempt(16);
+  }
+
+  private speakFallsCrowd() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    const spanish = voices.find((v) => v.lang.toLowerCase().startsWith('es-ar'))
+      ?? voices.find((v) => v.lang.toLowerCase().startsWith('es'));
+    const shouts = [
+      { text: '¡Aaaaaaaah!', pitch: 1.65, rate: 0.88 },
+      { text: '¡Ooooooooh!', pitch: 1.85, rate: 0.98 },
+      { text: '¡Yujuuuuu!', pitch: 2.0, rate: 1.08 },
+    ];
+    shouts.forEach((shout, index) => window.setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(shout.text);
+      utterance.lang = 'es-AR'; utterance.pitch = shout.pitch; utterance.rate = shout.rate; utterance.volume = 0.95;
+      if (spanish) utterance.voice = spanish;
+      window.speechSynthesis.speak(utterance);
+    }, index * 180));
   }
 
   cheer() { /* The celebration now belongs to the waterfall, not the avatar. */ }""",
@@ -1038,10 +1063,17 @@ patch("src/main.ts",
     const rect = renderer.domElement.getBoundingClientRect();
     buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
     buildRay.setFromCamera(buildPointer,camera);
-    const hit = buildRay.intersectObject(terrain.mesh,true)[0];
-    if (!hit) { showBuildStatus('No hay terreno válido en ese punto'); return; }
+    // The terrain is shader-displaced and instanced, so use the real heightfield for placement.
+    let groundHit: THREE.Vector3 | null = null;
+    const samplePoint = new THREE.Vector3();
+    for (let distance = 1; distance <= 120; distance += 0.5) {
+      buildRay.ray.at(distance, samplePoint);
+      const groundY = hf.height(samplePoint.x, samplePoint.z);
+      if (samplePoint.y <= groundY + 0.08) { groundHit = new THREE.Vector3(samplePoint.x, groundY, samplePoint.z); break; }
+    }
+    if (!groundHit) { showBuildStatus('No hay terreno válido en ese punto'); return; }
     if (activeBuild === 'floor') {
-      const x=Math.round(hit.point.x/4)*4,z=Math.round(hit.point.z/4)*4;
+      const x=Math.round(groundHit.x/4)*4,z=Math.round(groundHit.z/4)*4;
       if (builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5)) { showBuildStatus('Ya hay un piso en ese lugar'); return; }
       if (!spendBoards(4)) return;
       const y=hf.height(x,z);
@@ -1051,11 +1083,11 @@ patch("src/main.ts",
       showBuildStatus('Piso colocado. Ya podés construir sobre él'); return;
     }
     const floor = builtFloors.reduce<{x:number;z:number;y:number;d:number}|null>((best,f)=>{
-      const d=Math.hypot(f.x-hit.point.x,f.z-hit.point.z);
+      const d=Math.hypot(f.x-groundHit.x,f.z-groundHit.z);
       return d<3.2&&(!best||d<best.d)?{...f,d}:best;
     },null);
     if (!floor) { showBuildStatus('Primero necesitás colocar un piso'); return; }
-    const dx=hit.point.x-floor.x,dz=hit.point.z-floor.z;
+    const dx=groundHit.x-floor.x,dz=groundHit.z-floor.z;
     const alongX=Math.abs(dx)>=Math.abs(dz);
     const edgeX=floor.x+(dx>=0?2:-2),edgeZ=floor.z+(dz>=0?2:-2);
     const cx=alongX?edgeX:floor.x,cz=alongX?floor.z:edgeZ;
