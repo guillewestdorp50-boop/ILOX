@@ -574,7 +574,7 @@ patch("src/world/TerrainMaterial.ts",
 "uniform grass terrain option")
 patch("src/world/TerrainMaterial.ts",
 "  const liteIndices = [0, 2, 3, 4, 5];",
-"  const liteIndices = uniformGround ? [3, 5] : [0, 2, 3, 4, 5];",
+"  const liteIndices = [0, 2, 3, 4, 5];",
 "load only grass and basalt for uniform ground")
 patch("src/world/TerrainMaterial.ts",
 """  const weights = [
@@ -585,7 +585,7 @@ patch("src/world/TerrainMaterial.ts",
     rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
   ];""",
 """  const weights = uniformGround
-    ? [float(1).sub(rock), rock]
+    ? [float(0), float(0), float(1).sub(rock), float(0), rock]
     : [
         m0.x.mul(float(1).sub(underwater)).mul(noSand),
         m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
@@ -596,7 +596,7 @@ patch("src/world/TerrainMaterial.ts",
 "uniform grass and slope rock weights")
 patch("src/world/TerrainMaterial.ts",
 "  const indices = [0, 2, 3, 4, 5];\n  const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];",
-"  const indices = liteIndices;\n  const scales = indices.map((i) => SCALE[i]);",
+"  const indices = [0, 2, 3, 4, 5];\n  const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];",
 "match terrain texture indices to selected layers")
 patch("src/world/TerrainMaterial.ts",
 "export function createTerrainMaterial(hf: Heightfield, lite = false) {",
