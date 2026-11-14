@@ -1612,7 +1612,4 @@ patch("src/main.ts",
 "      const y=hf.height(x,z);\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
 "      const y=42;\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
 "place every adjacent floor tile on the exact common plane")
-patch("src/main.ts",
-"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }",
-"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: buscá una parcela seca y cercana al nivel común'); return; }",
-"explain floor compatibility without requiring the shovel")
+
