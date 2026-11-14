@@ -40,6 +40,10 @@ jobs:
       - name: Regenerate the resized island terrain and waterfall metadata
         working-directory: island-source
         run: pnpm gen:island
+      - name: Verify map dimensions and waterfall alignment
+        working-directory: island-source
+        run: |
+          node -e "const m=require('./public/world/meta.json'); const target=Math.sqrt(2000000); if(Math.abs(m.worldSize-target)>0.01) throw new Error('Unexpected world size: '+m.worldSize); if(!(m.falls.top < m.falls.lipGround && m.falls.top > m.falls.bottom)) throw new Error('Waterfall lip is not anchored to the cliff: '+JSON.stringify(m.falls)); console.log('World:',m.worldSize,'m square; waterfall:',(m.falls.lipGround-m.falls.top).toFixed(2),'m below lip,',(m.falls.top-m.falls.bottom).toFixed(2),'m drop');"
       - name: Build and verify
         working-directory: island-source
         run: |
