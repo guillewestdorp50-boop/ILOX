@@ -13,6 +13,14 @@ def patch(path, old, new, label):
         raise SystemExit(f"{label}: expected 1 match, found {n}")
     p.write_text(s.replace(old, new, 1), encoding="utf-8")
 
+def patch_many(path, old, new, expected, label):
+    p = root / path
+    s = p.read_text(encoding="utf-8")
+    n = s.count(old)
+    if n != expected:
+        raise SystemExit(f"{label}: expected {expected} matches, found {n}")
+    p.write_text(s.replace(old, new), encoding="utf-8")
+
 # Open plain performance mode: keep terrain and all freshwater, remove scattered foliage and boulders.
 # Keep only the waterfall's gorge rock faces; remove coastal rock props and offshore stacks.
 patch("src/main.ts",
@@ -373,18 +381,11 @@ patch("src/world/Heightfield.ts",
 "    const cell = WORLD_SIZE / N;\n    const fx = (x + HALF_WORLD) / cell - 0.5, fz = (z + HALF_WORLD) / cell - 0.5;",
 "heightfield scaled texel coordinates")
 # RockKit writes into the same resized heightmap using its real texel spacing.
-patch("src/world/RockKit.ts",
+patch_many("src/world/RockKit.ts",
 "      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
-"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
-"rock kit heightmap coordinates 1")
-patch("src/world/RockKit.ts",
-"      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
-"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
-"rock kit heightmap coordinates 2")
-patch("src/world/RockKit.ts",
-"      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
-"       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
-"rock kit heightmap coordinates 3")
+"      const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
+3,
+"rock kit heightmap coordinates")
 # Tighten oriented-box broadphase bounds so long perimeter walls do not fill the entire collider grid.
 patch("src/world/Colliders.ts",
 "    const o: Obstacle = { kind: 'box', x, z, r: Math.hypot(hx, hz), hx, hz, c: Math.cos(rot), s: Math.sin(rot), y0, y1 };\n    for (const k of this.cells(x - r, x + r, z - r, z + r)) this.bucket(k).obs.push(o);",
