@@ -154,6 +154,15 @@ patch("src/player/Input.ts",
 "    let sprint = k('ShiftLeft') || k('ShiftRight') || this.touchSprint;",
 "touch sprint")
 
+# Minimal center reticle with live range-to-target readout.
+patch("src/main.ts",
+"  const fwd = new THREE.Vector3();",
+"  const fwd = new THREE.Vector3();\n  const aimRay = new THREE.Raycaster();\n  const aimCenter = new THREE.Vector2(0, 0);\n  const aimDot = document.getElementById('ilox-aim-dot');\n  const aimDistance = document.getElementById('ilox-aim-distance');\n  const aimTargets = scene.children.filter((o) => o !== player.root && o !== player.shadows);\n  let aimCheckAt = 0;",
+"center aim raycaster")
+patch("src/main.ts",
+"    camera.updateMatrixWorld();\n    terrain.update(camera, Q.shadowFar);",
+"    camera.updateMatrixWorld();\n    if (aimDistance && performance.now() >= aimCheckAt) {\n      aimCheckAt = performance.now() + 180;\n      aimRay.setFromCamera(aimCenter, camera);\n      aimRay.far = camera.far;\n      const hit = aimRay.intersectObjects(aimTargets, true)[0];\n      if (hit) {\n        aimDistance.textContent = Math.round(hit.distance) + ' m';\n        aimDistance.style.display = 'block';\n      } else {\n        aimDistance.style.display = 'none';\n      }\n    }\n    terrain.update(camera, Q.shadowFar);",
+"live center aim distance")
 # Live graphics controls for device-side A/B testing (no reload required).
 patch("src/veg/Vegetation.ts",
 "  visible = 0;\n",
@@ -184,6 +193,8 @@ replacements = [
     ('<h1>ISLAND</h1>', '<h1>ILOX</h1>'),
     ('      <div class="bar">', '      <p class="line">Un mundo natural. Exploralo a tu manera.</p>\n      <div class="bar">'),
     ('<script type="module" src="/src/main.ts"></script>',
+     '<div id="ilox-aim-dot" aria-hidden="true"></div>\n'
+     '  <output id="ilox-aim-distance" aria-live="off"></output>\n'
      '<button id="ilox-graphics-toggle" type="button">GRÁFICOS</button>\n'
      '<section id="ilox-graphics" aria-label="Ajustes gráficos">\n'
      '  <header><strong>AJUSTES GRÁFICOS</strong><button id="ilox-graphics-close" type="button">×</button></header>\n'
@@ -211,7 +222,7 @@ touch_css = """
       body { overscroll-behavior:none; user-select:none; -webkit-user-select:none; }
       #app { position:fixed; inset:0; }
       #app canvas { display:block; width:100%; height:100%; touch-action:none; }
-      #ilox-graphics-toggle { position:fixed; z-index:90; top:max(14px,env(safe-area-inset-top)); right:max(14px,env(safe-area-inset-right)); padding:10px 13px; border:1px solid rgba(255,255,255,.35); border-radius:9px; color:#f3f0e7; background:rgba(9,19,16,.78); font:600 11px system-ui; letter-spacing:.08em; }
+      #ilox-aim-dot { position:fixed; z-index:60; left:50%; top:50%; width:4px; height:4px; margin:-2px 0 0 -2px; border-radius:50%; background:rgba(255,255,245,.95); box-shadow:0 0 2px 1px rgba(0,0,0,.7); pointer-events:none; }\n      #ilox-aim-distance { display:none; position:fixed; z-index:60; left:50%; top:calc(50% + 13px); transform:translateX(-50%); padding:2px 5px; border-radius:4px; color:#fff; background:rgba(0,0,0,.48); font:600 11px system-ui; font-variant-numeric:tabular-nums; text-shadow:0 1px 2px #000; pointer-events:none; }\n      #ilox-graphics-toggle { position:fixed; z-index:90; top:max(14px,env(safe-area-inset-top)); right:max(14px,env(safe-area-inset-right)); padding:10px 13px; border:1px solid rgba(255,255,255,.35); border-radius:9px; color:#f3f0e7; background:rgba(9,19,16,.78); font:600 11px system-ui; letter-spacing:.08em; }
       #ilox-graphics { display:none; position:fixed; z-index:95; top:max(58px,calc(env(safe-area-inset-top) + 48px)); right:max(14px,env(safe-area-inset-right)); width:min(290px,calc(100vw - 32px)); padding:15px; border:1px solid rgba(220,230,218,.24); border-radius:13px; color:#f3f0e7; background:rgba(9,19,16,.94); box-shadow:0 12px 38px rgba(0,0,0,.4); font:12px system-ui; backdrop-filter:blur(12px); }
       #ilox-graphics.open { display:block; }
       #ilox-graphics header { display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; letter-spacing:.08em; }
