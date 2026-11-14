@@ -1617,4 +1617,4 @@ patch("src/main.ts",
 # Temporary build diagnostic: print the generated TypeScript around the current
 # compiler-reported line so syntax repairs target the exact generated source.
 generated_main = (root / "src/main.ts").read_text(encoding="utf-8").splitlines()
-print("ILOX generated src/main.ts lines 620-835:\n" + "\n".join(f"{i+1}: {generated_main[i]}" for i in range(619, min(835, len(generated_main)))))
+print("ILOX generated src/main.ts lines 350-620:\n" + "\n".join(f"{i+1}: {generated_main[i]}" for i in range(349, min(620, len(generated_main)))))
