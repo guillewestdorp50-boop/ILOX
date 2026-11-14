@@ -374,15 +374,15 @@ patch("src/world/Heightfield.ts",
 "heightfield scaled texel coordinates")
 # RockKit writes into the same resized heightmap using its real texel spacing.
 patch("src/world/RockKit.ts",
-"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
 "       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
 "rock kit heightmap coordinates 1")
 patch("src/world/RockKit.ts",
-"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
 "       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
 "rock kit heightmap coordinates 2")
 patch("src/world/RockKit.ts",
-"       const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
+"      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
 "       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
 "rock kit heightmap coordinates 3")
 # A real invisible perimeter keeps the player inside the 2,000,000 m² square.
