@@ -746,7 +746,10 @@ patch("src/player/Player.ts",
           nr = this.hf.nearestRiver(nx, nz);
           sample = this.hf.river[nr.i];
           if (nr.i >= 9 && nr.i < this.hf.river.length - 1) {
-            const maxOffset = Math.max(0.25, sample.w / 2 - 0.42);
+            // Keep the full avatar inside the usable water margin while sliding.
+            // This clamp is intentionally inside the non-jump ride branch: pressing
+            // jump exits channelRide before reaching it, so airborne steering stays free.
+            const maxOffset = Math.max(0.25, sample.w / 2 - 0.95);
             if (nr.d > maxOffset) {
               const k = maxOffset / Math.max(nr.d, 1e-4);
               nx = sample.x + (nx - sample.x) * k;
