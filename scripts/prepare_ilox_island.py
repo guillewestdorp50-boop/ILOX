@@ -40,10 +40,16 @@ patch("src/world/layout.ts",
 HILLS.forEach((hill) => { hill.h *= 0.28; hill.r *= 1.2; });
 PEAK.h = 42;
 LIGHTHOUSE.base = 42;
-ESCARPMENT.forEach((edge) => { edge.step *= 0.18; });
 
 /** river from the spring under the peak to its mouth at the north end of the spawn beach */""",
 "convert volcanic relief to rolling prairie")
+patch("src/world/layout.ts",
+"""/** the fishing village on the cove's north shore */""",
+"""// Keep the waterfall escarpment, but reduce its cliff height for a walkable prairie.
+ESCARPMENT.forEach((edge) => { edge.step *= 0.18; });
+
+/** the fishing village on the cove's north shore */""",
+"soften waterfall escarpment after declaration")
 patch("src/world/layout.ts",
 "{ name: 'jungle', player: [365, 18], yaw: -2.6 },",
 "{ name: 'jungle', player: [0, 150], yaw: -2.6 },",
