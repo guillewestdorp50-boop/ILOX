@@ -527,8 +527,8 @@ patch("src/world/TerrainMaterial.ts",
   const loadLayers = async () => {
     const selected = liteIndices.map((i) => LAYERS[i]);
     const [albedos, normals] = await Promise.all([
-      Promise.all(selected.map((l) => loadKTX2(\`assets/terrain/\${l}_a.ktx2\`))),
-      Promise.all(selected.map((l) => loadKTX2(\`assets/terrain/\${l}_n.ktx2\`))),
+      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`))),
+      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_n.ktx2`))),
     ]);
     const A = toArray(albedos, true), Nn = toArray(normals, false);
     for (const t of albedoNodes) t.value = A;
