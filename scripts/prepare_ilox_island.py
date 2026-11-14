@@ -1189,3 +1189,54 @@ patch("src/main.ts",
   };
   renderer.domElement.addEventListener('pointerup', placeBuildPiece);""",
 "add mobile game menu and initial building pieces")
+
+
+# Construction repair: reliable terrain leveling, free camera, and explicit exit.
+patch("index.html",
+'      <button type="button" data-game-panel="build"><span>⌂</span><small>CONSTRUIR</small></button>',
+'      <button type="button" data-game-panel="build"><span>⌂</span><small>CONSTRUIR</small></button>\n      <button type="button" id="ilox-exit-build" style="display:none"><span>↩</span><small>SALIR</small></button>',
+"add construction exit control")
+patch("index.html",
+'      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
+'      #ilox-exit-build { width:66px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.48); border-radius:9px; color:#fff; background:rgba(115,48,38,.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:2px; pointer-events:auto; }\n      #ilox-exit-build span { font-size:20px; line-height:22px; } #ilox-exit-build small { font:700 7px system-ui; }\n      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
+"style construction exit control")
+patch("src/main.ts",
+"  const closeGamePanel = () => { gamePanel?.classList.remove('open'); activeBuild = null; document.body.classList.remove('ilox-building'); };",
+"  const buildExitButton = document.getElementById('ilox-exit-build') as HTMLButtonElement | null;\n  const closeGamePanel = () => {\n    gamePanel?.classList.remove('open'); activeBuild = null; floorPreview.visible = false;\n    document.body.classList.remove('ilox-building');\n    if (buildExitButton) buildExitButton.style.display = 'none';\n    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }\n  };",
+"restore player controls when leaving construction")
+patch("src/main.ts",
+"    activeBuild = null; document.body.classList.remove('ilox-building');",
+"    activeBuild = null; document.body.classList.remove('ilox-building');\n    if (buildExitButton) buildExitButton.style.display = 'none';\n    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
+"leave construction before opening another game panel")
+patch("src/main.ts",
+"        activeBuild = button.dataset.build as typeof activeBuild;\n        document.body.classList.add('ilox-building');",
+"        activeBuild = button.dataset.build as typeof activeBuild;\n        rig.set('free'); // freeze the avatar and let the camera fly independently\n        if (buildExitButton) buildExitButton.style.display = 'flex';\n        document.body.classList.add('ilox-building');",
+"freeze avatar and enable free camera during construction")
+patch("src/main.ts",
+"  document.getElementById('ilox-game-close')?.addEventListener('click', closeGamePanel);",
+"  document.getElementById('ilox-game-close')?.addEventListener('click', closeGamePanel);\n  buildExitButton?.addEventListener('click', closeGamePanel);",
+"wire construction exit button")
+patch("src/main.ts",
+"    if (activeBuild === 'flatten') {\n      hf.flattenArea(groundHit.x,groundHit.z,3.8);\n      activeBuild='floor'; floorPreview.visible=false;\n      showBuildStatus('Terreno nivelado. Mové el piso fantasma hasta verlo verde');\n      return;\n    }",
+"    if (activeBuild === 'flatten') {\n      // Level exactly the same 4 x 4 m grid cell used by the floor preview.\n      const fx=Math.round(groundHit.x/4)*4, fz=Math.round(groundHit.z/4)*4;\n      hf.flattenArea(fx,fz,3.8);\n      const hs=[hf.height(fx-2,fz-2),hf.height(fx+2,fz-2),hf.height(fx-2,fz+2),hf.height(fx+2,fz+2)];\n      const spread=Math.max(...hs)-Math.min(...hs);\n      activeBuild='floor'; floorPreview.visible=false;\n      updateFloorPreview(event);\n      showBuildStatus(spread<=0.16 ? 'Terreno aplanado. El piso debería verse VERDE' : 'Aplanando terreno… diferencia actual '+spread.toFixed(2)+' m');\n      return;\n    }",
+"align leveling footprint with floor grid and verify result")
+patch("src/main.ts",
+"    if (!activeBuild || event.button !== 0) return;\n    const rect = renderer.domElement.getBoundingClientRect();",
+"    if (!activeBuild || event.button !== 0) return;\n    if (activeBuild === 'floor') updateFloorPreview(event);\n    const rect = renderer.domElement.getBoundingClientRect();",
+"refresh floor ghost on release before placement")
+patch("src/main.ts",
+"    for(let d=1;d<=120;d+=0.5){buildRay.ray.at(d,p);const y=hf.height(p.x,p.z);if(p.y<=y+0.08){hit=new THREE.Vector3(p.x,y,p.z);break;}}",
+"    for(let d=0.2;d<=120;d+=0.2){buildRay.ray.at(d,p);const y=hf.height(p.x,p.z);if(y>-60 && p.y<=y+0.04){hit=new THREE.Vector3(p.x,y,p.z);break;}}",
+"improve terrain ray sampling for preview")
+patch("src/main.ts",
+"    for (let distance = 1; distance <= 120; distance += 0.5) {\n      buildRay.ray.at(distance, samplePoint);\n      const groundY = hf.height(samplePoint.x, samplePoint.z);\n      if (samplePoint.y <= groundY + 0.08) { groundHit = new THREE.Vector3(samplePoint.x, groundY, samplePoint.z); break; }\n    }",
+"    for (let distance = 0.2; distance <= 120; distance += 0.2) {\n      buildRay.ray.at(distance, samplePoint);\n      const groundY = hf.height(samplePoint.x, samplePoint.z);\n      if (groundY > -60 && samplePoint.y <= groundY + 0.04) { groundHit = new THREE.Vector3(samplePoint.x, groundY, samplePoint.z); break; }\n    }",
+"improve placement terrain ray sampling")
+patch("src/main.ts",
+"  renderer.domElement.addEventListener('pointermove', updateFloorPreview);",
+"  window.addEventListener('pointermove', (event) => { if (activeBuild === 'floor') updateFloorPreview(event); }, true);",
+"track floor preview across mobile touch surfaces")
+patch("src/main.ts",
+"  renderer.domElement.addEventListener('pointerup', placeBuildPiece);",
+"  window.addEventListener('pointerup', (event) => {\n    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select')) return;\n    placeBuildPiece(event);\n  }, true);",
+"handle construction taps reliably on touch devices");
