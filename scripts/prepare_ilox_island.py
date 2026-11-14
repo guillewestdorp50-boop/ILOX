@@ -14,6 +14,12 @@ def patch(path, old, new, label):
     p.write_text(s.replace(old, new, 1), encoding="utf-8")
 
 # Open plain performance mode: keep terrain and all freshwater, remove scattered foliage and boulders.
+# Keep only the waterfall's gorge rock faces; remove coastal rock props and offshore stacks.
+patch("src/main.ts",
+"  const rockPlan = planRocks(hf);",
+"  const rockPlan = planRocks(hf).filter((p) => p.zone === 1);",
+"keep only waterfall gorge rocks")
+
 patch("src/main.ts",
 "import { setPlantSkyMaps, loadVariants, rockMaterial } from './veg/glb';",
 "import { planRocks } from './world/RockKit';",
