@@ -71,11 +71,11 @@ patch("src/core/Engine.ts",
 "    const dpr = Math.min(window.devicePixelRatio || 1, preset === 'low' ? 1.25 : 2);",
 "mobile pixel ratio")
 
-# Cap the mobile camera horizon: the upstream 30 km far plane wastes visibility work
-# on terrain and scenery far beyond ILOX's playable island.
+# Cap the mobile camera horizon at 50 m: keep nearby homes and paths visible without
+# spending rendering work on distant scenery. The live graphics control can extend it.
 patch("src/core/Engine.ts",
 "  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 30000);",
-"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, preset === 'low' ? 1800 : 30000);",
+"  readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, preset === 'low' ? 50 : 30000);",
 "mobile camera far plane")
 patch("src/main.ts",
 "  sunLight.castShadow = !new URLSearchParams(location.search).has('noshadow');",
@@ -222,7 +222,7 @@ replacements = [
      '<button id="ilox-graphics-toggle" type="button">GRÁFICOS</button>\n'
      '<section id="ilox-graphics" aria-label="Ajustes gráficos">\n'
      '  <header><strong>AJUSTES GRÁFICOS</strong><button id="ilox-graphics-close" type="button">×</button></header>\n'
-     '  <label>Alcance del mundo <output id="ilox-range-value">1800 m</output><input id="ilox-range" type="range" min="300" max="1800" step="100" value="1800"></label>\n'
+     '  <label>Alcance del mundo <output id="ilox-range-value">50 m</output><input id="ilox-range" type="range" min="50" max="300" step="25" value="50"></label>\n'
      '  <label>Vegetación lejana <output id="ilox-vegetation-value">100%</output><input id="ilox-vegetation" type="range" min="10" max="100" step="5" value="100"></label>\n'
      '  <label>Resolución de render <output id="ilox-resolution-value">68%</output><input id="ilox-resolution" type="range" min="40" max="85" step="5" value="68"></label>\n'
      '  <label class="check"><input id="ilox-shadows" type="checkbox"> Sombras dinámicas</label>\n'
@@ -304,4 +304,4 @@ for unused in [root / "public" / "assets" / "props", root / "public" / "assets" 
 unused_shelves = root / "public" / "assets" / "rocks" / "shelves.glb"
 if unused_shelves.exists():
     unused_shelves.unlink()
-print("ILOX natural-world adaptation prepared; unused built-structure assets removed.")
+print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
