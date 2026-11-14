@@ -1398,10 +1398,3 @@ patch("src/main.ts",
 "    document.body.classList.remove('ilox-building');\n    if (rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;\n  };\n  const openGamePanel",
 "restore camera and avatar when closing construction");
 
-# Keep the centre reticle as the single source of truth for all construction
-# previews and placement in first-person; pointer coordinates remain for desktop.
-patch_many("src/main.ts",
-"    buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
-"    if (rig.mode === 'first') buildPointer.set(0,0); else buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
-3,
-"force all three construction rays to use the first-person centre reticle");
