@@ -42,3 +42,16 @@ ILOX crece por acumulación y reparación, no por destrucción. Mantener ramas y
 - Al pulsar SALTAR, se libera inmediatamente la contención lateral. En el aire puede dirigirse hacia cualquiera de los dos costados para abandonar la caída.
 - Si salta pero no dirige el vuelo hacia afuera, vuelve a caer en el canal y retoma el deslizamiento.
 - La contención lateral jamás debe aplicarse durante el salto ni durante el vuelo. No modificar esta mecánica al ajustar el margen del canal.
+
+
+## Segunda prueba real del usuario — 14/11/2026
+**Resultado confirmado:**
+- La contención lateral funciona correctamente: durante el deslizamiento el personaje llega al borde útil y permanece dentro del agua. Esta corrección queda aprobada y no debe modificarse.
+- La entrada al canal continúa siendo sentado y el recorrido general sigue funcionando.
+
+**Pendiente tras la prueba:**
+1. **Brazo derecho:** la corrección anterior no resolvió el problema; sigue desarticulado/colgando hacia atrás. No repetir el mismo ajuste de rotación a ciegas. Inspeccionar los nombres, jerarquía y ejes locales reales del esqueleto del modelo, y corregir la articulación derecha respetando el movimiento izquierdo que sí funciona.
+2. **Piernas:** siguen dobladas en pose de silla. La mezcla actual de animaciones `fall`, `sit` y `swim` no logra la extensión. Inspeccionar los clips y tracks reales del modelo; crear una pose de deslizamiento con caderas/rodillas/tobillos extendidos hacia delante y mezclarla solo durante `ride`. No afectar las animaciones normales.
+3. **Grito:** la voz del dispositivo pronuncia dos sonidos breves separados («I» y «U»), no una exclamación continua. El actual `SpeechSynthesisUtterance('¡Yujuuu!')` no es aceptable. Reemplazar por una exclamación vocal continua y expresiva, preferentemente un clip de audio propio integrado al proyecto, reproducido una sola vez al entrar al canal y con volumen claramente audible. No usar sílabas/letras sueltas ni depender de que el motor TTS interprete correctamente la ortografía.
+   
+**No tocar:** límite lateral ya aprobado, entrada sentada, salto y salida aérea lateral, geometría/ancho/pendiente del canal, corriente, cascada, agua ni perfil de rendimiento.
