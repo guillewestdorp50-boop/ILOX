@@ -157,7 +157,7 @@ patch("src/player/Input.ts",
 # Minimal center reticle with live range-to-target readout.
 patch("src/main.ts",
 "  const fwd = new THREE.Vector3();",
-"  const fwd = new THREE.Vector3();\n  const aimRay = new THREE.Raycaster();\n  const aimCenter = new THREE.Vector2(0, 0);\n  const aimDot = document.getElementById('ilox-aim-dot');\n  const aimDistance = document.getElementById('ilox-aim-distance');\n  const aimTargets = scene.children.filter((o) => o !== player.root && o !== player.shadows);\n  let aimCheckAt = 0;",
+"  const fwd = new THREE.Vector3();\n  const aimRay = new THREE.Raycaster();\n  const aimCenter = new THREE.Vector2(0, 0);\n  const aimDistance = document.getElementById('ilox-aim-distance');\n  const aimTargets = scene.children.filter((o) => o !== player.root && o !== player.shadows);\n  let aimCheckAt = 0;",
 "center aim raycaster")
 patch("src/main.ts",
 "    camera.updateMatrixWorld();\n    terrain.update(camera, Q.shadowFar);",
