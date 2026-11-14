@@ -190,7 +190,7 @@ replacements = [
      '  <label>Alcance del mundo <output id="ilox-range-value">1800 m</output><input id="ilox-range" type="range" min="300" max="1800" step="100" value="1800"></label>\n'
      '  <label>Vegetación lejana <output id="ilox-vegetation-value">100%</output><input id="ilox-vegetation" type="range" min="10" max="100" step="5" value="100"></label>\n'
      '  <label>Resolución de render <output id="ilox-resolution-value">68%</output><input id="ilox-resolution" type="range" min="40" max="85" step="5" value="68"></label>\n'
-     '  <label class="check"><input id="ilox-shadows" type="checkbox" checked> Sombras dinámicas</label>\n'
+     '  <label class="check"><input id="ilox-shadows" type="checkbox"> Sombras dinámicas</label>\n'
      '  <p>Los cambios se aplican en vivo.</p>\n'
      '</section>\n'
      '<div id="ilox-touch" aria-label="Controles táctiles">\n'
