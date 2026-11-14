@@ -1614,7 +1614,8 @@ patch("src/main.ts",
 "place every adjacent floor tile on the exact common plane")
 
 
-# Temporary build diagnostic: print the generated TypeScript around the current
-# compiler-reported line so syntax repairs target the exact generated source.
-generated_main = (root / "src/main.ts").read_text(encoding="utf-8").splitlines()
-print("ILOX generated src/main.ts lines 350-620:\n" + "\n".join(f"{i+1}: {generated_main[i]}" for i in range(349, min(620, len(generated_main)))))
+# Repair the extra closing brace introduced before floor-preview validation.
+patch("src/main.ts",
+"    const spread=Math.max(...hs)-Math.min(...hs);\\n    };\\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"    const spread=Math.max(...hs)-Math.min(...hs);\\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"remove stray floor preview closure")
