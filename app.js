@@ -40,56 +40,58 @@ function seededRandom(seed) {
 }
 
 function makeTerrain() {
-  const segments = 130;
-  const positions = [];
-  const colors = [];
-  const indices = [];
-  const color = new THREE.Color();
+  const segments = 180, positions = [], uvs = [], indices = [];
   for (let iz = 0; iz <= segments; iz++) {
     for (let ix = 0; ix <= segments; ix++) {
       const x = (ix / segments - 0.5) * worldSize;
       const z = (iz / segments - 0.5) * worldSize;
-      const y = terrainHeight(x, z);
-      positions.push(x, y, z);
-      const shade = THREE.MathUtils.clamp((y + 5) / 15, 0, 1);
-      color.setRGB(0.20 + shade * 0.08, 0.34 + shade * 0.09, 0.20 + shade * 0.035);
-      colors.push(color.r, color.g, color.b);
+      positions.push(x, terrainHeight(x, z), z);
+      uvs.push(ix / segments * 12, iz / segments * 12);
       if (ix < segments && iz < segments) {
-        const a = iz * (segments + 1) + ix;
-        const b = a + segments + 1;
+        const a = iz * (segments + 1) + ix, b = a + segments + 1;
         indices.push(a, b, a + 1, b, b + 1, a + 1);
       }
     }
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
-  mesh.receiveShadow = true;
-  scene.add(mesh);
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices); geometry.computeVertexNormals();
+  const canvas = document.createElement("canvas"); canvas.width = canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#526f3f"; ctx.fillRect(0, 0, 512, 512);
+  let seed = 78123;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let i = 0; i < 24000; i++) {
+    const v = Math.floor(65 + rand() * 100);
+    ctx.fillStyle = rand() > .5 ? `rgba(${v},${v+25},${v-28},.20)` : `rgba(25,45,18,.16)`;
+    const x = rand() * 512, y = rand() * 512, r = .4 + rand() * 2.1;
+    ctx.fillRect(x, y, r, r);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 4;
+  const material = new THREE.MeshStandardMaterial({ map: texture, color: 0xc4d2a2, roughness: 1 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.receiveShadow = true; scene.add(mesh);
 }
 
 function makeTree(x, z, scale, random) {
-  const y = terrainHeight(x, z);
-  const group = new THREE.Group();
-  group.position.set(x, y, z);
-  group.scale.setScalar(scale);
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.18, 0.28, 2.4, 6),
-    new THREE.MeshStandardMaterial({ color: 0x72513a, roughness: 1 })
-  );
-  trunk.position.y = 1.15;
-  group.add(trunk);
-  const greens = [0x315b3d, 0x3e7046, 0x527b4b, 0x294f3a];
-  for (let i = 0; i < 3; i++) {
+  const y = terrainHeight(x, z), group = new THREE.Group();
+  group.position.set(x, y, z); group.scale.setScalar(scale);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x60452f, roughness: 1 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.16, .31, 3.1, 8), trunkMat);
+  trunk.position.y = 1.48; trunk.rotation.z = (random() - .5) * .10; group.add(trunk);
+  const palette = [0x294d32,0x365f39,0x456e40,0x557747,0x31583a];
+  for (let i = 0; i < 7; i++) {
+    const radius = .85 + random() * .65;
     const crown = new THREE.Mesh(
-      new THREE.ConeGeometry(1.15 - i * 0.13, 2.5 - i * 0.22, 7),
-      new THREE.MeshStandardMaterial({ color: greens[Math.floor(random() * greens.length)], roughness: 1 })
+      new THREE.IcosahedronGeometry(radius, 1),
+      new THREE.MeshStandardMaterial({ color: palette[Math.floor(random()*palette.length)], roughness: 1, flatShading: false })
     );
-    crown.position.y = 2.25 + i * 0.82;
-    crown.position.x = (random() - 0.5) * 0.16;
+    crown.position.set((random()-.5)*1.35, 2.7 + random()*1.8, (random()-.5)*1.25);
+    crown.scale.set(1 + random()*.25, .85 + random()*.35, 1 + random()*.2);
     group.add(crown);
   }
   scene.add(group);
@@ -109,31 +111,53 @@ function makeRock(x, z, scale, random) {
 }
 
 function makeRiver() {
-  const positions = [];
-  const indices = [];
-  const steps = 90;
+  const positions = [], uvs = [], indices = [], steps = 180;
   for (let i = 0; i <= steps; i++) {
     const z = -worldSize / 2 + (i / steps) * worldSize;
-    const x = Math.sin(z * 0.025) * 17 + Math.sin(z * 0.061) * 5 - 15;
-    const width = 2.6 + Math.sin(i * 0.16) * 0.55;
-    const y = terrainHeight(x, z) + 0.18;
-    positions.push(x - width, y, z, x + width, y, z);
-    if (i < steps) {
-      const a = i * 2;
-      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-    }
+    const x = Math.sin(z * .025) * 17 + Math.sin(z * .061) * 5 - 15;
+    const width = 3.1 + Math.sin(i * .16) * .75;
+    const y = terrainHeight(x, z) + .22;
+    positions.push(x-width,y,z,x+width,y,z); uvs.push(0,i/steps*18,1,i/steps*18);
+    if (i < steps) { const a=i*2; indices.push(a,a+2,a+1,a+1,a+2,a+3); }
   }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  const river = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-    color: 0x5d9f9c, roughness: 0.28, metalness: 0.05, transparent: true, opacity: 0.9,
-    side: THREE.DoubleSide
-  }));
-  scene.add(river);
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));
+  geometry.setIndex(indices); geometry.computeVertexNormals();
+  const water = new THREE.MeshStandardMaterial({ color:0x6caaa8, roughness:.18, metalness:.12, transparent:true, opacity:.88, side:THREE.DoubleSide });
+  const river = new THREE.Mesh(geometry,water); scene.add(river);
 }
 
+function makeDistantMountains() {
+  const layers = [
+    { radius: 38, height: 25, color: 0x718579, z: -112, count: 13 },
+    { radius: 31, height: 19, color: 0x536e5e, z: -98, count: 15 },
+    { radius: 25, height: 14, color: 0x405d4b, z: -84, count: 17 }
+  ];
+  for (const layer of layers) {
+    for (let i=0;i<layer.count;i++) {
+      const angle = (i/layer.count)*Math.PI*2;
+      const peak = new THREE.Mesh(new THREE.ConeGeometry(layer.radius*(.72+Math.sin(i*8)*.12),layer.height*(.72+Math.cos(i*5)*.22),7,2),new THREE.MeshStandardMaterial({color:layer.color,roughness:1,flatShading:true}));
+      peak.position.set(Math.cos(angle)*72,layer.height*.24,layer.z+Math.sin(angle)*22);
+      peak.rotation.y=angle; scene.add(peak);
+    }
+  }
+}
+function makeMeadowDetails() {
+  const random=seededRandom(44119);
+  const bladeGeometry=new THREE.ConeGeometry(.075,.55,3);
+  const bladeMaterial=new THREE.MeshStandardMaterial({color:0x718b4d,roughness:1});
+  const grass=new THREE.InstancedMesh(bladeGeometry,bladeMaterial,1900);
+  const dummy=new THREE.Object3D();
+  for(let i=0;i<1900;i++){
+    const x=(random()-.5)*190,z=(random()-.5)*190;
+    if(Math.hypot(x,z)<7) { dummy.position.set(0,-100,0); }
+    else { dummy.position.set(x,terrainHeight(x,z)+.18,z); }
+    const scale=.45+random()*.9;
+    dummy.scale.set(scale,scale,scale); dummy.rotation.y=random()*Math.PI*2; dummy.updateMatrix(); grass.setMatrixAt(i,dummy.matrix);
+  }
+  grass.instanceMatrix.needsUpdate=true; scene.add(grass);
+}
 function makePlayer(kind = "boy") {
   const group = new THREE.Group();
   const isAdult = kind === "man" || kind === "woman";
@@ -255,14 +279,14 @@ function init() {
   scene.fog = new THREE.Fog(0x9bb8ae, 65, 190);
   camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 280);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
   game.insertBefore(renderer.domElement, game.firstChild);
-  scene.add(new THREE.HemisphereLight(0xe7f1e9, 0x52604a, 2.0));
-  const sun = new THREE.DirectionalLight(0xffedce, 2.1);
+  scene.add(new THREE.HemisphereLight(0xe7f1e9, 0x52604a, 1.55));
+  const sun = new THREE.DirectionalLight(0xffedce, 2.7);
   sun.position.set(-35, 65, 28);
   scene.add(sun);
   makeTerrain();
