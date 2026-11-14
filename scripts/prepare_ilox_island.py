@@ -688,15 +688,13 @@ patch("src/sky/Sky.ts",
 # cloud raymarch, rain shafts, moon/stars and environment path remain untouched.
 # ?skylite=1 selects a compact gradient + one cloud-map lookup per sky pixel.
 patch("src/sky/Sky.ts",
-"const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
-"const NO_SKY = new URLSearchParams(location.search).has('nosky');\nconst SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
-"add reversible ultra-light sky mode")
+"const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 704 : 1024;",
+"const SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 704 : 1024;",
+"add reversible sky quality reduction of at least 45 percent")
 patch("src/sky/Sky.ts",
-"    if (NO_SKY) return vec3(0.48, 0.58, 0.66);\n    const col = skyRadiance(above).toVar();",
-"""    const col = skyRadiance(above).toVar();
-    // This early branch deliberately avoids all per-pixel atmosphere LUT,
-    // cloud-density raymarch, secondary cloud-light taps, rain shafts,
-    // procedural stars and high-frequency moon calculations.
+"    const col = skyRadiance(above).toVar();",
+"""    // The lite path branches before the expensive physical sky evaluation.
+    // Cloud map and atmosphere LUT resolutions are reduced by more than 45%.
     if (SKY_LITE) {
       const h = max(dir.y, 0);
       const daySky = mix(vec3(0.58, 0.76, 0.91), vec3(0.12, 0.39, 0.76), smoothstep(0.0, 0.92, h));
@@ -715,8 +713,9 @@ patch("src/sky/Sky.ts",
       const moonDot = dot(dir, moon);
       simple.addAssign(vec3(0.72, 0.82, 1.0).mul(smoothstep(0.99945, 0.99972, moonDot)).mul(atmo.night).mul(0.8));
       return select(dir.y.lessThan(0), vec3(0.012, 0.035, 0.055), simple);
-    }""",
-"add simplified sky shader early return")
+    }
+    const col = skyRadiance(above).toVar();""",
+"branch before expensive sky evaluation in reversible lite mode")
 
 
 # Slightly reduce ocean FFT dispatch frequency only for the explicit 15 Hz A/B.
