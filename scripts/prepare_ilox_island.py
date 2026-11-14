@@ -388,7 +388,7 @@ patch_many("src/world/RockKit.ts",
 "rock kit heightmap coordinates")
 # Tighten oriented-box broadphase bounds so long perimeter walls do not fill the entire collider grid.
 patch("src/world/Colliders.ts",
-"    const o: Obstacle = { kind: 'box', x, z, r: Math.hypot(hx, hz), hx, hz, c: Math.cos(rot), s: Math.sin(rot), y0, y1 };\n    for (const k of this.cells(x - r, x + r, z - r, z + r)) this.bucket(k).obs.push(o);",
+"    const o: Obstacle = { kind: 'box', x, z, r: Math.hypot(hx, hz), hx, hz, c: Math.cos(rot), s: Math.sin(rot), y0, y1 };\n    for (const k of this.cells(x - o.r, x + o.r, z - o.r, z + o.r)) this.bucket(k).obs.push(o);",
 "    const o: Obstacle = { kind: 'box', x, z, r: Math.hypot(hx, hz), hx, hz, c: Math.cos(rot), s: Math.sin(rot), y0, y1 };\n    const ex = Math.abs(o.c) * hx + Math.abs(o.s) * hz;\n    const ez = Math.abs(o.s) * hx + Math.abs(o.c) * hz;\n    for (const k of this.cells(x - ex, x + ex, z - ez, z + ez)) this.bucket(k).obs.push(o);",
 "tight oriented box collider bounds")
 # A real invisible perimeter keeps the player inside the 2,000,000 m² square.
