@@ -1086,22 +1086,7 @@ patch("src/main.ts",
 "      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      player.root.position.y += 0.48;",
 "      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;",
 "move quad, rotate wheels, and do not drag the walking avatar")
-patch("src/main.ts",
-"    };\n    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
-"    };\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
-"allow small ground imperfections on the shared construction plane")
-patch("src/main.ts",
-"    floorPreview.position.set(x,hs.reduce((a,b)=>a+b,0)/4+0.06,z); floorPreview.visible=true;",
-"    floorPreview.position.set(x,42.06,z); floorPreview.visible=true;",
-"align floor preview to the common 42m plane")
-patch("src/main.ts",
-"      const y=hf.height(x,z);\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
-"      const y=42;\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
-"place every adjacent floor tile on the exact common plane")
-patch("src/main.ts",
-"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }",
-"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: buscá una parcela seca y cercana al nivel común'); return; }",
-"explain floor compatibility without requiring the shovel")
+
 
 # Compact bottom game menu and a first usable construction loop for mobile testing.
 index_path = root / "index.html"
@@ -1612,3 +1597,22 @@ patch("src/main.ts",
 "    const rect = renderer.domElement.getBoundingClientRect();\n    buildPointer.set(0,0);",
 "    buildPointer.set(0,0);",
 "remove unused pointer rectangle from centred placement ray");
+
+
+# Apply the floor tolerance after the original construction code has been generated.
+patch("src/main.ts",
+"    };\n    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"    };\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"allow small ground imperfections on the shared construction plane")
+patch("src/main.ts",
+"    floorPreview.position.set(x,hs.reduce((a,b)=>a+b,0)/4+0.06,z); floorPreview.visible=true;",
+"    floorPreview.position.set(x,42.06,z); floorPreview.visible=true;",
+"align floor preview to the common 42m plane")
+patch("src/main.ts",
+"      const y=hf.height(x,z);\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
+"      const y=42;\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
+"place every adjacent floor tile on the exact common plane")
+patch("src/main.ts",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: buscá una parcela seca y cercana al nivel común'); return; }",
+"explain floor compatibility without requiring the shovel")
