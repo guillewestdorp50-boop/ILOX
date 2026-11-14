@@ -1740,49 +1740,6 @@ patch("src/world/TerrainMaterial.ts",
 "reduce green forest coverage and blend more neutral earth into the surface")
 
 patch("src/world/TerrainMaterial.ts",
-"  const normalPh = placeholderArray(liteIndices.map((i) => [0.5, 0.5, ROUGH[i], 1]), false);\n",
-"",
-"remove terrain-lite normal-map array")
-
-patch("src/world/TerrainMaterial.ts",
-"  const normalNodes: N[] = [];\n",
-"",
-"remove terrain-lite normal-map node tracking")
-
-patch("src/world/TerrainMaterial.ts",
-"""  const sampleN = (layer: number, uvL: N) => {
-    const t = texture(normalPh, uvL).depth(int(layer));
-    normalNodes.push(t);
-    return t;
-  };
-""",
-"",
-"remove terrain-lite per-pixel normal texture sampling")
-
-patch("src/world/TerrainMaterial.ts",
-"    const t = sampleN(i, uvL);\n",
-"",
-"remove terrain-lite normal sample from each material layer")
-
-patch("src/world/TerrainMaterial.ts",
-"    rough = rough.add(t.z.mul(w));\n    detail = detail.add(t.xy.mul(2).sub(1).mul(w));",
-"    rough = rough.add(float(ROUGH[indices[i]]).mul(w));",
-"derive terrain roughness from material constants")
-
-patch("src/world/TerrainMaterial.ts",
-"""    const [albedos, normals] = await Promise.all([
-      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`))),
-      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_n.ktx2`))),
-    ]);
-    const A = toArray(albedos, true), Nn = toArray(normals, false);
-    for (const t of albedoNodes) t.value = A;
-    for (const t of normalNodes) t.value = Nn;""",
-"""    const albedos = await Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`)));
-    const A = toArray(albedos, true);
-    for (const t of albedoNodes) t.value = A;""",
-"load only four terrain albedo layers in mobile lite mode")
-
-patch("src/world/TerrainMaterial.ts",
 "  albedo = albedo.div(total);\n  rough = rough.div(total);\n  detail = detail.div(total);",
 "  albedo = albedo.div(total).mul(vec3(1.03, 0.94, 0.84));\n  rough = rough.div(total);\n  detail = detail.div(total);",
 "mute saturated green terrain tint for a more natural matte earth palette")
