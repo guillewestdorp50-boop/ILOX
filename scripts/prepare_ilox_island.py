@@ -1773,11 +1773,11 @@ patch("src/main.ts",
 # Keep the original layered terrain and lite shader intact as reversible alternatives:
 # append ?groundlayered=1 to restore the layered ground.
 patch("src/world/TerrainMaterial.ts",
-"export function createTerrainMaterial(hf: Heightfield, lite = false) {\\n  // The original full shader remains the default and is never overwritten.\\n  if (lite) return createTerrainLiteMaterial(hf);",
-"function createTerrainPlatformMaterial() {\\n  const m = new THREE.MeshStandardNodeMaterial({ color: 0x5b9848, roughness: 1, metalness: 0 });\\n  m.name = 'ilox-green-ground-platform';\\n  return { material: m, loadLayers: async () => {} };\\n}\\n\\nexport function createTerrainMaterial(hf: Heightfield, lite = false, platform = false) {\\n  // The original full and lite materials remain available as reversible alternatives.\\n  if (platform) return createTerrainPlatformMaterial();\\n  if (lite) return createTerrainLiteMaterial(hf);",
+"export function createTerrainMaterial(hf: Heightfield, lite = false) {\n  // The original full shader remains the default and is never overwritten.\n  if (lite) return createTerrainLiteMaterial(hf);",
+"function createTerrainPlatformMaterial() {\n  const m = new THREE.MeshStandardNodeMaterial({ color: 0x5b9848, roughness: 1, metalness: 0 });\n  m.name = 'ilox-green-ground-platform';\n  return { material: m, loadLayers: async () => {} };\n}\n\nexport function createTerrainMaterial(hf: Heightfield, lite = false, platform = false) {\n  // The original full and lite materials remain available as reversible alternatives.\n  if (platform) return createTerrainPlatformMaterial();\n  if (lite) return createTerrainLiteMaterial(hf);",
 "add simple green platform material while retaining layered terrain");
 
 patch("src/main.ts",
 "  const terrainM = createTerrainMaterial(hf, terrainLite);",
-"  const groundParams = new URLSearchParams(location.search);\\n  const terrainPlatform = !groundParams.has('groundlayered');\\n  const terrainM = createTerrainMaterial(hf, terrainLite, terrainPlatform);",
+"  const groundParams = new URLSearchParams(location.search);\n  const terrainPlatform = !groundParams.has('groundlayered');\n  const terrainM = createTerrainMaterial(hf, terrainLite, terrainPlatform);",
 "select green platform by default and preserve layered fallback");
