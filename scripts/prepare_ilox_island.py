@@ -1708,3 +1708,86 @@ patch("src/main.ts",
 "    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;\n    }",
 "    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n    }\n    quadMixer?.update(dt);",
 "drive imported quad and advance its real wheel-roll animation")
+
+
+# Surface-first mobile profile: retain the complete heightfield and mountain silhouettes,
+# but use a lighter terrain material and coarser distant LOD on touch devices.
+# The original full terrain shader remains available with ?terrainfull=1.
+patch("src/main.ts",
+"  const terrainLite = new URLSearchParams(location.search).has('terrainlite');",
+"  const terrainParams = new URLSearchParams(location.search);\n  const terrainLite = terrainParams.has('terrainlite') || (Q.renderScale < 0.7 && !terrainParams.has('terrainfull'));",
+"enable reversible lite terrain shader automatically on mobile")
+
+patch("src/world/TerrainMaterial.ts",
+"  const liteIndices = [0, 2, 3, 4, 5];",
+"  const liteIndices = [0, 3, 4, 5];",
+"reduce terrain material from five layers to four")
+
+patch("src/world/TerrainMaterial.ts",
+`  const weights = [
+    m0.x.mul(float(1).sub(underwater)).mul(noSand),
+    m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
+    m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
+    m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
+    rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
+  ];`,
+`  const weights = [
+    m0.x.mul(float(1).sub(underwater)).mul(noSand),
+    m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
+    m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand).add(m0.w.mul(0.24)),
+    rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
+  ];`,
+"reduce green forest coverage and blend more neutral earth into the surface")
+
+patch("src/world/TerrainMaterial.ts",
+"  const normalPh = placeholderArray(liteIndices.map((i) => [0.5, 0.5, ROUGH[i], 1]), false);\n",
+"",
+"remove terrain-lite normal-map array")
+
+patch("src/world/TerrainMaterial.ts",
+"  const normalNodes: N[] = [];\n",
+"",
+"remove terrain-lite normal-map node tracking")
+
+patch("src/world/TerrainMaterial.ts",
+`  const sampleN = (layer: number, uvL: N) => {
+    const t = texture(normalPh, uvL).depth(int(layer));
+    normalNodes.push(t);
+    return t;
+  };
+`,
+"",
+"remove terrain-lite per-pixel normal texture sampling")
+
+patch("src/world/TerrainMaterial.ts",
+"    const t = sampleN(i, uvL);\n",
+"",
+"remove terrain-lite normal sample from each material layer")
+
+patch("src/world/TerrainMaterial.ts",
+"    rough = rough.add(t.z.mul(w));\n    detail = detail.add(t.xy.mul(2).sub(1).mul(w));",
+"    rough = rough.add(float(ROUGH[indices[i]]).mul(w));",
+"derive terrain roughness from material constants")
+
+patch("src/world/TerrainMaterial.ts",
+`    const [albedos, normals] = await Promise.all([
+      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`))),
+      Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_n.ktx2`))),
+    ]);
+    const A = toArray(albedos, true), Nn = toArray(normals, false);
+    for (const t of albedoNodes) t.value = A;
+    for (const t of normalNodes) t.value = Nn;`,
+`    const albedos = await Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`)));
+    const A = toArray(albedos, true);
+    for (const t of albedoNodes) t.value = A;`,
+"load only four terrain albedo layers in mobile lite mode")
+
+patch("src/world/TerrainMaterial.ts",
+"  albedo = albedo.div(total);\n  rough = rough.div(total);\n  detail = detail.div(total);",
+"  albedo = albedo.div(total).mul(vec3(1.03, 0.94, 0.84));\n  rough = rough.div(total);\n  detail = detail.div(total);",
+"mute saturated green terrain tint for a more natural matte earth palette")
+
+patch("src/core/quality.ts",
+"lodScale: 0.36",
+"lodScale: 0.95",
+"reduce excessive terrain patch density on mobile while retaining heightmap relief")
