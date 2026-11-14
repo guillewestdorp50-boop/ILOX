@@ -937,3 +937,183 @@ patch("src/main.ts",
     catch { /* The installable PWA manifest also requests landscape. */ }
   };""",
 "request landscape orientation")
+
+
+# Compact bottom game menu and a first usable construction loop for mobile testing.
+index_path = root / "index.html"
+index_html = index_path.read_text(encoding="utf-8")
+jump_marker = '      <button class="ilox-action" id="ilox-jump" type="button">SALTAR</button>\n'
+game_markup = """      <nav id="ilox-toolbar" aria-label="Menú del juego">
+        <button type="button" data-game-panel="backpack"><span>🎒</span><small>MOCHILA</small></button>
+        <button type="button" data-game-panel="inventory"><span>▦</span><small>INVENTARIO</small></button>
+        <button type="button" data-game-panel="build"><span>⌂</span><small>CONSTRUIR</small></button>
+      </nav>
+      <section id="ilox-game-panel" aria-live="polite"><header><strong id="ilox-game-title">ILOX</strong><button id="ilox-game-close" type="button">×</button></header><div id="ilox-game-content"></div></section>
+      <output id="ilox-build-status">Elegí una herramienta para comenzar</output>
+"""
+if jump_marker not in index_html:
+    raise SystemExit("ILOX game toolbar insertion point missing")
+index_html = index_html.replace(jump_marker, jump_marker + game_markup, 1)
+landscape_marker = '    </div>\n    <script type="module" src="./src/main.ts"></script>'
+if landscape_marker not in index_html:
+    raise SystemExit("ILOX landscape overlay insertion point missing")
+index_html = index_html.replace(landscape_marker, '    </div>\n    <div id="ilox-landscape-block"><div><strong>ILOX</strong><p>Iniciando en horizontal…</p><span>Si el teléfono no gira automáticamente, rotalo para jugar</span></div></div>\n    <script type="module" src="./src/main.ts"></script>', 1)
+game_css = """
+      #ilox-toolbar { position:absolute; left:50%; bottom:max(8px,env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; gap:6px; pointer-events:auto; }
+      #ilox-toolbar button { width:54px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.38); border-radius:9px; color:#f7f4e9; background:rgba(9,20,16,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 2px 10px rgba(0,0,0,.25); }
+      #ilox-toolbar span { font-size:20px; line-height:22px; } #ilox-toolbar small { font:600 7px system-ui; letter-spacing:.03em; }
+      #ilox-game-panel { display:none; position:absolute; left:50%; bottom:72px; transform:translateX(-50%); width:min(340px,calc(100vw - 24px)); max-height:min(48vh,330px); overflow:auto; padding:12px; border:1px solid rgba(235,240,225,.25); border-radius:12px; color:#f4efe3; background:rgba(8,18,15,.94); box-shadow:0 8px 28px rgba(0,0,0,.42); pointer-events:auto; font:12px system-ui; backdrop-filter:blur(10px); }
+      #ilox-game-panel.open { display:block; } #ilox-game-panel header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; letter-spacing:.08em; }
+      #ilox-game-panel header button { color:white; background:transparent; border:0; font-size:22px; }
+      #ilox-game-content { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+      #ilox-game-content p { grid-column:1/-1; margin:2px 0 6px; color:rgba(245,245,235,.78); line-height:1.4; }
+      #ilox-game-content button { min-height:48px; border:1px solid rgba(235,240,225,.25); border-radius:8px; color:#f7f4e9; background:rgba(75,100,76,.55); font:600 10px system-ui; }
+      #ilox-game-content button.selected { border-color:#e4cf91; background:rgba(117,105,57,.75); }
+      #ilox-build-status { display:none; position:fixed; z-index:88; left:50%; bottom:136px; transform:translateX(-50%); max-width:90vw; padding:7px 10px; border-radius:7px; color:#fff; background:rgba(0,0,0,.76); font:600 11px system-ui; text-align:center; pointer-events:none; }
+      #ilox-landscape-block { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; text-align:center; color:#f7f4e9; background:#101b16; font:14px system-ui; }
+      #ilox-landscape-block strong { font:300 32px Georgia,serif; letter-spacing:.3em; } #ilox-landscape-block p { margin:16px 0 8px; font-size:17px; }
+      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }
+      @media (orientation:portrait) and (pointer:coarse) { #ilox-landscape-block { display:flex; } #ilox-touch { display:none !important; } }
+"""
+if "</style>" not in index_html:
+    raise SystemExit("ILOX style insertion point missing")
+index_html = index_html.replace("</style>", game_css + "\n    </style>", 1)
+index_path.write_text(index_html, encoding="utf-8")
+
+patch("src/main.ts",
+"  const hud = new Hud(false); // ILOX keeps the natural world unobstructed.",
+"""  const hud = new Hud(false); // ILOX keeps the natural world unobstructed.
+  const gamePanel = document.getElementById('ilox-game-panel');
+  const gameTitle = document.getElementById('ilox-game-title');
+  const gameContent = document.getElementById('ilox-game-content');
+  const buildStatus = document.getElementById('ilox-build-status') as HTMLOutputElement | null;
+  const buildGroup = new THREE.Group(); scene.add(buildGroup);
+  const builtFloors: { x: number; z: number; y: number }[] = [];
+  let activeBuild: 'floor' | 'wall' | 'roof' | 'door' | 'window' | 'stairs' | null = null;
+  const stock = { boards: 60, placed: 0 };
+  let statusTimer = 0;
+  const showBuildStatus = (message: string) => {
+    if (!buildStatus) return;
+    buildStatus.textContent = message; buildStatus.style.display = 'block';
+    window.clearTimeout(statusTimer);
+    statusTimer = window.setTimeout(() => { buildStatus.style.display = 'none'; }, 2400);
+  };
+  const closeGamePanel = () => { gamePanel?.classList.remove('open'); activeBuild = null; document.body.classList.remove('ilox-building'); };
+  const openGamePanel = (kind: string) => {
+    gamePanel?.classList.add('open');
+    if (!gameContent || !gameTitle) return;
+    activeBuild = null; document.body.classList.remove('ilox-building');
+    if (kind === 'backpack') {
+      gameTitle.textContent = 'MOCHILA';
+      gameContent.innerHTML = '<p>Herramientas disponibles en esta prueba.</p><button type="button" disabled>🔨 MARTILLO</button><button type="button" disabled>📐 PLANO</button><button type="button" disabled>🪓 HACHA</button>';
+    } else if (kind === 'inventory') {
+      gameTitle.textContent = 'INVENTARIO';
+      gameContent.innerHTML = '<p>Material de prueba: '+stock.boards+' tablas · Piezas colocadas: '+stock.placed+'</p><button type="button" disabled>🪵 TABLAS</button><button type="button" disabled>🪟 VENTANAS</button><button type="button" disabled>🚪 PUERTAS</button>';
+    } else {
+      gameTitle.textContent = 'CONSTRUCCIÓN';
+      gameContent.innerHTML = '<p>Primero colocá un piso. Después elegí una pieza y tocá el terreno junto al piso.</p><button data-build="floor">▰ PISO</button><button data-build="wall">▥ PARED</button><button data-build="roof">▱ TECHO</button><button data-build="door">🚪 PUERTA</button><button data-build="window">▣ VENTANA</button><button data-build="stairs">▤ ESCALERA</button>';
+      gameContent.querySelectorAll<HTMLButtonElement>('[data-build]').forEach((button) => button.addEventListener('click', () => {
+        activeBuild = button.dataset.build as typeof activeBuild;
+        document.body.classList.add('ilox-building');
+        gameContent.querySelectorAll('button').forEach((b) => b.classList.toggle('selected', b === button));
+        showBuildStatus(activeBuild === 'floor' ? 'Tocá un lugar libre para colocar el piso' : 'Elegí un lado de un piso existente');
+      }));
+    }
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-game-panel]').forEach((button) => button.addEventListener('click', () => openGamePanel(button.dataset.gamePanel ?? 'backpack')));
+  document.getElementById('ilox-game-close')?.addEventListener('click', closeGamePanel);
+  const buildRay = new THREE.Raycaster(), buildPointer = new THREE.Vector2();
+  const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x9a7045, roughness: 0.88 });
+  const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x8bc9d8, roughness: 0.18, metalness: 0.08, transparent: true, opacity: 0.72 });
+  const addBuildBox = (geometry: THREE.BufferGeometry, x: number, y: number, z: number, material = woodMaterial) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true; buildGroup.add(mesh); stock.placed++; return mesh;
+  };
+  const spendBoards = (amount: number) => {
+    if (stock.boards < amount) { showBuildStatus('No quedan tablas suficientes'); return false; }
+    stock.boards -= amount; return true;
+  };
+  const placeBuildPiece = (event: PointerEvent) => {
+    if (!activeBuild || event.button !== 0) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
+    buildRay.setFromCamera(buildPointer,camera);
+    const hit = buildRay.intersectObject(terrain.mesh,true)[0];
+    if (!hit) { showBuildStatus('No hay terreno válido en ese punto'); return; }
+    if (activeBuild === 'floor') {
+      const x=Math.round(hit.point.x/4)*4,z=Math.round(hit.point.z/4)*4;
+      if (builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5)) { showBuildStatus('Ya hay un piso en ese lugar'); return; }
+      if (!spendBoards(4)) return;
+      const y=hf.height(x,z);
+      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);
+      builtFloors.push({x,z,y:y+0.22});
+      colliders.platform(x,z,2,2,0,y+0.22,'wood');
+      showBuildStatus('Piso colocado. Ya podés construir sobre él'); return;
+    }
+    const floor = builtFloors.reduce<{x:number;z:number;y:number;d:number}|null>((best,f)=>{
+      const d=Math.hypot(f.x-hit.point.x,f.z-hit.point.z);
+      return d<3.2&&(!best||d<best.d)?{...f,d}:best;
+    },null);
+    if (!floor) { showBuildStatus('Primero necesitás colocar un piso'); return; }
+    const dx=hit.point.x-floor.x,dz=hit.point.z-floor.z;
+    const alongX=Math.abs(dx)>=Math.abs(dz);
+    const edgeX=floor.x+(dx>=0?2:-2),edgeZ=floor.z+(dz>=0?2:-2);
+    const cx=alongX?edgeX:floor.x,cz=alongX?floor.z:edgeZ;
+    if (activeBuild === 'roof') {
+      if (!spendBoards(4)) return;
+      addBuildBox(new THREE.BoxGeometry(4,0.2,4),floor.x,floor.y+3.1,floor.z);
+      showBuildStatus('Techo colocado'); return;
+    }
+    if (activeBuild === 'stairs') {
+      if (!spendBoards(5)) return;
+      for(let i=0;i<5;i++){
+        const rise=0.24*(i+1), z0=floor.z+(dz>=0?1.55:-1.55)+(dz>=0?-i*0.62:i*0.62);
+        addBuildBox(new THREE.BoxGeometry(3.2,rise,0.62),floor.x,floor.y+rise/2,z0);
+        colliders.platform(floor.x,z0,1.6,0.31,0,floor.y+rise,'wood');
+      }
+      showBuildStatus('Escalera colocada'); return;
+    }
+    if (activeBuild === 'door') {
+      if (!spendBoards(3)) return;
+      if (alongX) {
+        addBuildBox(new THREE.BoxGeometry(0.22,3,0.22),cx,floor.y+1.5,cz-1.9);
+        addBuildBox(new THREE.BoxGeometry(0.22,3,0.22),cx,floor.y+1.5,cz+1.9);
+        addBuildBox(new THREE.BoxGeometry(0.22,0.35,4),cx,floor.y+2.82,cz);
+        colliders.box(cx,cz-1.9,0.11,0.11,0,floor.y,floor.y+3); colliders.box(cx,cz+1.9,0.11,0.11,0,floor.y,floor.y+3);
+      } else {
+        addBuildBox(new THREE.BoxGeometry(0.22,3,0.22),cx-1.9,floor.y+1.5,cz);
+        addBuildBox(new THREE.BoxGeometry(0.22,3,0.22),cx+1.9,floor.y+1.5,cz);
+        addBuildBox(new THREE.BoxGeometry(4,0.35,0.22),cx,floor.y+2.82,cz);
+        colliders.box(cx-1.9,cz,0.11,0.11,0,floor.y,floor.y+3); colliders.box(cx+1.9,cz,0.11,0.11,0,floor.y,floor.y+3);
+      }
+      showBuildStatus('Marco de puerta colocado'); return;
+    }
+    if (activeBuild === 'window') {
+      if (!spendBoards(4)) return;
+      if (alongX) {
+        addBuildBox(new THREE.BoxGeometry(0.2,0.75,4),cx,floor.y+0.38,cz);
+        addBuildBox(new THREE.BoxGeometry(0.2,0.75,4),cx,floor.y+2.62,cz);
+        addBuildBox(new THREE.BoxGeometry(0.2,1.5,0.55),cx,floor.y+1.5,cz-1.72);
+        addBuildBox(new THREE.BoxGeometry(0.2,1.5,0.55),cx,floor.y+1.5,cz+1.72);
+        addBuildBox(new THREE.BoxGeometry(0.05,1.5,2.85),cx+0.02,floor.y+1.5,cz,glassMaterial);
+      } else {
+        addBuildBox(new THREE.BoxGeometry(4,0.75,0.2),cx,floor.y+0.38,cz);
+        addBuildBox(new THREE.BoxGeometry(4,0.75,0.2),cx,floor.y+2.62,cz);
+        addBuildBox(new THREE.BoxGeometry(0.55,1.5,0.2),cx-1.72,floor.y+1.5,cz);
+        addBuildBox(new THREE.BoxGeometry(0.55,1.5,0.2),cx+1.72,floor.y+1.5,cz);
+        addBuildBox(new THREE.BoxGeometry(2.85,1.5,0.05),cx,floor.y+1.5,cz+0.02,glassMaterial);
+      }
+      showBuildStatus('Ventana colocada'); return;
+    }
+    if (!spendBoards(4)) return;
+    if (alongX) {
+      addBuildBox(new THREE.BoxGeometry(0.18,3,4),cx,floor.y+1.5,cz);
+      colliders.box(cx,cz,0.09,2,0,floor.y,floor.y+3);
+    } else {
+      addBuildBox(new THREE.BoxGeometry(4,3,0.18),cx,floor.y+1.5,cz);
+      colliders.box(cx,cz,2,0.09,0,floor.y,floor.y+3);
+    }
+    showBuildStatus('Pared colocada');
+  };
+  renderer.domElement.addEventListener('pointerdown', placeBuildPiece);""",
+"add mobile game menu and initial building pieces")
