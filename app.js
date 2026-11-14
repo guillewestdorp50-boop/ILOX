@@ -193,40 +193,21 @@ function placeImportedModel(source, x, z, scale, targetHeight) {
 
 async function loadFreeNatureAssets() {
   try {
-    // Modelo botánico CC0 de Poly Haven; se limita el peso para proteger el rendimiento móvil.
-    const [treeResult, rockResult] = await Promise.allSettled([
-      fetchPolyHavenModel("fir_sapling_medium", 8000000),
-      fetchPolyHavenModel("boulder_01", 14000000)
-    ]);
-    let loaded = false;
-    if (treeResult.status === "fulfilled") {
-      const source = treeResult.value.scene;
-      proceduralTreeGroups.forEach(group => scene.remove(group));
-      const random = seededRandom(73021);
-      for (let i = 0; i < 22; i++) {
-        const x = (random() - 0.5) * 185;
-        const z = (random() - 0.5) * 185;
-        if (Math.hypot(x, z) < 20) continue;
-        if (Math.abs(x - (Math.sin(z * 0.025) * 17 - 15)) < 6) continue;
-        placeImportedModel(source, x, z, 0.82 + random() * 0.7, 5.2);
-      }
-      loaded = true;
+    // Primer asset de producción: roca escaneada CC0, con límite de descarga para móviles.
+    // Los árboles escaneados de alta calidad disponibles superan el presupuesto gráfico del G14;
+    // mantenemos los árboles de respaldo hasta incorporar una variante realmente optimizada.
+    const result = await fetchPolyHavenModel("boulder_01", 14000000);
+    const source = result.scene;
+    const random = seededRandom(92017);
+    for (let i = 0; i < 8; i++) {
+      const x = (random() - 0.5) * 190;
+      const z = (random() - 0.5) * 190;
+      if (Math.hypot(x, z) < 12) continue;
+      placeImportedModel(source, x, z, 0.45 + random() * 0.75, 1.2 + random() * 1.5);
     }
-    if (rockResult.status === "fulfilled") {
-      const source = rockResult.value.scene;
-      const random = seededRandom(92017);
-      for (let i = 0; i < 16; i++) {
-        const x = (random() - 0.5) * 190;
-        const z = (random() - 0.5) * 190;
-        if (Math.hypot(x, z) < 12) continue;
-        placeImportedModel(source, x, z, 0.45 + random() * 0.85, 1.8 + random() * 1.8);
-      }
-      loaded = true;
-    }
-    importedNatureReady = loaded;
-    if (!loaded) console.warn("ILOX: los modelos externos no pudieron cargarse; se conserva el escenario de respaldo.");
+    importedNatureReady = true;
   } catch (error) {
-    console.warn("ILOX: biblioteca CC0 no disponible en esta sesión.", error);
+    console.warn("ILOX: la roca CC0 no pudo cargarse; se conserva el escenario de respaldo.", error);
   }
 }
 
