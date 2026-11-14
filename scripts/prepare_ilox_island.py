@@ -1383,3 +1383,25 @@ patch("index.html",
 "      body.ilox-building #ilox-build-camera { display:none !important; }\n      body.ilox-building #ilox-look-zone { display:block !important; pointer-events:auto !important; }",
 "remove camera arrows and restore swipe-to-look in construction")
 
+# Repair first-person construction aiming from the player's actual forward direction.
+# Enter construction at eye level immediately, with a controlled downward work angle
+# so the centre reticle meets the ground about one metre ahead instead of inheriting
+# the third-person camera's downward/backward view.
+patch("src/main.ts",
+"      gameTitle.textContent = 'CONSTRUCCIÓN';",
+"      gameTitle.textContent = 'CONSTRUCCIÓN';\n      rig.set('first');\n      rig.yaw = player.heading;\n      rig.pitch = -0.95;\n      player.root.visible = false;\n      if (buildViewModel) buildViewModel.visible = true;",
+"enter first-person immediately on opening construction");
+
+# Restore the regular player camera and avatar when leaving construction.
+patch("src/main.ts",
+"    document.body.classList.remove('ilox-building');\n  };\n  const openGamePanel",
+"    document.body.classList.remove('ilox-building');\n    if (rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;\n  };\n  const openGamePanel",
+"restore camera and avatar when closing construction");
+
+# Keep the centre reticle as the single source of truth for all construction
+# previews and placement in first-person; pointer coordinates remain for desktop.
+patch_many("src/main.ts",
+"    buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
+"    if (rig.mode === 'first') buildPointer.set(0,0); else buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
+3,
+"force all three construction rays to use the first-person centre reticle");
