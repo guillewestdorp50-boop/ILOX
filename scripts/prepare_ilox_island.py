@@ -1013,7 +1013,7 @@ index_path.write_text(index_html, encoding="utf-8")
 
 patch("src/world/Heightfield.ts",
 "  /** unit normal (x, y, z) from central differences over `e` metres */",
-"  /** Gently levels a 4 m building footprint without digging; a soft outer falloff blends it into the landscape. */\n  flattenArea(x: number, z: number, radius = 3.2) {\n    const N=this.n, h=this.heights, target=this.height(x,z);\n    const i0=Math.max(0,Math.floor(x+HALF_WORLD-radius-0.5)), i1=Math.min(N-1,Math.ceil(x+HALF_WORLD+radius-0.5));\n    const j0=Math.max(0,Math.floor(z+HALF_WORLD-radius-0.5)), j1=Math.min(N-1,Math.ceil(z+HALF_WORLD+radius-0.5));\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const px=i-HALF_WORLD+0.5,pz=j-HALF_WORLD+0.5,d=Math.hypot(px-x,pz-z);\n      if(d>radius) continue;\n      const blend=d<=radius-0.8?1:Math.max(0,Math.min(1,(radius-d)/0.8));\n      const k=j*N+i; h[k]=h[k]+(target-h[k])*blend;\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n  }\n\n  /** unit normal (x, y, z) from central differences over `e` metres */",
+"  /** Gently levels a 4 m building footprint without digging; a soft outer falloff blends it into the landscape. */\n  flattenArea(x: number, z: number, radius = 3.8) {\n    const N=this.n, h=this.heights, cell=WORLD_SIZE/N, target=this.height(x,z);\n    const fx=(x+HALF_WORLD)/cell-0.5, fz=(z+HALF_WORLD)/cell-0.5;\n    const reach=radius/cell;\n    const i0=Math.max(0,Math.floor(fx-reach)), i1=Math.min(N-1,Math.ceil(fx+reach));\n    const j0=Math.max(0,Math.floor(fz-reach)), j1=Math.min(N-1,Math.ceil(fz+reach));\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const px=(i+0.5)*cell-HALF_WORLD,pz=(j+0.5)*cell-HALF_WORLD,d=Math.hypot(px-x,pz-z);\n      if(d>radius) continue;\n      const blend=d<=radius-0.8?1:Math.max(0,Math.min(1,(radius-d)/0.8));\n      const k=j*N+i; h[k]=h[k]+(target-h[k])*blend;\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n  }\n\n  /** unit normal (x, y, z) from central differences over `e` metres */",
 "add gentle terrain leveling method")
 
 patch("src/main.ts",
@@ -1241,6 +1241,28 @@ patch("src/main.ts",
 "  window.addEventListener('pointerup', (event) => {\n    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select')) return;\n    placeBuildPiece(event);\n  }, true);",
 "handle construction taps reliably on touch devices");
 
+
+# Dedicated four-way camera controls on the right side during construction.
+patch("index.html",
+'      <button type="button" id="ilox-exit-build" style="display:none"><span>↩</span><small>SALIR</small></button>',
+'      <button type="button" id="ilox-exit-build" style="display:none"><span>↩</span><small>SALIR</small></button>\n      <div id="ilox-build-camera" aria-label="Mover cámara libre"><button type="button" data-build-camera="up" aria-label="Subir cámara">▲</button><div><button type="button" data-build-camera="left" aria-label="Mover cámara a la izquierda">◀</button><button type="button" data-build-camera="right" aria-label="Mover cámara a la derecha">▶</button></div><button type="button" data-build-camera="down" aria-label="Bajar cámara">▼</button></div>',
+"add four-way free camera controls")
+patch("index.html",
+'      #ilox-exit-build small { font:700 7px system-ui; }',
+'      #ilox-exit-build small { font:700 7px system-ui; }\n      #ilox-build-camera { position:fixed; z-index:80; right:max(14px,env(safe-area-inset-right)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }\n      #ilox-build-camera div { display:flex; gap:8px; }\n      #ilox-build-camera button { width:54px; height:54px; border:1px solid rgba(235,240,225,.58); border-radius:13px; color:#fff; background:rgba(20,38,32,.84); font:700 24px system-ui; touch-action:none; user-select:none; -webkit-user-select:none; pointer-events:auto; box-shadow:0 2px 12px rgba(0,0,0,.28); }\n      body.ilox-building #ilox-build-camera { display:flex; }\n      body.ilox-building #ilox-look-zone { display:none !important; }',
+"style four-way free camera controls")
+patch("src/player/Input.ts",
+'  private keys = new Set<string>();',
+'  private keys = new Set<string>();\n  private buildCameraKeys = new Set<string>();',
+"track construction camera buttons")
+patch("src/player/Input.ts",
+'    this.canvas = canvas;',
+'    this.canvas = canvas;\n    document.querySelectorAll<HTMLButtonElement>("[data-build-camera]").forEach((button) => {\n      const direction = button.dataset.buildCamera ?? "";\n      const start = (event: PointerEvent) => { event.preventDefault(); button.setPointerCapture?.(event.pointerId); this.buildCameraKeys.add(direction); };\n      const stop = () => this.buildCameraKeys.delete(direction);\n      button.addEventListener("pointerdown", start); button.addEventListener("pointerup", stop);\n      button.addEventListener("pointercancel", stop); button.addEventListener("lostpointercapture", stop);\n    });',
+"wire held camera movement buttons")
+patch("src/player/Input.ts",
+'    this.mdx = 0;',
+'    if (document.body.classList.contains("ilox-building")) {\n      mx += Number(this.buildCameraKeys.has("right")) - Number(this.buildCameraKeys.has("left"));\n      up += Number(this.buildCameraKeys.has("up")) - Number(this.buildCameraKeys.has("down"));\n    }\n    this.mdx = 0;',
+"apply construction camera movement intent")
 
 # Keep mobile camera gestures available in construction mode; placement uses the open center area.
 patch("index.html",
