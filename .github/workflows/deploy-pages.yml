@@ -36,6 +36,8 @@ jobs:
           enablement: true
       - name: Descargar modelo 3D gratuito CC0 de Poly Haven
         run: python3 scripts/fetch_polyhaven_assets.py
+      - name: Validar JavaScript
+        run: node --check app.js
       - name: Preparar sitio
         run: |
           mkdir -p _site
