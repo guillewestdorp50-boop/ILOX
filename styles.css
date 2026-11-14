@@ -30,3 +30,14 @@ h1 em{font-style:normal;color:#e8d29a}
 @media (pointer:coarse){.touch-ui{display:block}.controls-help{display:none}.bottom-hint{bottom:calc(170px + env(safe-area-inset-bottom))}}
 @media(max-width:600px){.world-label{display:none}.welcome{top:42%;max-width:84vw}.welcome p{max-width:285px}.bottom-hint{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important}}
+
+.avatar-select{position:absolute;z-index:3;left:clamp(20px,7vw,90px);top:50%;transform:translateY(-42%);width:min(520px,86vw);padding:22px;background:rgba(13,29,24,.86);border:1px solid #ffffff30;backdrop-filter:blur(12px);transition:opacity .35s,transform .35s}
+.avatar-select.hidden{display:none}
+.avatar-select h2{font-size:clamp(25px,4vw,38px);margin:9px 0;color:#f4f3e9;letter-spacing:-.04em}
+.avatar-select p{font-size:13px;color:#d5ded4;margin:0 0 17px}
+.avatar-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.avatar-option{min-height:74px;padding:10px 5px;border:1px solid #ffffff42;background:#ffffff0b;color:#f4f3e9;text-align:left;border-radius:3px}
+.avatar-option strong,.avatar-option small{display:block}
+.avatar-option strong{font-size:12px}.avatar-option small{font-size:10px;color:#c5d0c6;margin-top:5px}
+.avatar-option.selected{border-color:#e6d19b;background:#e6d19b20;box-shadow:inset 0 0 0 1px #e6d19b}
+@media(max-width:520px){.avatar-select{left:5vw;width:90vw;top:48%;padding:16px}.avatar-options{grid-template-columns:repeat(2,minmax(0,1fr))}.avatar-option{min-height:58px}}
