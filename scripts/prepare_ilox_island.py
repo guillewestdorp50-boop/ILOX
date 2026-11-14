@@ -1003,7 +1003,7 @@ game_css = """
       #ilox-build-status { display:none; position:fixed; z-index:88; left:50%; bottom:136px; transform:translateX(-50%); max-width:90vw; padding:7px 10px; border-radius:7px; color:#fff; background:rgba(0,0,0,.76); font:600 11px system-ui; text-align:center; pointer-events:none; }
       #ilox-landscape-block { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; text-align:center; color:#f7f4e9; background:#101b16; font:14px system-ui; }
       #ilox-landscape-block strong { font:300 32px Georgia,serif; letter-spacing:.3em; } #ilox-landscape-block p { margin:16px 0 8px; font-size:17px; }
-      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }
+      body.ilox-building .ilox-action { pointer-events:none !important; }
       @media (orientation:portrait) and (pointer:coarse) { #ilox-landscape-block { display:flex; } #ilox-touch { display:none !important; } }
 """
 if "</style>" not in index_html:
@@ -1197,8 +1197,8 @@ patch("index.html",
 '      <button type="button" data-game-panel="build"><span>⌂</span><small>CONSTRUIR</small></button>\n      <button type="button" id="ilox-exit-build" style="display:none"><span>↩</span><small>SALIR</small></button>',
 "add construction exit control")
 patch("index.html",
-'      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
-'      #ilox-exit-build { width:66px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.48); border-radius:9px; color:#fff; background:rgba(115,48,38,.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:2px; pointer-events:auto; }\n      #ilox-exit-build span { font-size:20px; line-height:22px; } #ilox-exit-build small { font:700 7px system-ui; }\n      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
+'      body.ilox-building .ilox-action { pointer-events:none !important; }',
+'      #ilox-exit-build { width:66px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.48); border-radius:9px; color:#fff; background:rgba(115,48,38,.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:2px; pointer-events:auto; }\n      #ilox-exit-build span { font-size:20px; line-height:22px; } #ilox-exit-build small { font:700 7px system-ui; }\n      body.ilox-building .ilox-action { pointer-events:none !important; }',
 "style construction exit control")
 patch("src/main.ts",
 "  const closeGamePanel = () => { gamePanel?.classList.remove('open'); activeBuild = null; document.body.classList.remove('ilox-building'); };",
@@ -1244,7 +1244,7 @@ patch("src/main.ts",
 
 # Keep mobile camera gestures available in construction mode; placement uses the open center area.
 patch("index.html",
-'      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
+'      body.ilox-building .ilox-action { pointer-events:none !important; }',
 '      body.ilox-building .ilox-action { pointer-events:none !important; }',
 "allow free-camera touch controls while building")
 patch("src/main.ts",
