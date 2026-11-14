@@ -969,6 +969,82 @@ patch("src/main.ts",
 "request landscape orientation")
 
 
+
+# Functional quad bike: reuses the same movement intent, with a faster vehicle mode.
+patch("src/player/Player.ts",
+"  heading = 0;",
+"  heading = 0;\n  vehicleMode = false;",
+"add vehicle driving state")
+patch("src/player/Player.ts",
+"    let top = swim ? (intent.sprint ? SWIM_FAST : SWIM) : intent.sprint ? SPRINT : intent.walk ? WALK : RUN;",
+"    let top = this.vehicleMode ? (intent.sprint ? 16 : intent.walk ? 5 : 10) : swim ? (intent.sprint ? SWIM_FAST : SWIM) : intent.sprint ? SPRINT : intent.walk ? WALK : RUN;",
+"vehicle speed uses existing movement controls")
+patch("src/player/Player.ts",
+"    if (!swim && mag < 0.55 && !intent.sprint) top = THREE.MathUtils.lerp(WALK, RUN, Math.max(0, mag - 0.2) / 0.35);",
+"    if (!this.vehicleMode && !swim && mag < 0.55 && !intent.sprint) top = THREE.MathUtils.lerp(WALK, RUN, Math.max(0, mag - 0.2) / 0.35);",
+"preserve vehicle throttle speed")
+
+patch("src/main.ts",
+"  rig.snapBehind(spot.yaw);",
+"""  rig.snapBehind(spot.yaw);
+
+  // ILOX functional quad: parked beside the village spawn; player input drives it when mounted.
+  const quadBike = new THREE.Group();
+  quadBike.name = 'ilox-quad-bike';
+  const quadFrame = new THREE.MeshStandardMaterial({ color: 0x344b35, roughness: 0.72, metalness: 0.12 });
+  const quadRubber = new THREE.MeshStandardMaterial({ color: 0x171a18, roughness: 0.96 });
+  const quadMetal = new THREE.MeshStandardMaterial({ color: 0x737b70, roughness: 0.45, metalness: 0.65 });
+  const quadSeat = new THREE.MeshStandardMaterial({ color: 0x282622, roughness: 0.92 });
+  const quadPart = (geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; quadBike.add(mesh); return mesh;
+  };
+  quadPart(new THREE.BoxGeometry(0.82, 0.22, 1.35), quadFrame, 0, 0.66, 0);
+  quadPart(new THREE.BoxGeometry(0.48, 0.18, 0.62), quadSeat, 0, 0.88, 0.12);
+  quadPart(new THREE.BoxGeometry(0.58, 0.16, 0.42), quadFrame, 0, 0.79, -0.56);
+  quadPart(new THREE.BoxGeometry(0.64, 0.12, 0.38), quadFrame, 0, 0.78, 0.58);
+  quadPart(new THREE.CylinderGeometry(0.055, 0.055, 0.82, 10), quadMetal, 0, 1.02, -0.64).rotation.z = Math.PI / 2;
+  quadPart(new THREE.BoxGeometry(0.48, 0.08, 0.12), quadMetal, 0, 1.02, -0.64);
+  quadPart(new THREE.SphereGeometry(0.13, 12, 8), new THREE.MeshStandardMaterial({ color: 0xf3dca1, emissive: 0x665020 }), 0, 0.83, -0.73);
+  const quadWheelGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.19, 14);
+  quadWheelGeo.rotateZ(Math.PI / 2);
+  for (const x of [-0.58, 0.58]) for (const z of [-0.68, 0.68]) {
+    const wheel = quadPart(quadWheelGeo, quadRubber, x, 0.34, z);
+    const hub = quadPart(new THREE.CylinderGeometry(0.12, 0.12, 0.205, 10), quadMetal, x, 0.34, z);
+    hub.rotation.z = Math.PI / 2;
+    void wheel;
+  }
+  quadBike.position.set(spot.player[0] + 4, hf.height(spot.player[0] + 4, spot.player[1] + 4) - 0.32, spot.player[1] + 4);
+  quadBike.rotation.y = spot.yaw;
+  scene.add(quadBike);
+  let quadMounted = false;
+  const quadButton = document.getElementById('ilox-vehicle-toggle');
+  const toggleQuad = () => {
+    if (quadMounted) {
+      quadMounted = false; player.vehicleMode = false;
+      if (quadButton) quadButton.textContent = 'SUBIR ATV';
+      return;
+    }
+    if (Math.hypot(player.pos.x - quadBike.position.x, player.pos.z - quadBike.position.z) > 5.5) {
+      if (quadButton) quadButton.textContent = 'ACERCATE AL ATV';
+      window.setTimeout(() => { if (quadButton && !quadMounted) quadButton.textContent = 'SUBIR ATV'; }, 1500);
+      return;
+    }
+    quadMounted = true; player.vehicleMode = true;
+    if (quadButton) quadButton.textContent = 'BAJAR ATV';
+  };
+  quadButton?.addEventListener('click', toggleQuad);""",
+"add drivable quad bike and mount interaction")
+patch("src/main.ts",
+"    const intent = input.read(dt);",
+"    const intent = input.read(dt);\n    if (input.hit('KeyE')) toggleQuad();",
+"keyboard mount and dismount")
+patch("src/main.ts",
+"    player.update(dt, playerIntent, rig.yaw);\n    rig.update(dt,",
+"    player.update(dt, playerIntent, rig.yaw);\n    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y - 0.32, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      player.root.position.y += 0.48;\n    }\n    rig.update(dt,",
+"drive quad with player movement and camera follow")
+
+
 # Compact bottom game menu and a first usable construction loop for mobile testing.
 index_path = root / "index.html"
 index_html = index_path.read_text(encoding="utf-8")
@@ -977,6 +1053,7 @@ game_markup = """      <nav id="ilox-toolbar" aria-label="Menú del juego">
         <button type="button" data-game-panel="backpack"><span>🎒</span><small>MOCHILA</small></button>
         <button type="button" data-game-panel="inventory"><span>▦</span><small>INVENTARIO</small></button>
         <button type="button" data-game-panel="build"><span>⌂</span><small>CONSTRUIR</small></button>
+        <button type="button" id="ilox-vehicle-toggle">SUBIR ATV</button>
       </nav>
       <section id="ilox-game-panel" aria-live="polite"><header><strong id="ilox-game-title">ILOX</strong><button id="ilox-game-close" type="button">×</button></header><div id="ilox-game-content"></div></section>
       <output id="ilox-build-status">Elegí una herramienta para comenzar</output>
@@ -992,7 +1069,7 @@ game_css = """
       body:not(.ilox-game-ready) #ilox-touch, body:not(.ilox-game-ready) #ilox-toolbar, body:not(.ilox-game-ready) #ilox-game-panel, body:not(.ilox-game-ready) #ilox-build-status, body:not(.ilox-game-ready) #ilox-graphics-toggle, body:not(.ilox-game-ready) #ilox-aim-dot, body:not(.ilox-game-ready) #ilox-aim-distance { display:none !important; }
       #ilox-toolbar { position:absolute; left:50%; bottom:max(8px,env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; gap:6px; pointer-events:auto; }
       #ilox-toolbar button { width:54px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.38); border-radius:9px; color:#f7f4e9; background:rgba(9,20,16,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 2px 10px rgba(0,0,0,.25); }
-      #ilox-toolbar span { font-size:20px; line-height:22px; } #ilox-toolbar small { font:600 7px system-ui; letter-spacing:.03em; }
+      #ilox-vehicle-toggle { min-width:74px; font-size:9px !important; font-weight:700 !important; border-color:rgba(222,194,115,.7) !important; }\n      #ilox-toolbar span { font-size:20px; line-height:22px; } #ilox-toolbar small { font:600 7px system-ui; letter-spacing:.03em; }
       #ilox-game-panel { display:none; position:absolute; left:50%; bottom:72px; transform:translateX(-50%); width:min(340px,calc(100vw - 24px)); max-height:min(48vh,330px); overflow:auto; padding:12px; border:1px solid rgba(235,240,225,.25); border-radius:12px; color:#f4efe3; background:rgba(8,18,15,.94); box-shadow:0 8px 28px rgba(0,0,0,.42); pointer-events:auto; font:12px system-ui; backdrop-filter:blur(10px); }
       #ilox-game-panel.open { display:block; } #ilox-game-panel header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; letter-spacing:.08em; }
       #ilox-game-panel header button { color:white; background:transparent; border:0; font-size:22px; }
