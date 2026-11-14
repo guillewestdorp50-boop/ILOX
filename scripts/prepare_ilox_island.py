@@ -438,7 +438,7 @@ patch("src/player/Player.ts",
 # above the escarpment, making the sheet appear to start in mid-air.
 patch("tools/gen-island.ts",
 "  lipWater = lipBed + 0.55;",
-"  const lipPoint = RIVER[FALLS_INDEX].p;\n  const lipGround = sampleRaw(lipPoint[0], lipPoint[1]);\n  lipWater = Math.min(lipBed + 0.55, lipGround - 1.65);,
+"  const lipPoint = RIVER[FALLS_INDEX].p;\n  const lipGround = sampleRaw(lipPoint[0], lipPoint[1]);\n  lipWater = Math.min(lipBed + 0.55, lipGround - 1.65);",
 "keep waterfall lip below the terrain crest")
 
 
