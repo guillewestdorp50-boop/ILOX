@@ -432,4 +432,13 @@ patch("src/player/Player.ts",
 "const WALK = 1.35, RUN = 5.0, SPRINT = 8.0, SWIM = 1.35, SWIM_FAST = 2.1;",
 "match run speeds to locomotion clips")
 
+
+# Anchor the waterfall lip to the actual pre-carve terrain crest.
+# On the 2M map, the river-distance sampling can otherwise place the lip water
+# above the escarpment, making the sheet appear to start in mid-air.
+patch("tools/gen-island.ts",
+"  lipWater = lipBed + 0.55;",
+"  const lipPoint = RIVER[FALLS_INDEX].p;\n  lipWater = Math.min(lipBed + 0.55, sampleRaw(lipPoint[0], lipPoint[1]) - 1.65);",
+"keep waterfall lip below the terrain crest")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
