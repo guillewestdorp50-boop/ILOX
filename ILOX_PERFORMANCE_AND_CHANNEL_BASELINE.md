@@ -36,3 +36,9 @@
 
 ## Regla de desarrollo
 ILOX crece por acumulación y reparación, no por destrucción. Mantener ramas y funciones existentes; cambios reversibles y aditivos.
+
+## Aclaración confirmada por el usuario — salto y salida lateral
+- Durante el deslizamiento normal, el personaje permanece dentro del margen interior del agua.
+- Al pulsar SALTAR, se libera inmediatamente la contención lateral. En el aire puede dirigirse hacia cualquiera de los dos costados para abandonar la caída.
+- Si salta pero no dirige el vuelo hacia afuera, vuelve a caer en el canal y retoma el deslizamiento.
+- La contención lateral jamás debe aplicarse durante el salto ni durante el vuelo. No modificar esta mecánica al ajustar el margen del canal.
