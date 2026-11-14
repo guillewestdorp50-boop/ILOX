@@ -58,11 +58,11 @@ patch("src/main.ts",
 # Keep water visually alive while halving its expensive compute dispatch cadence on phones.
 patch("src/main.ts",
 "  let canopyK = 0, glareK = 0;",
-"  let canopyK = 0, glareK = 0;\\n  let oceanAccumulator = 0;",
+"  let canopyK = 0, glareK = 0;\n  let oceanAccumulator = 0;",
 "ocean compute accumulator")
 patch("src/main.ts",
 "    if (!skip.has('oceansim')) ocean.update(renderer, camera, t, dt);",
-"    if (!skip.has('oceansim')) {\\n      oceanAccumulator += dt;\\n      if (oceanAccumulator >= 1 / 30) {\\n        ocean.update(renderer, camera, t, oceanAccumulator);\\n        oceanAccumulator = 0;\\n      }\\n    }",
+"    if (!skip.has('oceansim')) {\n      oceanAccumulator += dt;\n      if (oceanAccumulator >= 1 / 30) {\n        ocean.update(renderer, camera, t, oceanAccumulator);\n        oceanAccumulator = 0;\n      }\n    }",
 "throttle ocean compute to 30hz")
 
 # Carve several broad, naturally irregular grass clearings into the forest mask.
