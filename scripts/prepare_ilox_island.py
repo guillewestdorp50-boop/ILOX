@@ -1294,7 +1294,7 @@ patch("src/main.ts",
 "show dotted 4m footprint and shovel marker")
 patch("src/main.ts",
 "    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
-"    floorPreviewValid=preparedPlots.has(plotKey(x,z))&&spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"    floorPreviewValid=preparedPlots.has(plotKey(x,z))&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);\\n    floorPreviewMaterial.opacity=0.48-Math.min(spread,4)*0.03;",
 "require completed matching plot before floor turns green")
 patch("src/main.ts",
 "    if (activeBuild === 'flatten') {\n      // Level exactly the same 4 x 4 m grid cell used by the floor preview.\n      const fx=Math.round(groundHit.x/4)*4, fz=Math.round(groundHit.z/4)*4;\n      hf.flattenArea(fx,fz,3.8);\n      const hs=[hf.height(fx-2,fz-2),hf.height(fx+2,fz-2),hf.height(fx-2,fz+2),hf.height(fx+2,fz+2)];\n      const spread=Math.max(...hs)-Math.min(...hs);\n      activeBuild='floor'; floorPreview.visible=false;\n      updateFloorPreview(event);\n      showBuildStatus(spread<=0.16 ? 'Terreno aplanado. El piso debería verse VERDE' : 'Aplanando terreno… diferencia actual '+spread.toFixed(2)+' m');\n      return;\n    }",
