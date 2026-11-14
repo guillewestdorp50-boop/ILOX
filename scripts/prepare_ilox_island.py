@@ -955,6 +955,11 @@ patch("src/main.ts",
 
 # Ask the browser to lock landscape after its first permitted user gesture; the PWA manifest also declares landscape.
 patch("src/main.ts",
+"  setTimeout(() => loading.done(), 250);",
+"  setTimeout(() => { loading.done(); document.body.classList.add('ilox-game-ready'); }, 250);",
+"reveal controls only after loading completes")
+
+patch("src/main.ts",
 "  const startAudio = () => audio.start();",
 """  const startAudio = () => {
     audio.start();
@@ -984,6 +989,7 @@ if landscape_marker not in index_html:
     raise SystemExit("ILOX landscape overlay insertion point missing")
 index_html = index_html.replace(landscape_marker, '    </div>\n    <div id="ilox-landscape-block"><div><strong>ILOX</strong><p>Iniciando en horizontal…</p><span>Si el teléfono no gira automáticamente, rotalo para jugar</span></div></div>\n    <script type="module" src="./src/main.ts"></script>', 1)
 game_css = """
+      body:not(.ilox-game-ready) #ilox-touch, body:not(.ilox-game-ready) #ilox-toolbar, body:not(.ilox-game-ready) #ilox-game-panel, body:not(.ilox-game-ready) #ilox-build-status, body:not(.ilox-game-ready) #ilox-graphics-toggle, body:not(.ilox-game-ready) #ilox-aim-dot, body:not(.ilox-game-ready) #ilox-aim-distance { display:none !important; }
       #ilox-toolbar { position:absolute; left:50%; bottom:max(8px,env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; gap:6px; pointer-events:auto; }
       #ilox-toolbar button { width:54px; height:54px; padding:4px 2px; border:1px solid rgba(235,240,225,.38); border-radius:9px; color:#f7f4e9; background:rgba(9,20,16,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 2px 10px rgba(0,0,0,.25); }
       #ilox-toolbar span { font-size:20px; line-height:22px; } #ilox-toolbar small { font:600 7px system-ui; letter-spacing:.03em; }
@@ -1005,6 +1011,11 @@ if "</style>" not in index_html:
 index_html = index_html.replace("</style>", game_css + "\n    </style>", 1)
 index_path.write_text(index_html, encoding="utf-8")
 
+patch("src/world/Heightfield.ts",
+"  /** unit normal (x, y, z) from central differences over `e` metres */",
+"  /** Gently levels a 4 m building footprint without digging; a soft outer falloff blends it into the landscape. */\n  flattenArea(x: number, z: number, radius = 3.2) {\n    const N=this.n, h=this.heights, target=this.height(x,z);\n    const i0=Math.max(0,Math.floor(x+HALF_WORLD-radius-0.5)), i1=Math.min(N-1,Math.ceil(x+HALF_WORLD+radius-0.5));\n    const j0=Math.max(0,Math.floor(z+HALF_WORLD-radius-0.5)), j1=Math.min(N-1,Math.ceil(z+HALF_WORLD+radius-0.5));\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const px=i-HALF_WORLD+0.5,pz=j-HALF_WORLD+0.5,d=Math.hypot(px-x,pz-z);\n      if(d>radius) continue;\n      const blend=d<=radius-0.8?1:Math.max(0,Math.min(1,(radius-d)/0.8));\n      const k=j*N+i; h[k]=h[k]+(target-h[k])*blend;\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n  }\n\n  /** unit normal (x, y, z) from central differences over `e` metres */",
+"add gentle terrain leveling method")
+
 patch("src/main.ts",
 "  const hud = new Hud(false); // ILOX keeps the natural world unobstructed.",
 """  const hud = new Hud(false); // ILOX keeps the natural world unobstructed.
@@ -1014,7 +1025,7 @@ patch("src/main.ts",
   const buildStatus = document.getElementById('ilox-build-status') as HTMLOutputElement | null;
   const buildGroup = new THREE.Group(); scene.add(buildGroup);
   const builtFloors: { x: number; z: number; y: number }[] = [];
-  let activeBuild: 'floor' | 'wall' | 'roof' | 'door' | 'window' | 'stairs' | null = null;
+  let activeBuild: 'flatten' | 'floor' | 'wall' | 'roof' | 'door' | 'window' | 'stairs' | null = null;
   const stock = { boards: 60, placed: 0 };
   let statusTimer = 0;
   const showBuildStatus = (message: string) => {
@@ -1036,12 +1047,13 @@ patch("src/main.ts",
       gameContent.innerHTML = '<p>Material de prueba: '+stock.boards+' tablas · Piezas colocadas: '+stock.placed+'</p><button type="button" disabled>🪵 TABLAS</button><button type="button" disabled>🪟 VENTANAS</button><button type="button" disabled>🚪 PUERTAS</button>';
     } else {
       gameTitle.textContent = 'CONSTRUCCIÓN';
-      gameContent.innerHTML = '<p>Primero colocá un piso. Después elegí una pieza y tocá el terreno junto al piso.</p><button data-build="floor">▰ PISO</button><button data-build="wall">▥ PARED</button><button data-build="roof">▱ TECHO</button><button data-build="door">🚪 PUERTA</button><button data-build="window">▣ VENTANA</button><button data-build="stairs">▤ ESCALERA</button>';
+      gameContent.innerHTML = '<p>Antes de colocar un piso, nivelá el terreno con la pala. Luego elegí la pieza.</p><button data-build="flatten">🪏 APLANAR</button><button data-build="floor">▰ PISO</button><button data-build="wall">▥ PARED</button><button data-build="roof">▱ TECHO</button><button data-build="door">🚪 PUERTA</button><button data-build="window">▣ VENTANA</button><button data-build="stairs">▤ ESCALERA</button>';
       gameContent.querySelectorAll<HTMLButtonElement>('[data-build]').forEach((button) => button.addEventListener('click', () => {
         activeBuild = button.dataset.build as typeof activeBuild;
         document.body.classList.add('ilox-building');
         gameContent.querySelectorAll('button').forEach((b) => b.classList.toggle('selected', b === button));
-        showBuildStatus(activeBuild === 'floor' ? 'Tocá un lugar libre para colocar el piso' : 'Elegí un lado de un piso existente');
+        gamePanel?.classList.remove('open');
+        showBuildStatus(activeBuild === 'flatten' ? 'Tocá el terreno: la pala lo va a nivelar' : activeBuild === 'floor' ? 'Mové el piso fantasma; verde significa que encaja' : 'Elegí un lado de un piso existente');
       }));
     }
   };
