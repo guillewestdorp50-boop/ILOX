@@ -1,0 +1,48 @@
+name: Verify ILOX 2M map experiment
+
+on:
+  push:
+    branches: [experiment/map-2m-square]
+    paths:
+      - 'scripts/prepare_ilox_island.py'
+      - '.github/workflows/verify-map-2m.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: StarKnightt/island
+          ref: 651d582f991a1ba0efc2cf358c890bb6bb29b76f
+          path: island-source
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: island-source/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: island-source
+        run: pnpm install --frozen-lockfile
+      - name: Apply ILOX adaptation
+        run: |
+          python3 scripts/prepare_ilox_island.py island-source
+          cp manifest.webmanifest island-source/public/manifest.webmanifest
+          cp LICENSE-Island.txt island-source/public/LICENSE-Island.txt
+      - name: Build and verify
+        working-directory: island-source
+        run: |
+          pnpm build
+          test -s dist/index.html
+          test -s dist/world/height.bin.gz
+          test -s dist/world/meta.json
+          test -s dist/assets/character/hero.glb
+          grep -q 'ILOX' dist/index.html
