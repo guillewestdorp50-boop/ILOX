@@ -154,6 +154,23 @@ patch("src/player/Input.ts",
 "    let sprint = k('ShiftLeft') || k('ShiftRight') || this.touchSprint;",
 "touch sprint")
 
+# Live graphics controls for device-side A/B testing (no reload required).
+patch("src/veg/Vegetation.ts",
+"  visible = 0;\n",
+"  visible = 0;\n  renderDistanceScale = 1;\n",
+"live vegetation distance control")
+patch("src/veg/Vegetation.ts",
+"      const maxD = sp.lods[nL - 1].maxDist;\n      const maxD2 = maxD * maxD;",
+"      const rangeScale = this.renderDistanceScale;\n      const maxD = sp.lods[nL - 1].maxDist * rangeScale;\n      const maxD2 = maxD * maxD;",
+"apply live vegetation distance")
+patch("src/veg/Vegetation.ts",
+"      const lim2 = sp.lods.map((l) => l.maxDist * l.maxDist);",
+"      const lim2 = sp.lods.map((l) => l.maxDist * l.maxDist * rangeScale * rangeScale);",
+"apply live vegetation LOD distance")
+patch("src/main.ts",
+"  const veg = new Vegetation(hf, colliders);",
+"  const veg = new Vegetation(hf, colliders);\n  const graphicsPanel = document.getElementById('ilox-graphics');\n  const graphicsToggle = document.getElementById('ilox-graphics-toggle');\n  const rangeControl = document.getElementById('ilox-range') as HTMLInputElement | null;\n  const vegControl = document.getElementById('ilox-vegetation') as HTMLInputElement | null;\n  const resolutionControl = document.getElementById('ilox-resolution') as HTMLInputElement | null;\n  const shadowControl = document.getElementById('ilox-shadows') as HTMLInputElement | null;\n  const rangeValue = document.getElementById('ilox-range-value');\n  const vegValue = document.getElementById('ilox-vegetation-value');\n  const resolutionValue = document.getElementById('ilox-resolution-value');\n  graphicsToggle?.addEventListener('click', () => graphicsPanel?.classList.toggle('open'));\n  document.getElementById('ilox-graphics-close')?.addEventListener('click', () => graphicsPanel?.classList.remove('open'));\n  rangeControl?.addEventListener('input', () => { camera.far = Number(rangeControl.value); camera.updateProjectionMatrix(); if (rangeValue) rangeValue.textContent = rangeControl.value + ' m'; veg.update(camera, 60, true); });\n  vegControl?.addEventListener('input', () => { veg.renderDistanceScale = Number(vegControl.value) / 100; if (vegValue) vegValue.textContent = vegControl.value + '%'; veg.update(camera, 60, true); });\n  resolutionControl?.addEventListener('input', () => { engine.setRenderScale(Number(resolutionControl.value) / 100); if (resolutionValue) resolutionValue.textContent = resolutionControl.value + '%'; });\n  shadowControl?.addEventListener('change', () => { sunLight.castShadow = shadowControl.checked; sunLight.shadow.needsUpdate = true; });",
+"live graphics panel wiring")
 # Rebrand the loading shell and make URLs relative for the /ILOX/ Pages path.
 index = root / "index.html"
 s = index.read_text(encoding="utf-8")
@@ -167,6 +184,15 @@ replacements = [
     ('<h1>ISLAND</h1>', '<h1>ILOX</h1>'),
     ('      <div class="bar">', '      <p class="line">Un mundo natural. Exploralo a tu manera.</p>\n      <div class="bar">'),
     ('<script type="module" src="/src/main.ts"></script>',
+     '<button id="ilox-graphics-toggle" type="button">GRÁFICOS</button>\n'
+     '<section id="ilox-graphics" aria-label="Ajustes gráficos">\n'
+     '  <header><strong>AJUSTES GRÁFICOS</strong><button id="ilox-graphics-close" type="button">×</button></header>\n'
+     '  <label>Alcance del mundo <output id="ilox-range-value">1800 m</output><input id="ilox-range" type="range" min="300" max="1800" step="100" value="1800"></label>\n'
+     '  <label>Vegetación lejana <output id="ilox-vegetation-value">100%</output><input id="ilox-vegetation" type="range" min="10" max="100" step="5" value="100"></label>\n'
+     '  <label>Resolución de render <output id="ilox-resolution-value">68%</output><input id="ilox-resolution" type="range" min="40" max="85" step="5" value="68"></label>\n'
+     '  <label class="check"><input id="ilox-shadows" type="checkbox" checked> Sombras dinámicas</label>\n'
+     '  <p>Los cambios se aplican en vivo.</p>\n'
+     '</section>\n'
      '<div id="ilox-touch" aria-label="Controles táctiles">\n'
      '      <div id="ilox-look-zone" aria-label="Mirar alrededor"></div>\n'
      '      <div id="ilox-stick-zone" aria-label="Mover personaje"><div id="ilox-stick"></div></div>\n'
@@ -185,6 +211,16 @@ touch_css = """
       body { overscroll-behavior:none; user-select:none; -webkit-user-select:none; }
       #app { position:fixed; inset:0; }
       #app canvas { display:block; width:100%; height:100%; touch-action:none; }
+      #ilox-graphics-toggle { position:fixed; z-index:90; top:max(14px,env(safe-area-inset-top)); right:max(14px,env(safe-area-inset-right)); padding:10px 13px; border:1px solid rgba(255,255,255,.35); border-radius:9px; color:#f3f0e7; background:rgba(9,19,16,.78); font:600 11px system-ui; letter-spacing:.08em; }
+      #ilox-graphics { display:none; position:fixed; z-index:95; top:max(58px,calc(env(safe-area-inset-top) + 48px)); right:max(14px,env(safe-area-inset-right)); width:min(290px,calc(100vw - 32px)); padding:15px; border:1px solid rgba(220,230,218,.24); border-radius:13px; color:#f3f0e7; background:rgba(9,19,16,.94); box-shadow:0 12px 38px rgba(0,0,0,.4); font:12px system-ui; backdrop-filter:blur(12px); }
+      #ilox-graphics.open { display:block; }
+      #ilox-graphics header { display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; letter-spacing:.08em; }
+      #ilox-graphics header button { color:white; background:transparent; border:0; font-size:22px; }
+      #ilox-graphics label { display:block; margin:13px 0; color:rgba(245,245,235,.86); }
+      #ilox-graphics output { float:right; color:#b7d9c4; font-variant-numeric:tabular-nums; }
+      #ilox-graphics input[type=range] { display:block; width:100%; margin:9px 0 0; accent-color:#9fc8a9; }
+      #ilox-graphics .check { display:flex; gap:9px; align-items:center; }
+      #ilox-graphics p { margin:12px 0 0; color:rgba(245,245,235,.5); font-size:10px; }
       #ilox-touch { display:none; position:fixed; inset:0; z-index:70; pointer-events:none; touch-action:none; }
       #ilox-look-zone { position:absolute; top:0; right:0; bottom:0; width:53%; pointer-events:auto; touch-action:none; }
       #ilox-stick-zone { position:absolute; left:max(22px,env(safe-area-inset-left)); bottom:max(22px,env(safe-area-inset-bottom)); width:132px; height:132px;
