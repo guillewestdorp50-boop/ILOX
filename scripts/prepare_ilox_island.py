@@ -1392,9 +1392,3 @@ patch("src/main.ts",
 "      gameTitle.textContent = 'CONSTRUCCIÓN';\n      rig.set('first');\n      rig.yaw = player.heading;\n      rig.pitch = -0.95;\n      player.root.visible = false;\n      if (buildViewModel) buildViewModel.visible = true;",
 "enter first-person immediately on opening construction");
 
-# Restore the regular player camera and avatar when leaving construction.
-patch("src/main.ts",
-"    document.body.classList.remove('ilox-building');\n  };\n  const openGamePanel",
-"    document.body.classList.remove('ilox-building');\n    if (rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }\n    player.root.visible = true;\n    if (buildViewModel) buildViewModel.visible = false;\n  };\n  const openGamePanel",
-"restore camera and avatar when closing construction");
-
