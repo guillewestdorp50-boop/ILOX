@@ -1281,7 +1281,7 @@ patch("src/main.ts",
 
 # Real, progressive 4 x 4 m building plots: the shovel and floor share one exact footprint.
 patch("src/world/Heightfield.ts",
-"  /** unit normal (x, y, z) from central differences over " + chr(96) + "e" + chr(96) + " metres */",
+"  /** unit normal (x, y, z) from central differences over e metres */",
 "  /** Applies one real shovel stroke to the exact square building footprint and returns its remaining height spread. */\n  flattenFootprintStep(x: number, z: number, size: number, targetY: number, strength = 0.34) {\n    const N=this.n, h=this.heights, cell=WORLD_SIZE/N, half=size/2;\n    const i0=Math.max(0,Math.ceil((x-half+HALF_WORLD)/cell-0.5));\n    const i1=Math.min(N-1,Math.floor((x+half+HALF_WORLD)/cell-0.5));\n    const j0=Math.max(0,Math.ceil((z-half+HALF_WORLD)/cell-0.5));\n    const j1=Math.min(N-1,Math.floor((z+half+HALF_WORLD)/cell-0.5));\n    let min=Infinity,max=-Infinity;\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const k=j*N+i;\n      h[k] += (targetY-h[k])*strength;\n      min=Math.min(min,h[k]); max=Math.max(max,h[k]);\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n    return max-min;\n  }\n\n  /** unit normal (x, y, z) from central differences over e metres */",
 "add progressive square-footprint terrain leveling")
 patch("src/main.ts",
