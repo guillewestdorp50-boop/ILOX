@@ -1,0 +1,74 @@
+name: Verificar ILOX — mundo natural realista
+
+on:
+  push:
+    branches: [rebuild-realistic-island]
+    paths:
+      - 'scripts/prepare_ilox_island.py'
+      - 'LICENSE-Island.txt'
+      - 'manifest.webmanifest'
+      - '.github/workflows/test-ilox-island.yml'
+      - '.github/workflows/deploy-pages.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/prepare_ilox_island.py'
+      - 'LICENSE-Island.txt'
+      - 'manifest.webmanifest'
+      - '.github/workflows/test-ilox-island.yml'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener ILOX
+        uses: actions/checkout@v4
+
+      - name: Obtener mundo Island (MIT, commit fijado)
+        uses: actions/checkout@v4
+        with:
+          repository: StarKnightt/island
+          ref: 651d582f991a1ba0efc2cf358c890bb6bb29b76f
+          path: island-source
+          persist-credentials: false
+
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: island-source/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: island-source
+        run: pnpm install --frozen-lockfile
+
+      - name: Adaptar el mundo a ILOX
+        run: |
+          python3 scripts/prepare_ilox_island.py island-source
+          cp manifest.webmanifest island-source/public/manifest.webmanifest
+          cp LICENSE-Island.txt island-source/public/LICENSE-Island.txt
+
+      - name: Compilar y verificar
+        working-directory: island-source
+        run: |
+          pnpm build
+          test -s dist/index.html
+          test -s dist/manifest.webmanifest
+          test -s dist/world/height.bin.gz
+          test -s dist/assets/character/hero.glb
+          test -s dist/assets/rocks/boulders.glb
+          grep -q 'ILOX' dist/index.html
+          grep -q 'ilox-touch' dist/index.html
+          grep -q 'touchMoveX' src/player/Input.ts
+          ! grep -q 'village.build()' src/main.ts
