@@ -1,4 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -16,7 +17,7 @@ let scene, camera, renderer, player, clock;
 let started = false;
 let yaw = 0, pitch = 0.18;
 let moveX = 0, moveZ = 0;
-let joyPointer = null;
+let joyPointer = null;\nconst polyHavenLoader = new GLTFLoader();\nconst proceduralTreeGroups = [];\nlet importedNatureReady = false;
 let lookPointer = null;
 let lastLookX = 0, lastLookY = 0;
 const keys = new Set();
@@ -139,6 +140,96 @@ function makeTree(x, z, scale, random) {
   }
   scene.add(group);
 }
+async function fetchPolyHavenModel(assetId, maxBytes = 18000000) {
+  // Poly Haven publica modelos CC0. Se consulta su catálogo y se elige una variante glTF ligera.
+  const response = await fetch(`https://api.polyhaven.com/files/${assetId}`, { headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error(`Poly Haven respondió ${response.status}`);
+  const files = await response.json();
+  const candidates = [];
+  const walk = (node, path = []) => {
+    if (!node || typeof node !== "object") return;
+    if (typeof node.url === "string" && /\\.(glb|gltf)(\\?|$)/i.test(node.url)) {
+      candidates.push({ url: node.url, size: Number(node.size || 0), path: path.join("/") });
+      return;
+    }
+    for (const [key, value] of Object.entries(node)) walk(value, [...path, key]);
+  };
+  walk(files);
+  const usable = candidates
+    .filter(file => !file.size || file.size <= maxBytes)
+    .sort((a, b) => {
+      const a1k = /1k/i.test(a.path) ? 0 : 1;
+      const b1k = /1k/i.test(b.path) ? 0 : 1;
+      return a1k - b1k || (a.size || Infinity) - (b.size || Infinity);
+    });
+  if (!usable.length) throw new Error(`No hay variante glTF ligera para ${assetId}`);
+  return polyHavenLoader.loadAsync(usable[0].url);
+}
+
+function placeImportedModel(source, x, z, scale, targetHeight) {
+  const model = source.clone(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const size = new THREE.Vector3();
+  bounds.getSize(size);
+  const largest = Math.max(size.x, size.y, size.z) || 1;
+  model.scale.setScalar(targetHeight / largest * scale);
+  const scaledBounds = new THREE.Box3().setFromObject(model);
+  model.position.set(x, terrainHeight(x, z) - scaledBounds.min.y, z);
+  model.traverse(object => {
+    if (!object.isMesh) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    if (object.material) {
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if ("roughness" in material && material.roughness === undefined) material.roughness = 0.9;
+        material.needsUpdate = true;
+      }
+    }
+  });
+  scene.add(model);
+  return model;
+}
+
+async function loadFreeNatureAssets() {
+  try {
+    // Modelo botánico CC0 de Poly Haven; se limita el peso para proteger el rendimiento móvil.
+    const [treeResult, rockResult] = await Promise.allSettled([
+      fetchPolyHavenModel("fir_sapling_medium", 8000000),
+      fetchPolyHavenModel("boulder_01", 14000000)
+    ]);
+    let loaded = false;
+    if (treeResult.status === "fulfilled") {
+      const source = treeResult.value.scene;
+      proceduralTreeGroups.forEach(group => scene.remove(group));
+      const random = seededRandom(73021);
+      for (let i = 0; i < 22; i++) {
+        const x = (random() - 0.5) * 185;
+        const z = (random() - 0.5) * 185;
+        if (Math.hypot(x, z) < 20) continue;
+        if (Math.abs(x - (Math.sin(z * 0.025) * 17 - 15)) < 6) continue;
+        placeImportedModel(source, x, z, 0.82 + random() * 0.7, 5.2);
+      }
+      loaded = true;
+    }
+    if (rockResult.status === "fulfilled") {
+      const source = rockResult.value.scene;
+      const random = seededRandom(92017);
+      for (let i = 0; i < 16; i++) {
+        const x = (random() - 0.5) * 190;
+        const z = (random() - 0.5) * 190;
+        if (Math.hypot(x, z) < 12) continue;
+        placeImportedModel(source, x, z, 0.45 + random() * 0.85, 1.8 + random() * 1.8);
+      }
+      loaded = true;
+    }
+    importedNatureReady = loaded;
+    if (!loaded) console.warn("ILOX: los modelos externos no pudieron cargarse; se conserva el escenario de respaldo.");
+  } catch (error) {
+    console.warn("ILOX: biblioteca CC0 no disponible en esta sesión.", error);
+  }
+}
+
 function makeRock(x, z, scale, random) {
   const y = terrainHeight(x, z);
   const mesh = new THREE.Mesh(
