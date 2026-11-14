@@ -131,72 +131,112 @@ function makeRiver() {
   scene.add(river);
 }
 
-function makePlayer() {
+function makePlayer(kind = "boy") {
   const group = new THREE.Group();
-  const jacket = new THREE.MeshStandardMaterial({ color: 0x65704b, roughness: 1 });
-  const pants = new THREE.MeshStandardMaterial({ color: 0x665b45, roughness: 1 });
-  const skin = new THREE.MeshStandardMaterial({ color: 0xd99b72, roughness: 1 });
-  const hair = new THREE.MeshStandardMaterial({ color: 0x38271f, roughness: 1 });
+  const isAdult = kind === "man" || kind === "woman";
+  const isFemale = kind === "woman" || kind === "girl";
+  const scale = isAdult ? 1.0 : 0.79;
+  const jacketColor = 0x151719;
+  const jacket = new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.92 });
+  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x4a5360 : 0x555b50, roughness: 1 });
+  const skin = new THREE.MeshStandardMaterial({ color: kind === "woman" ? 0xc98d68 : kind === "girl" ? 0xd9a27d : 0xd49a76, roughness: 0.95 });
+  const hair = new THREE.MeshStandardMaterial({ color: kind === "woman" ? 0x33251e : kind === "girl" ? 0x493026 : 0x30251f, roughness: 1 });
+  const canvas = new THREE.MeshStandardMaterial({ color: 0x887957, roughness: 1 });
+  const canvasLight = new THREE.MeshStandardMaterial({ color: 0xa18d68, roughness: 1 });
   const leather = new THREE.MeshStandardMaterial({ color: 0x49382a, roughness: 1 });
-  const canvas = new THREE.MeshStandardMaterial({ color: 0x77704f, roughness: 1 });
-  const canvasLight = new THREE.MeshStandardMaterial({ color: 0x958663, roughness: 1 });
-  const bootMat = new THREE.MeshStandardMaterial({ color: 0x3b3025, roughness: 1 });
-  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.9, 0.44), jacket);
-  shirt.position.y = 1.42;
-  group.add(shirt);
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.13, 0.46), leather);
-  collar.position.set(0, 1.84, 0.015);
-  group.add(collar);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.29, 16, 12), skin);
-  head.position.set(0, 2.05, -0.01);
-  group.add(head);
-  const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.56), hair);
-  hairCap.position.set(0, 2.17, -0.035);
-  group.add(hairCap);
+  const bootMat = new THREE.MeshStandardMaterial({ color: 0x302820, roughness: 1 });
+  const buckleMat = new THREE.MeshStandardMaterial({ color: 0xb49a61, metalness: 0.25, roughness: 0.7 });
 
-  // Mochila compacta de lona vintage, colocada sobre la espalda (+Z).
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.72, 0.30), canvas);
-  pack.position.set(0, 1.43, 0.36);
-  group.add(pack);
-  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.67, 0.18, 0.34), canvasLight);
-  flap.position.set(0, 1.83, 0.36);
-  group.add(flap);
-  const frontPocket = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.29, 0.12), canvasLight);
-  frontPocket.position.set(0, 1.27, 0.55);
-  group.add(frontPocket);
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.52, 5, 12), jacket);
+  torso.position.y = 1.36;
+  group.add(torso);
+
+  // Capucha negra: volumen de tela detrás de la cabeza, visible de perfil y desde atrás.
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.36, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.78), jacket);
+  hood.position.set(0, 1.99, 0.105);
+  hood.scale.set(1, 1.04, 0.82);
+  group.add(hood);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.12, 0.18, 12), skin);
+  neck.position.y = 1.79;
+  group.add(neck);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.255, 20, 16), skin);
+  head.position.set(0, 2.02, -0.015);
+  head.scale.set(0.9, 1.08, 0.94);
+  group.add(head);
+  const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.265, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), hair);
+  hairCap.position.set(0, 2.12, -0.025);
+  group.add(hairCap);
+  if (isFemale) {
+    const hairBack = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), hair);
+    hairBack.position.set(0, 1.91, -0.16);
+    hairBack.scale.set(0.95, 1.12, 0.72);
+    group.add(hairBack);
+  }
+
+  // Brazos naturales y mangas de la camperita.
   for (const side of [-1, 1]) {
-    const sidePocket = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.25, 0.22), canvas);
-    sidePocket.position.set(side * 0.35, 1.38, 0.35);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 0.48, 4, 10), jacket);
+    arm.position.set(side * 0.43, 1.38, 0);
+    arm.rotation.z = side * -0.12;
+    group.add(arm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), skin);
+    hand.position.set(side * 0.47, 1.05, -0.005);
+    group.add(hand);
+
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.53, 4, 10), pants);
+    leg.position.set(side * 0.18, 0.59, 0);
+    group.add(leg);
+    const boot = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.13, 3, 8), bootMat);
+    boot.position.set(side * 0.18, 0.13, -0.055);
+    boot.scale.set(1.05, 0.72, 1.45);
+    group.add(boot);
+  }
+
+  // Mochila pequeña de lona vintage, con tapa, correas y bolsillos laterales.
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.66, 0.27), canvas);
+  pack.position.set(0, 1.31, 0.34);
+  pack.rotation.x = -0.06;
+  group.add(pack);
+  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.16, 0.30), canvasLight);
+  flap.position.set(0, 1.68, 0.34);
+  group.add(flap);
+  const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.10), canvasLight);
+  pocket.position.set(0, 1.22, 0.51);
+  group.add(pocket);
+  for (const side of [-1, 1]) {
+    const sidePocket = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.22, 10), canvas);
+    sidePocket.rotation.z = Math.PI / 2;
+    sidePocket.position.set(side * 0.31, 1.31, 0.34);
     group.add(sidePocket);
-    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.78, 0.09), leather);
-    strap.position.set(side * 0.24, 1.43, 0.16);
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.69, 0.07), leather);
+    strap.position.set(side * 0.20, 1.34, 0.18);
     group.add(strap);
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.08, 0.025), new THREE.MeshStandardMaterial({ color: 0xb49a61, metalness: 0.35, roughness: 0.65 }));
-    buckle.position.set(side * 0.24, 1.48, 0.105);
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.075, 0.025), buckleMat);
+    buckle.position.set(side * 0.20, 1.40, 0.145);
     group.add(buckle);
   }
-  for (const side of [-1, 1]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.76, 0.34), pants);
-    leg.position.set(side * 0.2, 0.61, 0);
-    group.add(leg);
-    const cuff = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.35), leather);
-    cuff.position.set(side * 0.2, 0.28, 0);
-    group.add(cuff);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.2, 0.49), bootMat);
-    boot.position.set(side * 0.2, 0.12, -0.015);
-    group.add(boot);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.7, 0.25), jacket);
-    arm.position.set(side * 0.51, 1.43, 0);
-    arm.rotation.z = side * -0.08;
-    group.add(arm);
-    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), leather);
-    glove.position.set(side * 0.52, 1.04, 0.015);
-    group.add(glove);
-  }
-  const logo = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.09, 0.02), new THREE.MeshStandardMaterial({ color: 0xe7d29a, emissive: 0x4a3514, emissiveIntensity: 0.15 }));
-  logo.position.set(0, 1.46, 0.518);
+
+  // Parche de tela con la marca ILOX en la parte alta de la espalda, visible sobre la mochila.
+  const logoCanvas = document.createElement("canvas");
+  logoCanvas.width = 512; logoCanvas.height = 128;
+  const ctx = logoCanvas.getContext("2d");
+  ctx.clearRect(0, 0, 512, 128);
+  ctx.fillStyle = "#e7d29a";
+  ctx.font = "900 82px Arial";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("ILOX", 256, 67);
+  const logoTexture = new THREE.CanvasTexture(logoCanvas);
+  const logo = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.48, 0.12),
+    new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true, side: THREE.DoubleSide })
+  );
+  logo.position.set(0, 1.83, 0.285);
   group.add(logo);
+
+  group.scale.setScalar(scale);
   group.position.set(0, terrainHeight(0, 0), 0);
+  group.userData.avatarKind = kind;
   scene.add(group);
   return group;
 }
