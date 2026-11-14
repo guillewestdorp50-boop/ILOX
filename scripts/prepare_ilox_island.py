@@ -637,4 +637,39 @@ patch("src/sky/Sky.ts",
 "    if (force || this.n % (new URLSearchParams(location.search).has('atmolite') ? 6 : 3) === 0) renderAtmosphereLUTs(this.renderer);",
 "reduce sky LUT refresh cadence only in atmosphere A/B")
 
+
+# Reversible ultra-light sky path. The original physically based atmosphere,
+# cloud raymarch, rain shafts, moon/stars and environment path remain untouched.
+# ?skylite=1 selects a compact gradient + one cloud-map lookup per sky pixel.
+patch("src/sky/Sky.ts",
+"const CLOUD_RES = 1024;",
+"const SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_RES = 1024;",
+"add reversible ultra-light sky mode")
+patch("src/sky/Sky.ts",
+"    const col = skyRadiance(above).toVar();",
+"""    const col = skyRadiance(above).toVar();
+    // This early branch deliberately avoids all per-pixel atmosphere LUT,
+    // cloud-density raymarch, secondary cloud-light taps, rain shafts,
+    // procedural stars and high-frequency moon calculations.
+    if (SKY_LITE) {
+      const h = max(dir.y, 0);
+      const daySky = mix(vec3(0.58, 0.76, 0.91), vec3(0.12, 0.39, 0.76), smoothstep(0.0, 0.92, h));
+      const greySky = mix(daySky, vec3(0.48, 0.57, 0.66), atmo.overcast.mul(0.78));
+      const nightSky = mix(vec3(0.004, 0.009, 0.025), vec3(0.018, 0.035, 0.075), h);
+      const simple = mix(greySky, nightSky, atmo.night).toVar();
+      const cloudT = max(clouds.base.sub(cameraPosition.y).div(max(dir.y, 0.06)), 0);
+      const cloudSample = cloudAt(cameraPosition.add(dir.mul(cloudT)).xz);
+      const cloudAmount = cloudSample.x.mul(smoothstep(0.04, 0.32, cloudSample.y))
+        .mul(float(1).sub(atmo.night)).mul(0.9);
+      const cloudColor = mix(vec3(0.91, 0.95, 0.99), vec3(0.49, 0.56, 0.64), atmo.overcast.mul(0.72));
+      simple.assign(mix(simple, cloudColor, cloudAmount));
+      const sunDot = dot(dir, sun);
+      const sunGlow = pow(max(sunDot, 0), 96).mul(0.18).add(smoothstep(0.99935, 0.99972, sunDot).mul(2.2));
+      simple.addAssign(vec3(1.0, 0.72, 0.39).mul(sunGlow).mul(float(1).sub(atmo.night)));
+      const moonDot = dot(dir, moon);
+      simple.addAssign(vec3(0.72, 0.82, 1.0).mul(smoothstep(0.99945, 0.99972, moonDot)).mul(atmo.night).mul(0.8));
+      return select(dir.y.lessThan(0), vec3(0.012, 0.035, 0.055), simple);
+    }""",
+"add simplified sky shader early return")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
