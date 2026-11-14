@@ -1070,6 +1070,26 @@ patch("src/main.ts",
     if (stock.boards < amount) { showBuildStatus('No quedan tablas suficientes'); return false; }
     stock.boards -= amount; return true;
   };
+  const floorPreviewMaterial = new THREE.MeshBasicMaterial({ color: 0x35df68, transparent: true, opacity: 0.48, depthWrite: false, side: THREE.DoubleSide });
+  const floorPreview = new THREE.Mesh(new THREE.BoxGeometry(4,0.10,4), floorPreviewMaterial);
+  floorPreview.visible = false; floorPreview.renderOrder = 20; scene.add(floorPreview);
+  let floorPreviewValid = false;
+  const updateFloorPreview = (event: PointerEvent) => {
+    if (activeBuild !== 'floor') { floorPreview.visible = false; return; }
+    const rect=renderer.domElement.getBoundingClientRect();
+    buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
+    buildRay.setFromCamera(buildPointer,camera);
+    const p=new THREE.Vector3(); let hit: THREE.Vector3|null=null;
+    for(let d=1;d<=120;d+=0.5){buildRay.ray.at(d,p);const y=hf.height(p.x,p.z);if(p.y<=y+0.08){hit=new THREE.Vector3(p.x,y,p.z);break;}}
+    if(!hit){floorPreview.visible=false;floorPreviewValid=false;return;}
+    const x=Math.round(hit.x/4)*4,z=Math.round(hit.z/4)*4;
+    const hs=[hf.height(x-2,z-2),hf.height(x+2,z-2),hf.height(x-2,z+2),hf.height(x+2,z+2)];
+    const spread=Math.max(...hs)-Math.min(...hs);
+    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);
+    floorPreviewMaterial.color.setHex(floorPreviewValid?0x35df68:0xf04444);
+    floorPreview.position.set(x,hs.reduce((a,b)=>a+b,0)/4+0.06,z); floorPreview.visible=true;
+  };
+  renderer.domElement.addEventListener('pointermove', updateFloorPreview);
   const placeBuildPiece = (event: PointerEvent) => {
     if (!activeBuild || event.button !== 0) return;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -1084,7 +1104,15 @@ patch("src/main.ts",
       if (samplePoint.y <= groundY + 0.08) { groundHit = new THREE.Vector3(samplePoint.x, groundY, samplePoint.z); break; }
     }
     if (!groundHit) { showBuildStatus('No hay terreno válido en ese punto'); return; }
+    if (activeBuild === 'flatten') {
+      hf.flattenArea(groundHit.x,groundHit.z,3.8);
+      activeBuild='floor'; floorPreview.visible=false;
+      showBuildStatus('Terreno nivelado. Mové el piso fantasma hasta verlo verde');
+      return;
+    }
     if (activeBuild === 'floor') {
+      if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }
+      floorPreview.visible=false;
       const x=Math.round(groundHit.x/4)*4,z=Math.round(groundHit.z/4)*4;
       if (builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5)) { showBuildStatus('Ya hay un piso en ese lugar'); return; }
       if (!spendBoards(4)) return;
@@ -1159,5 +1187,5 @@ patch("src/main.ts",
     }
     showBuildStatus('Pared colocada');
   };
-  renderer.domElement.addEventListener('pointerdown', placeBuildPiece);""",
+  renderer.domElement.addEventListener('pointerup', placeBuildPiece);""",
 "add mobile game menu and initial building pieces")
