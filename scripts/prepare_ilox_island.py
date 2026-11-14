@@ -1392,3 +1392,41 @@ patch("src/main.ts",
 "      gameTitle.textContent = 'CONSTRUCCIÓN';\n      rig.set('first');\n      rig.yaw = player.heading;\n      rig.pitch = -0.95;\n      player.root.visible = false;\n      if (buildViewModel) buildViewModel.visible = true;",
 "enter first-person immediately on opening construction");
 
+
+
+# Independent player camera selector — third person / first person.
+# This is deliberately separate from construction, previews, terrain and building tools.
+# First-person look uses a distinct target vector: never alias the forward vector with
+# the temporary vector used to calculate the look-at point (that caused a fixed view).
+patch("src/player/CameraRig.ts",
+"      cam.lookAt(tmp.copy(cam.position).add(forward));",
+"      cam.lookAt(tmp2.copy(cam.position).add(forward));",
+"keep first-person look direction independent from its look-at target")
+
+# Construction must not force the player into first-person; the camera selector owns
+# the mode. Preserve the previous free-camera construction behavior until separately tested.
+patch("src/main.ts",
+"        rig.set('first'); // eye-level view; the avatar keeps walking under the movement joystick.\n        player.root.visible = false;\n        if (buildViewModel) buildViewModel.visible = true;",
+"        rig.set('free'); // keep construction camera independent from the player camera selector.",
+"keep construction camera separate from first-person selector")
+patch("src/main.ts",
+"      gameTitle.textContent = 'CONSTRUCCIÓN';\n      rig.set('first');\n      rig.yaw = player.heading;\n      rig.pitch = -0.95;\n      player.root.visible = false;\n      if (buildViewModel) buildViewModel.visible = true;",
+"      gameTitle.textContent = 'CONSTRUCCIÓN';",
+"do not change camera when opening construction")
+
+# Add a persistent camera mode button to the main game UI.
+patch("index.html",
+'<button id="ilox-graphics-toggle" type="button">GRÁFICOS</button>',
+'<button id="ilox-camera-toggle" type="button" aria-pressed="false">CÁMARA: TERCERA PERSONA</button>\n<button id="ilox-graphics-toggle" type="button">GRÁFICOS</button>',
+"add third-person and first-person selector")
+patch("index.html",
+"      #ilox-graphics-toggle {",
+"      #ilox-camera-toggle { position:fixed; z-index:90; top:max(14px,env(safe-area-inset-top)); left:max(14px,env(safe-area-inset-left)); padding:10px 13px; border:1px solid rgba(255,255,255,.35); border-radius:9px; color:#f3f0e7; background:rgba(9,19,16,.78); font:600 11px system-ui; letter-spacing:.06em; }\n      #ilox-camera-toggle[aria-pressed=true] { border-color:rgba(167,220,184,.85); background:rgba(26,76,54,.88); }\n      #ilox-graphics-toggle {",
+"style camera mode selector")
+
+# Wire the selector after the rig and player exist. First-person follows the avatar
+# at eye height; third-person returns to the normal follow camera behind the heading.
+patch("src/main.ts",
+"  let photo = false;\n  const setPhoto = (on: boolean) => {",
+"  const cameraModeButton = document.getElementById('ilox-camera-toggle') as HTMLButtonElement | null;\n  let firstPersonMode = false;\n  const setPlayerCameraMode = (firstPerson: boolean) => {\n    firstPersonMode = firstPerson;\n    if (firstPerson) {\n      rig.set('first');\n      player.root.visible = false;\n    } else {\n      rig.set('follow');\n      rig.snapBehind(player.heading);\n      player.root.visible = true;\n    }\n    if (cameraModeButton) {\n      cameraModeButton.textContent = firstPerson ? 'CÁMARA: PRIMERA PERSONA' : 'CÁMARA: TERCERA PERSONA';\n      cameraModeButton.setAttribute('aria-pressed', String(firstPerson));\n    }\n  };\n  cameraModeButton?.addEventListener('click', () => setPlayerCameraMode(!firstPersonMode));\n  let photo = false;\n  const setPhoto = (on: boolean) => {",
+"wire independent player camera selector")
