@@ -140,30 +140,15 @@ function makeTree(x, z, scale, random) {
   }
   scene.add(group);
 }
-async function fetchPolyHavenModel(assetId, maxBytes = 18000000) {
-  // Poly Haven publica modelos CC0. Se consulta su catálogo y se elige una variante glTF ligera.
-  const response = await fetch(`https://api.polyhaven.com/files/${assetId}`, { headers: { Accept: "application/json", "X-ILOX-Client": "ILOX/0.1" } });
-  if (!response.ok) throw new Error(`Poly Haven respondió ${response.status}`);
-  const files = await response.json();
-  const candidates = [];
-  const walk = (node, path = []) => {
-    if (!node || typeof node !== "object") return;
-    if (typeof node.url === "string" && /\.(glb|gltf)(\?|$)/i.test(node.url)) {
-      candidates.push({ url: node.url, size: Number(node.size || 0), path: path.join("/") });
-      return;
-    }
-    for (const [key, value] of Object.entries(node)) walk(value, [...path, key]);
-  };
-  walk(files);
-  const usable = candidates
-    .filter(file => !file.size || file.size <= maxBytes)
-    .sort((a, b) => {
-      const a1k = /1k/i.test(a.path) ? 0 : 1;
-      const b1k = /1k/i.test(b.path) ? 0 : 1;
-      return a1k - b1k || (a.size || Infinity) - (b.size || Infinity);
-    });
-  if (!usable.length) throw new Error(`No hay variante glTF ligera para ${assetId}`);
-  return polyHavenLoader.loadAsync(usable[0].url);
+async function fetchPolyHavenModel(assetId) {
+  // El modelo se descarga durante la publicación y queda alojado junto al juego.
+  // Así no dependemos de una API externa en cada inicio ni consumimos datos repetidamente.
+  const base = `./assets/nature/${assetId}/`;
+  const response = await fetch(base + "manifest.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("El paquete CC0 todavía no está publicado.");
+  const manifest = await response.json();
+  if (!manifest.available || !manifest.file) throw new Error("El paquete CC0 no está disponible.");
+  return polyHavenLoader.loadAsync(base + manifest.file);
 }
 
 function placeImportedModel(source, x, z, scale, targetHeight) {
@@ -196,7 +181,7 @@ async function loadFreeNatureAssets() {
     // Primer asset de producción: roca escaneada CC0, con límite de descarga para móviles.
     // Los árboles escaneados de alta calidad disponibles superan el presupuesto gráfico del G14;
     // mantenemos los árboles de respaldo hasta incorporar una variante realmente optimizada.
-    const result = await fetchPolyHavenModel("boulder_01", 14000000);
+    const result = await fetchPolyHavenModel("boulder_01");
     const source = result.scene;
     const random = seededRandom(92017);
     for (let i = 0; i < 8; i++) {
