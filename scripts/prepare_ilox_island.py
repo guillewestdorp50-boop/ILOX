@@ -1240,3 +1240,18 @@ patch("src/main.ts",
 "  renderer.domElement.addEventListener('pointerup', placeBuildPiece);",
 "  window.addEventListener('pointerup', (event) => {\n    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select')) return;\n    placeBuildPiece(event);\n  }, true);",
 "handle construction taps reliably on touch devices");
+
+
+# Keep mobile camera gestures available in construction mode; placement uses the open center area.
+patch("index.html",
+'      body.ilox-building #ilox-look-zone, body.ilox-building #ilox-stick-zone, body.ilox-building .ilox-action { pointer-events:none !important; }',
+'      body.ilox-building .ilox-action { pointer-events:none !important; }',
+"allow free-camera touch controls while building")
+patch("src/main.ts",
+"  window.addEventListener('pointermove', (event) => { if (activeBuild === 'floor') updateFloorPreview(event); }, true);",
+"  window.addEventListener('pointermove', (event) => {\n    if (activeBuild === 'floor' && !(event.target as Element | null)?.closest('#ilox-look-zone, #ilox-stick-zone, button')) updateFloorPreview(event);\n  }, true);",
+"do not move floor preview while adjusting free camera")
+patch("src/main.ts",
+"    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select')) return;",
+"    if (!activeBuild || (event.target as Element | null)?.closest('button, input, textarea, select, #ilox-look-zone, #ilox-stick-zone')) return;",
+"reserve touch zones for free-camera gestures")
