@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Adapt the pinned Island source into ILOX's natural-world exploration PWA."""
 from pathlib import Path
+import shutil
 import sys
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "island-source")
 
@@ -127,4 +128,12 @@ The ILOX adaptation excludes the upstream village, buildings, docks, boats,
 lighthouse and fantasy/combat content.
 """
 (root / "public" / "THIRD_PARTY_LICENSES.md").write_text(license_text, encoding="utf-8")
-print("ILOX natural-world adaptation prepared.")
+
+# The natural-only scene never imports the village/lighthouse asset packs.
+# Remove them from the published bundle, plus the unused alternate rock shelf.
+for unused in [root / "public" / "assets" / "props", root / "public" / "assets" / "tex"]:
+    shutil.rmtree(unused, ignore_errors=True)
+unused_shelves = root / "public" / "assets" / "rocks" / "shelves.glb"
+if unused_shelves.exists():
+    unused_shelves.unlink()
+print("ILOX natural-world adaptation prepared; unused built-structure assets removed.")
