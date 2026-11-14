@@ -897,12 +897,12 @@ patch("src/player/Player.ts",
 # Waterfall crowd voices play at the falls, not on the avatar's channel-ride callback.
 patch("src/main.ts",
 "    audio.update(dt, camera, { night: tod.night, rain: weather.rain, wind: weather.wind, underwater: camera.position.y < player.waterLevel - 0.05 });",
-"    audio.fallsCheers(camera.position);\\n    audio.update(dt, camera, { night: tod.night, rain: weather.rain, wind: weather.wind, underwater: camera.position.y < player.waterLevel - 0.05 });",
+"    audio.fallsCheers(camera.position);\n    audio.update(dt, camera, { night: tod.night, rain: weather.rain, wind: weather.wind, underwater: camera.position.y < player.waterLevel - 0.05 });",
 "trigger waterfall crowd voices on approach")
 
 # A readable wooden wayfinding sign beside the waterfall approach.
 patch("src/main.ts",
-"  const river = new River(hf);\\n  if (!skip.has('river')) scene.add(river.group);",
+"  const river = new River(hf);\n  if (!skip.has('river')) scene.add(river.group);",
 """  const river = new River(hf);
   if (!skip.has('river')) scene.add(river.group);
   const fallsSign = new THREE.Group();
