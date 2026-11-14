@@ -1724,19 +1724,19 @@ patch("src/world/TerrainMaterial.ts",
 "reduce terrain material from five layers to four")
 
 patch("src/world/TerrainMaterial.ts",
-`  const weights = [
+"""  const weights = [
     m0.x.mul(float(1).sub(underwater)).mul(noSand),
     m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
     m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
     m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
     rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
-  ];`,
-`  const weights = [
+  ];""",
+"""  const weights = [
     m0.x.mul(float(1).sub(underwater)).mul(noSand),
     m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
     m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand).add(m0.w.mul(0.24)),
     rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
-  ];`,
+  ];""",
 "reduce green forest coverage and blend more neutral earth into the surface")
 
 patch("src/world/TerrainMaterial.ts",
@@ -1750,12 +1750,12 @@ patch("src/world/TerrainMaterial.ts",
 "remove terrain-lite normal-map node tracking")
 
 patch("src/world/TerrainMaterial.ts",
-`  const sampleN = (layer: number, uvL: N) => {
+"""  const sampleN = (layer: number, uvL: N) => {
     const t = texture(normalPh, uvL).depth(int(layer));
     normalNodes.push(t);
     return t;
   };
-`,
+""",
 "",
 "remove terrain-lite per-pixel normal texture sampling")
 
@@ -1770,16 +1770,16 @@ patch("src/world/TerrainMaterial.ts",
 "derive terrain roughness from material constants")
 
 patch("src/world/TerrainMaterial.ts",
-`    const [albedos, normals] = await Promise.all([
+"""    const [albedos, normals] = await Promise.all([
       Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`))),
       Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_n.ktx2`))),
     ]);
     const A = toArray(albedos, true), Nn = toArray(normals, false);
     for (const t of albedoNodes) t.value = A;
-    for (const t of normalNodes) t.value = Nn;`,
-`    const albedos = await Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`)));
+    for (const t of normalNodes) t.value = Nn;""",
+"""    const albedos = await Promise.all(selected.map((l) => loadKTX2(`assets/terrain/${l}_a.ktx2`)));
     const A = toArray(albedos, true);
-    for (const t of albedoNodes) t.value = A;`,
+    for (const t of albedoNodes) t.value = A;""",
 "load only four terrain albedo layers in mobile lite mode")
 
 patch("src/world/TerrainMaterial.ts",
