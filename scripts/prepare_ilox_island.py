@@ -13,6 +13,23 @@ def patch(path, old, new, label):
         raise SystemExit(f"{label}: expected 1 match, found {n}")
     p.write_text(s.replace(old, new, 1), encoding="utf-8")
 
+# Open plain performance mode: keep terrain and all freshwater, remove scattered foliage and boulders.
+patch("src/main.ts",
+"import { setPlantSkyMaps, loadVariants, rockMaterial } from './veg/glb';",
+"import { planRocks } from './world/RockKit';",
+"remove vegetation and rock asset imports")
+patch("src/main.ts",
+"import { Vegetation, vegU, type RockModel } from './veg/Vegetation';\nimport { buildCanopy } from './veg/Canopy';",
+"import { Vegetation, vegU } from './veg/Vegetation';",
+"remove canopy and rock model imports")
+patch("src/main.ts",
+"import { RockKit, planRocks } from './world/RockKit';",
+"import { planRocks } from './world/RockKit';",
+"remove decorative rock kit import")
+patch("src/main.ts",
+"  setPlantSkyMaps(hf.mask0Tex, hf.heightTex, HALF_WORLD, WORLD_SIZE);\n  const veg = new Vegetation(hf, colliders);\n  const tv = performance.now();\n  veg.build();\n  // the plants (helpers' GLBs) load and scatter while the rest of the island comes up\n  const plantsReady = veg.buildGlb().then(() => {\n    console.log(`plants in ${(performance.now() - tv).toFixed(0)} ms`);\n    mark('plants');\n  }, (e) => console.warn('plants', e));\n  mark('vegetation built');\n  if (!skip.has('veg')) scene.add(veg.group);\n  if (!skip.has('canopy')) scene.add(buildCanopy(hf, renderer));\n  // rocks stream in with the props: the helper's jointed basalt blocks (the island's own dark volcanic rock, the cliff\n  // kit's palette), each set into the ground by its buried part rather than resting on its lowest point\n  const rocksReady = (async () => {\n    const set = await loadVariants('assets/rocks/boulders.glb');\n    const mats = new Map<THREE.Material, THREE.Material>();\n    const model = (name: string, big: boolean): RockModel | null => {\n      const v = set.get(name);\n      const near = v?.lods[0]?.[0], far = (v?.lods[1] ?? v?.lods[0])?.[0];\n      if (!v || !near || !far) return null;\n      let mat = mats.get(near.src);\n      if (!mat) mats.set(near.src, (mat = rockMaterial(near.src)));\n      for (const g of [near.geometry, far.geometry]) g.computeBoundingSphere();\n      return { geometry: near.geometry, far: far.geometry, material: mat, radius: Math.max(0.3, v.radius), big, sink: 0.4 };\n    };\n    const out = [model('basalt_a', false), model('basalt_b', false), model('basalt_c', true), model('basalt_d', true)].filter((m): m is RockModel => !!m);\n    veg.addRocks(out);\n    mark('rocks');\n  })().catch((e) => console.warn('rocks', e));\n  // cliff faces, sea stacks and the gorge of the falls\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('rock kit'), (e) => console.warn('rock kit', e));",
+"  // Open plain: no grass, plants, tree canopy or scattered boulders are generated or loaded.\n  const veg = new Vegetation(hf, colliders);\n  const plantsReady = Promise.resolve();\n  const rocksReady = Promise.resolve();\n  mark('open plain: foliage and scattered rocks disabled');\n  // Keep the rock kit only for the natural waterfall gorge and cliff support.\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('waterfall gorge ready'), (e) => console.warn('waterfall gorge', e));",
+"disable foliage canopy and scattered boulders")
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
