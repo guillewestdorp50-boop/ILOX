@@ -136,4 +136,9 @@ replace_once(main_path,
 # Evitar que el gesto táctil desplace la página o active zoom mientras se juega.
 (root / "index.html").write_text(Path("ilox-forest-index.html").read_text(encoding="utf-8"), encoding="utf-8")
 (root / "ilox.css").write_text(Path("ilox-forest.css").read_text(encoding="utf-8"), encoding="utf-8")
+# No publicar modelos de la cumbre que se retiraron del juego.
+for unused in ("efigie.bin", "crystal_a.bin", "crystal_b.bin"):
+    asset = root / "public/models" / unused
+    if asset.exists():
+        asset.unlink()
 print("Base The Forest adaptada a ILOX; controles móviles instalados.")
