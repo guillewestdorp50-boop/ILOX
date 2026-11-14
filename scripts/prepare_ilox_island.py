@@ -360,7 +360,7 @@ patch("src/world/Terrain.ts",
 "      const size = (WORLD_SIZE / (this.hf.n / LEAF_CELLS)) * Math.pow(2, lod);",
 "terrain node physical size")
 patch("src/world/Terrain.ts",
-"      const rootSize = LEAF * Math.pow(2, top);",
+"    const rootSize = LEAF * Math.pow(2, top);",
 "      const rootSize = (WORLD_SIZE / (this.hf.n / LEAF_CELLS)) * Math.pow(2, top);",
 "terrain root physical size")
 patch("src/world/Terrain.ts",
