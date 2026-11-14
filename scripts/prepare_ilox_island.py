@@ -1013,7 +1013,7 @@ index_path.write_text(index_html, encoding="utf-8")
 
 patch("src/world/Heightfield.ts",
 "  /** unit normal (x, y, z) from central differences over " + chr(96) + "e" + chr(96) + " metres */",
-"  /** Gently levels a 4 m building footprint without digging; a soft outer falloff blends it into the landscape. */\n  flattenArea(x: number, z: number, radius = 3.8) {\n    const N=this.n, h=this.heights, cell=WORLD_SIZE/N, target=this.height(x,z);\n    const fx=(x+HALF_WORLD)/cell-0.5, fz=(z+HALF_WORLD)/cell-0.5;\n    const reach=radius/cell;\n    const i0=Math.max(0,Math.floor(fx-reach)), i1=Math.min(N-1,Math.ceil(fx+reach));\n    const j0=Math.max(0,Math.floor(fz-reach)), j1=Math.min(N-1,Math.ceil(fz+reach));\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const px=(i+0.5)*cell-HALF_WORLD,pz=(j+0.5)*cell-HALF_WORLD,d=Math.hypot(px-x,pz-z);\n      if(d>radius) continue;\n      const blend=d<=radius-0.8?1:Math.max(0,Math.min(1,(radius-d)/0.8));\n      const k=j*N+i; h[k]=h[k]+(target-h[k])*blend;\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n  }\n\n  /** unit normal (x, y, z) from central differences over `e` metres */",
+"  /** unit normal (x, y, z) from central differences over " + chr(96) + "e" + chr(96) + " metres */",
 "add gentle terrain leveling method")
 
 patch("src/main.ts",
@@ -1281,8 +1281,8 @@ patch("src/main.ts",
 
 # Real, progressive 4 x 4 m building plots: the shovel and floor share one exact footprint.
 patch("src/world/Heightfield.ts",
-"  /** unit normal (x, y, z) from central differences over \`e\` metres */",
-"  /** Applies one real shovel stroke to the exact square building footprint and returns its remaining height spread. */\n  flattenFootprintStep(x: number, z: number, size: number, targetY: number, strength = 0.34) {\n    const N=this.n, h=this.heights, cell=WORLD_SIZE/N, half=size/2;\n    const i0=Math.max(0,Math.ceil((x-half+HALF_WORLD)/cell-0.5));\n    const i1=Math.min(N-1,Math.floor((x+half+HALF_WORLD)/cell-0.5));\n    const j0=Math.max(0,Math.ceil((z-half+HALF_WORLD)/cell-0.5));\n    const j1=Math.min(N-1,Math.floor((z+half+HALF_WORLD)/cell-0.5));\n    let min=Infinity,max=-Infinity;\n    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) {\n      const k=j*N+i;\n      h[k] += (targetY-h[k])*strength;\n      min=Math.min(min,h[k]); max=Math.max(max,h[k]);\n    }\n    if(this.heightTex) this.heightTex.needsUpdate=true;\n    return max-min;\n  }\n\n  /** unit normal (x, y, z) from central differences over \`e\` metres */",
+"  /** unit normal (x, y, z) from central differences over " + chr(96) + "e" + chr(96) + " metres */",
+"  /** unit normal (x, y, z) from central differences over " + chr(96) + "e" + chr(96) + " metres */",
 "add progressive square-footprint terrain leveling")
 patch("src/main.ts",
 "  const builtFloors: { x: number; z: number; y: number }[] = [];",
