@@ -811,11 +811,37 @@ patch("src/audio/Audio.ts",
     this.play(list[Math.floor(Math.random() * list.length)], 0.35, 0.9 + Math.random() * 0.2, 0, pos);
   }
 
-  /** A playful one-shot cheer when the current catches the player in the lower channel. */
-  cheer() {
-    if (this.muted) return;
-    this.play('channel_cheer', 0.95, 1.0);
-  }""",
+  private fallsCheerArmed = true;
+  private fallsCheerPending = false;
+
+  /** Three spatialized childlike shouts as the listener enters the waterfall area. */
+  fallsCheers(listener: THREE.Vector3) {
+    const distance = listener.distanceTo(this.fallsPos);
+    if (distance > 68) { this.fallsCheerArmed = true; return; }
+    if (distance > 42 || !this.fallsCheerArmed || this.fallsCheerPending || this.muted) return;
+    this.fallsCheerArmed = false; this.fallsCheerPending = true;
+    const playCrowd = () => {
+      const p = this.fallsPos;
+      const voices = [
+        { x: p.x - 4.5, y: p.y + 2, z: p.z - 2.5, gain: 0.72, rate: 0.88, delay: 0 },
+        { x: p.x + 3.8, y: p.y + 3, z: p.z + 1.5, gain: 0.62, rate: 1.04, delay: 0.13 },
+        { x: p.x + 0.5, y: p.y - 1, z: p.z - 4, gain: 0.66, rate: 1.14, delay: 0.27 },
+      ];
+      for (const v of voices) this.play('channel_cheer', v.gain, v.rate, v.delay, new THREE.Vector3(v.x, v.y, v.z));
+      this.fallsCheerPending = false;
+    };
+    const attempt = (remaining: number) => {
+      if (this.buffers.has('channel_cheer')) { playCrowd(); return; }
+      if (remaining <= 0) { this.fallsCheerPending = false; return; }
+      void this.load('channel_cheer').then((buffer) => {
+        if (buffer) playCrowd();
+        else window.setTimeout(() => attempt(remaining - 1), 250);
+      });
+    };
+    attempt(16);
+  }
+
+  cheer() { /* The celebration now belongs to the waterfall, not the avatar. */ }""",
 "add joyful channel cheer")
 patch("src/main.ts",
 "  player.onSplash = (s, p) => audio.splash(s, p);",
@@ -866,3 +892,48 @@ patch("src/player/Player.ts",
       }
     }""",
 "procedural moving celebratory arms during channel ride")
+
+
+# Waterfall crowd voices play at the falls, not on the avatar's channel-ride callback.
+patch("src/main.ts",
+"    audio.update(dt, camera, { night: tod.night, rain: weather.rain, wind: weather.wind, underwater: camera.position.y < player.waterLevel - 0.05 });",
+"    audio.fallsCheers(camera.position);\\n    audio.update(dt, camera, { night: tod.night, rain: weather.rain, wind: weather.wind, underwater: camera.position.y < player.waterLevel - 0.05 });",
+"trigger waterfall crowd voices on approach")
+
+# A readable wooden wayfinding sign beside the waterfall approach.
+patch("src/main.ts",
+"  const river = new River(hf);\\n  if (!skip.has('river')) scene.add(river.group);",
+"""  const river = new River(hf);
+  if (!skip.has('river')) scene.add(river.group);
+  const fallsSign = new THREE.Group();
+  const signCanvas = document.createElement('canvas'); signCanvas.width = 512; signCanvas.height = 160;
+  const signCtx = signCanvas.getContext('2d')!;
+  signCtx.fillStyle = '#263c2d'; signCtx.fillRect(0,0,512,160);
+  signCtx.strokeStyle = '#d9c28d'; signCtx.lineWidth = 10; signCtx.strokeRect(7,7,498,146);
+  signCtx.fillStyle = '#f7efd9'; signCtx.font = 'bold 58px system-ui'; signCtx.textAlign = 'center'; signCtx.fillText('CASCADA',240,101);
+  signCtx.strokeStyle = '#f7efd9'; signCtx.lineWidth = 12; signCtx.lineCap = 'round';
+  signCtx.beginPath(); signCtx.moveTo(395,80); signCtx.lineTo(465,80); signCtx.lineTo(438,53); signCtx.moveTo(465,80); signCtx.lineTo(438,107); signCtx.stroke();
+  const signMap = new THREE.CanvasTexture(signCanvas); signMap.colorSpace = THREE.SRGBColorSpace;
+  const signWood = new THREE.MeshStandardMaterial({color:0x64462c,roughness:0.9});
+  const signFace = new THREE.MeshStandardMaterial({map:signMap,roughness:0.85});
+  const signPost = new THREE.Mesh(new THREE.BoxGeometry(0.18,2.8,0.18),signWood); signPost.position.y=1.4; fallsSign.add(signPost);
+  const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.4,1.45,0.2),signWood); signBoard.position.y=2.55; fallsSign.add(signBoard);
+  const signFront = new THREE.Mesh(new THREE.PlaneGeometry(4.22,1.28),signFace); signFront.position.set(0,2.55,0.111); fallsSign.add(signFront);
+  const lip = hf.meta.falls.lip; let fallsIndex=0, fallsBest=Infinity;
+  for(let i=0;i<hf.river.length;i++){const d=Math.hypot(hf.river[i].x-lip[0],hf.river[i].z-lip[1]);if(d<fallsBest){fallsBest=d;fallsIndex=i;}}
+  const upstream=hf.river[Math.max(0,fallsIndex-3)], downstream=hf.river[Math.min(hf.river.length-1,fallsIndex+2)];
+  const tx=downstream.x-upstream.x,tz=downstream.z-upstream.z,tl=Math.hypot(tx,tz)||1;
+  const tangentX=tx/tl,tangentZ=tz/tl,side=(hf.river[fallsIndex]?.w??8)/2+3.5;
+  const signX=upstream.x-tangentX*5-tangentZ*side,signZ=upstream.z-tangentZ*5+tangentX*side;
+  fallsSign.position.set(signX,hf.height(signX,signZ),signZ); fallsSign.rotation.y=Math.atan2(-tangentX,-tangentZ); scene.add(fallsSign);""",
+"add waterfall wayfinding sign")
+
+# Ask the browser to lock landscape after its first permitted user gesture; the PWA manifest also declares landscape.
+patch("src/main.ts",
+"  const startAudio = () => audio.start();",
+"""  const startAudio = () => {
+    audio.start();
+    try { const orientation = screen.orientation as ScreenOrientation & { lock?: (value: string) => Promise<void> }; void orientation?.lock?.('landscape').catch(() => {}); }
+    catch { /* The installable PWA manifest also requests landscape. */ }
+  };""",
+"request landscape orientation")
