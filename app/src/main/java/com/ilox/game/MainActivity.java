@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient());
         setContentView(webView);
-        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
+        webView.loadUrl("https://guillewestdorp50-boop.github.io/ILOX/");
     }
 
     private void enterImmersiveMode() {
