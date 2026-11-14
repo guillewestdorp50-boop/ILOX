@@ -276,7 +276,7 @@ function showToast(message) {
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9bb8ae);
-  scene.fog = new THREE.Fog(0x9bb8ae, 65, 190);
+  scene.fog = new THREE.Fog(0x9bb8ae, 105, 235);
   camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 280);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
@@ -289,7 +289,9 @@ function init() {
   const sun = new THREE.DirectionalLight(0xffedce, 2.7);
   sun.position.set(-35, 65, 28);
   scene.add(sun);
+  makeDistantMountains();
   makeTerrain();
+  makeMeadowDetails();
   makeRiver();
   const random = seededRandom(20261114);
   for (let i = 0; i < 230; i++) {
