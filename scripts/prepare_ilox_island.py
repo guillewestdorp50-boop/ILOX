@@ -688,7 +688,7 @@ patch("src/sky/Sky.ts",
 # cloud raymarch, rain shafts, moon/stars and environment path remain untouched.
 # ?skylite=1 selects a compact gradient + one cloud-map lookup per sky pixel.
 patch("src/sky/Sky.ts",
-"const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 704 : 1024;",
+"const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
 "const SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 704 : 1024;",
 "add reversible sky quality reduction of at least 45 percent")
 patch("src/sky/Sky.ts",
