@@ -16,7 +16,7 @@ def patch(path, old, new, label):
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
-"  low: { renderScale: 0.52, shadowMap: 512, cascades: 1, shadowFar: 95, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.28, grassFar: 18, lodScale: 0.55, oceanSegments: 80, cloudSteps: 4, rainParticles: 700 },",
+"  low: { renderScale: 0.68, shadowMap: 512, cascades: 1, shadowFar: 90, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.22, grassFar: 16, lodScale: 0.5, oceanSegments: 80, cloudSteps: 4, rainParticles: 500 },",
 "mobile low preset")
 patch("src/core/quality.ts",
 "export const preset: Preset = forced && PRESETS.includes(forced) ? forced : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
@@ -41,6 +41,20 @@ patch("src/core/Engine.ts",
 "    if (params.noPost || preset === 'low') {",
 "bypass mobile post processing")
 
+# Further reduce the mobile GPU/CPU workload without replacing scanned art.
+patch("src/core/Engine.ts",
+"    const dpr = Math.min(window.devicePixelRatio || 1, 2);",
+"    const dpr = Math.min(window.devicePixelRatio || 1, preset === 'low' ? 1.25 : 2);",
+"mobile pixel ratio")
+patch("src/main.ts",
+"  sunLight.castShadow = !new URLSearchParams(location.search).has('noshadow');",
+"  sunLight.castShadow = preset !== 'low' && !new URLSearchParams(location.search).has('noshadow');",
+"disable mobile shadow maps")
+patch("src/main.ts",
+"    veg.update(camera, 60);",
+"    veg.update(camera, preset === 'low' ? 18 : 60);",
+"reduce mobile vegetation culling radius")
+
 # Carve several broad, naturally irregular grass clearings into the forest mask.
 patch("src/world/Heightfield.ts",
 "    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
@@ -53,9 +67,9 @@ patch("src/veg/Vegetation.ts",
 "const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
 "meadow scatter mask")
 patch("src/veg/Vegetation.ts",
-"        mesh.castShadow = lod.shadow;\n        mesh.receiveShadow = true;",
-"      mesh.castShadow = lod.shadow && Q.cascades > 1;\n      mesh.receiveShadow = Q.cascades > 1;",
-"vegetation shadow budget")
+"mesh.castShadow = lod.shadow;",
+"mesh.castShadow = lod.shadow && Q.cascades > 1;",
+"vegetation cast shadows")
 patch("src/veg/Vegetation.ts",
 "      if ((f < 0.22 && g < 0.45) || clearing(px, pz, -8)) continue;",
 "      if (inMeadow(px, pz) || (f < 0.22 && g < 0.45) || clearing(px, pz, -8)) continue;",
