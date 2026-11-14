@@ -689,10 +689,10 @@ patch("src/sky/Sky.ts",
 # ?skylite=1 selects a compact gradient + one cloud-map lookup per sky pixel.
 patch("src/sky/Sky.ts",
 "const CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
-"const SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
+"const NO_SKY = new URLSearchParams(location.search).has('nosky');\nconst SKY_LITE = new URLSearchParams(location.search).has('skylite');\nconst CLOUD_LITE = new URLSearchParams(location.search).has('cloudlite');\nconst CLOUD_RES = CLOUD_LITE ? 768 : 1024;",
 "add reversible ultra-light sky mode")
 patch("src/sky/Sky.ts",
-"    const col = skyRadiance(above).toVar();",
+"    if (NO_SKY) return vec3(0.48, 0.58, 0.66);\n    const col = skyRadiance(above).toVar();",
 """    const col = skyRadiance(above).toVar();
     // This early branch deliberately avoids all per-pixel atmosphere LUT,
     // cloud-density raymarch, secondary cloud-light taps, rain shafts,
