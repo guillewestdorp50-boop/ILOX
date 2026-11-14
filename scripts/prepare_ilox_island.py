@@ -565,6 +565,52 @@ patch("src/main.ts",
 
 
 
+
+# Reversible uniform-ground profile: grass across ordinary land, basalt only
+# on steep rock faces. The full original shader and layered lite path remain intact.
+patch("src/world/TerrainMaterial.ts",
+"function createTerrainLiteMaterial(hf: Heightfield) {",
+"function createTerrainLiteMaterial(hf: Heightfield, uniformGround = false) {",
+"uniform grass terrain option")
+patch("src/world/TerrainMaterial.ts",
+"  const liteIndices = [0, 2, 3, 4, 5];",
+"  const liteIndices = uniformGround ? [3, 5] : [0, 2, 3, 4, 5];",
+"load only grass and basalt for uniform ground")
+patch("src/world/TerrainMaterial.ts",
+`  const weights = [
+    m0.x.mul(float(1).sub(underwater)).mul(noSand),
+    m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
+    m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
+    m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
+    rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
+  ];`,
+`  const weights = uniformGround
+    ? [float(1).sub(rock), rock]
+    : [
+        m0.x.mul(float(1).sub(underwater)).mul(noSand),
+        m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
+        m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
+        m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
+        rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
+      ];`,
+"uniform grass and slope rock weights")
+patch("src/world/TerrainMaterial.ts",
+"  const indices = [0, 2, 3, 4, 5];\n  const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];",
+"  const indices = liteIndices;\n  const scales = indices.map((i) => SCALE[i]);",
+"match terrain texture indices to selected layers")
+patch("src/world/TerrainMaterial.ts",
+"export function createTerrainMaterial(hf: Heightfield, lite = false) {",
+"export function createTerrainMaterial(hf: Heightfield, lite = false, uniformGround = false) {",
+"expose uniform ground profile")
+patch("src/world/TerrainMaterial.ts",
+"  if (lite) return createTerrainLiteMaterial(hf);",
+"  if (lite || uniformGround) return createTerrainLiteMaterial(hf, uniformGround);",
+"activate uniform grass profile")
+patch("src/main.ts",
+"  const terrainLite = new URLSearchParams(location.search).has('terrainlite');\n  const terrainM = createTerrainMaterial(hf, terrainLite);",
+"  const terrainParams = new URLSearchParams(location.search);\n  const uniformGround = terrainParams.has('uniformground');\n  const terrainLite = terrainParams.has('terrainlite') || uniformGround;\n  const terrainM = createTerrainMaterial(hf, terrainLite, uniformGround);",
+"select uniform grass terrain by URL flag")
+
 # Reversible mobile water A/B: retain the full ocean material by default.
 # ?waterlite=1 keeps animated FFT displacement and natural wave geometry, but
 # skips costly per-pixel refraction, shoreline foam/noise, and multi-pass optics.
