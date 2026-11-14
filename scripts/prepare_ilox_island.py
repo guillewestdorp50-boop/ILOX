@@ -21,6 +21,34 @@ def patch_many(path, old, new, expected, label):
         raise SystemExit(f"{label}: expected {expected} matches, found {n}")
     p.write_text(s.replace(old, new), encoding="utf-8")
 
+# Broad prairie world profile: preserve the original generator, but gently reshape its inputs.
+# Coastline expands by 14%, interior relief is reduced, and the volcanic escarpment becomes low rolling terrain.
+patch("src/world/layout.ts",
+"/** small islands and sea stacks, each its own closed coast */",
+"""// ILOX prairie profile: expand usable land and soften the rocky coastline.
+COAST.forEach((point) => {
+  point.p[0] *= 1.14;
+  point.p[1] *= 1.14;
+  point.kind = Math.min(point.kind, 0.55);
+});
+
+/** small islands and sea stacks, each its own closed coast */""",
+"expand prairie land and soften coast")
+patch("src/world/layout.ts",
+"/** river from the spring under the peak to its mouth at the north end of the spawn beach */",
+"""// Retain gentle natural relief, but remove the tall volcanic mountain walls.
+HILLS.forEach((hill) => { hill.h *= 0.28; hill.r *= 1.2; });
+PEAK.h = 42;
+LIGHTHOUSE.base = 42;
+ESCARPMENT.forEach((edge) => { edge.step *= 0.18; });
+
+/** river from the spring under the peak to its mouth at the north end of the spawn beach */""",
+"convert volcanic relief to rolling prairie")
+patch("src/world/layout.ts",
+"{ name: 'jungle', player: [365, 18], yaw: -2.6 },",
+"{ name: 'jungle', player: [0, 150], yaw: -2.6 },",
+"move default start into central prairie")
+
 # Open plain performance mode: keep terrain and all freshwater, remove scattered foliage and boulders.
 # Keep only the waterfall's gorge rock faces; remove coastal rock props and offshore stacks.
 patch("src/main.ts",
@@ -121,13 +149,13 @@ patch("src/main.ts",
 # Carve several broad, naturally irregular grass clearings into the forest mask.
 patch("src/world/Heightfield.ts",
 "    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
-"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);\n    const meadowCenters = [\n      [-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96],\n    ] as const;\n    for (let j = 0; j < this.m; j++) for (let i = 0; i < this.m; i++) {\n      const x = (i + 0.5) * 2 - HALF_WORLD, z = (j + 0.5) * 2 - HALF_WORLD;\n      const o = (j * this.m + i) * 4;\n      const hX = Math.max(0, Math.min(N - 1, Math.round(x + HALF_WORLD)));\n      const hZ = Math.max(0, Math.min(N - 1, Math.round(z + HALF_WORLD)));\n      const h = heights[hZ * N + hX];\n      if (h < 2 || this.mask1[o + 2] > 18 || this.mask1[o] > 210 || this.mask0[o + 2] > 175 || this.mask0[o] > 190) continue;\n      let meadow = 0;\n      for (const [cx, cz, radius] of meadowCenters) {\n        const dx = (x - cx) / (radius * (1.0 + 0.09 * Math.sin(z * 0.035)));\n        const dz = (z - cz) / (radius * (1.0 + 0.08 * Math.sin(x * 0.031)));\n        const d = Math.hypot(dx, dz);\n        const f = Math.max(0, Math.min(1, (1.0 - d) / 0.24));\n        meadow = Math.max(meadow, f * f * (3 - 2 * f));\n      }\n      if (meadow < 0.03) continue;\n      this.mask0[o + 3] = Math.round(this.mask0[o + 3] * (1 - meadow * 0.98));\n      this.mask0[o + 1] = Math.max(this.mask0[o + 1], Math.round(meadow * 205));\n    }",
+"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);\n    const meadowCenters = [\n      [-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96], [0, 150, 230],\n    ] as const;\n    for (let j = 0; j < this.m; j++) for (let i = 0; i < this.m; i++) {\n      const x = (i + 0.5) * 2 - HALF_WORLD, z = (j + 0.5) * 2 - HALF_WORLD;\n      const o = (j * this.m + i) * 4;\n      const hX = Math.max(0, Math.min(N - 1, Math.round(x + HALF_WORLD)));\n      const hZ = Math.max(0, Math.min(N - 1, Math.round(z + HALF_WORLD)));\n      const h = heights[hZ * N + hX];\n      if (h < 2 || this.mask1[o + 2] > 18 || this.mask1[o] > 210 || this.mask0[o + 2] > 175 || this.mask0[o] > 190) continue;\n      let meadow = 0;\n      for (const [cx, cz, radius] of meadowCenters) {\n        const dx = (x - cx) / (radius * (1.0 + 0.09 * Math.sin(z * 0.035)));\n        const dz = (z - cz) / (radius * (1.0 + 0.08 * Math.sin(x * 0.031)));\n        const d = Math.hypot(dx, dz);\n        const f = Math.max(0, Math.min(1, (1.0 - d) / 0.24));\n        meadow = Math.max(meadow, f * f * (3 - 2 * f));\n      }\n      if (meadow < 0.03) continue;\n      this.mask0[o + 3] = Math.round(this.mask0[o + 3] * (1 - meadow * 0.98));\n      this.mask0[o + 1] = Math.max(this.mask0[o + 1], Math.round(meadow * 205));\n    }",
 "bake meadows")
 
 # Keep clearings open at ground level, not merely as holes in the distant canopy.
 patch("src/veg/Vegetation.ts",
 "const CELL = 32;",
-"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
+"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96], [0, 150, 230]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
 "meadow scatter mask")
 patch("src/veg/Vegetation.ts",
 "mesh.castShadow = lod.shadow;",
