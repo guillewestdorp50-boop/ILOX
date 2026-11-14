@@ -1746,8 +1746,8 @@ patch("src/world/TerrainMaterial.ts",
 
 patch("src/core/quality.ts",
 "lodScale: 0.36",
-"lodScale: 0.95",
-"reduce excessive terrain patch density on mobile while retaining heightmap relief")
+"lodScale: 0.36",
+"preserve the verified mobile terrain LOD value from the 5% performance baseline")
 
 
 # Restore visible island terrain on mobile and keep the construction clearing local.
