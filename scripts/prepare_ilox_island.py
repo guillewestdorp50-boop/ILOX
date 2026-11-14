@@ -1045,6 +1045,64 @@ patch("src/main.ts",
 "drive quad with player movement and camera follow")
 
 
+
+# ILOX corrective pass: keep the ATV cheap to render, seat its rider, and use
+# the common 42 m construction plane with a practical tolerance.
+# These are additive repairs to the generated source; water, sky and terrain
+# rendering/performance systems are deliberately untouched.
+patch("src/main.ts",
+"  const quadMetal = new THREE.MeshStandardMaterial({ color: 0x737b70, roughness: 0.45, metalness: 0.65 });\n  const quadSeat = new THREE.MeshStandardMaterial({ color: 0x282622, roughness: 0.92 });",
+"  const quadMetal = quadFrame;\n  const quadSeat = quadRubber;",
+"reuse ATV materials to reduce shader variants")
+patch("src/main.ts",
+"    mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; quadBike.add(mesh); return mesh;",
+"    mesh.position.set(x, y, z); mesh.castShadow = false; mesh.receiveShadow = false; quadBike.add(mesh); return mesh;",
+"disable unnecessary ATV shadow passes")
+patch("src/main.ts",
+"new THREE.MeshStandardMaterial({ color: 0xf3dca1, emissive: 0x665020 })",
+"quadMetal",
+"reuse ATV headlight material")
+patch("src/main.ts",
+"  for (const x of [-0.58, 0.58]) for (const z of [-0.68, 0.68]) {",
+"  const quadWheels: THREE.Mesh[] = [];\n  for (const x of [-0.58, 0.58]) for (const z of [-0.68, 0.68]) {",
+"track ATV wheels for rotation")
+patch("src/main.ts",
+"    const wheel = quadPart(quadWheelGeo, quadRubber, x, 0.34, z);\n    const hub = quadPart(new THREE.CylinderGeometry(0.12, 0.12, 0.205, 10), quadMetal, x, 0.34, z);",
+"    const wheel = quadPart(quadWheelGeo, quadRubber, x, 0.34, z);\n    quadWheels.push(wheel);\n    const hub = quadPart(new THREE.CylinderGeometry(0.12, 0.12, 0.205, 10), quadMetal, x, 0.34, z);",
+"rotate the quad wheels")
+patch("src/main.ts",
+"  quadBike.rotation.y = spot.yaw;\n  scene.add(quadBike);",
+"  quadBike.rotation.y = spot.yaw;\n  const quadRider = new THREE.Group();\n  const riderPart = (geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, rx = 0, rz = 0) => {\n    const mesh = new THREE.Mesh(geometry, material);\n    mesh.position.set(x, y, z); mesh.rotation.set(rx, 0, rz); mesh.castShadow = false; mesh.receiveShadow = false;\n    quadRider.add(mesh);\n  };\n  riderPart(new THREE.CylinderGeometry(0.15, 0.21, 0.48, 8), quadFrame, 0, 1.17, 0.16, -0.32);\n  riderPart(new THREE.SphereGeometry(0.14, 10, 8), quadFrame, 0, 1.53, 0.04);\n  riderPart(new THREE.SphereGeometry(0.155, 10, 8), quadRubber, 0, 1.59, 0.04);\n  riderPart(new THREE.CylinderGeometry(0.045, 0.055, 0.46, 7), quadFrame, -0.22, 1.25, -0.17, -0.85, -0.48);\n  riderPart(new THREE.CylinderGeometry(0.045, 0.055, 0.46, 7), quadFrame, 0.22, 1.25, -0.17, -0.85, 0.48);\n  riderPart(new THREE.CylinderGeometry(0.07, 0.085, 0.42, 7), quadRubber, -0.12, 0.87, -0.13, -1.05);\n  riderPart(new THREE.CylinderGeometry(0.07, 0.085, 0.42, 7), quadRubber, 0.12, 0.87, -0.13, -1.05);\n  quadRider.visible = false;\n  quadBike.add(quadRider);\n  scene.add(quadBike);",
+"add seated low-poly rider without extra shadow cost")
+patch("src/main.ts",
+"    if (quadMounted) {\n      quadMounted = false; player.vehicleMode = false;\n      if (quadButton) quadButton.textContent = 'SUBIR ATV';",
+"    if (quadMounted) {\n      quadMounted = false; player.vehicleMode = false; player.root.visible = true; quadRider.visible = false;\n      if (quadButton) quadButton.textContent = 'SUBIR ATV';",
+"restore avatar on ATV dismount")
+patch("src/main.ts",
+"    quadMounted = true; player.vehicleMode = true;\n    if (quadButton) quadButton.textContent = 'BAJAR ATV';",
+"    quadMounted = true; player.vehicleMode = true; player.root.visible = false; quadRider.visible = true;\n    if (quadButton) quadButton.textContent = 'BAJAR ATV';",
+"seat rider and hide walking avatar while mounted")
+patch("src/main.ts",
+"      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      player.root.position.y += 0.48;",
+"      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;",
+"move quad, rotate wheels, and do not drag the walking avatar")
+patch("src/main.ts",
+"    };\n    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"    };\n    floorPreviewValid=spread<=0.45&&Math.abs(hs.reduce((a,b)=>a+b,0)/4-42)<=0.55&&Math.abs(hf.height(x,z)-42)<=0.55&&hf.water(x,z)<0.05&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);",
+"allow small ground imperfections on the shared construction plane")
+patch("src/main.ts",
+"    floorPreview.position.set(x,hs.reduce((a,b)=>a+b,0)/4+0.06,z); floorPreview.visible=true;",
+"    floorPreview.position.set(x,42.06,z); floorPreview.visible=true;",
+"align floor preview to the common 42m plane")
+patch("src/main.ts",
+"      const y=hf.height(x,z);\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
+"      const y=42;\n      addBuildBox(new THREE.BoxGeometry(4,0.22,4),x,y+0.11,z);",
+"place every adjacent floor tile on the exact common plane")
+patch("src/main.ts",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: buscá una parcela seca y cercana al nivel común'); return; }",
+"explain floor compatibility without requiring the shovel")
+
 # Compact bottom game menu and a first usable construction loop for mobile testing.
 index_path = root / "index.html"
 index_html = index_path.read_text(encoding="utf-8")
