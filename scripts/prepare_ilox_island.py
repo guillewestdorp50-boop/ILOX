@@ -23,6 +23,24 @@ patch("src/core/quality.ts",
 "const mobileDevice = typeof window !== 'undefined' && (window.matchMedia('(pointer: coarse)').matches || Math.min(window.innerWidth, window.innerHeight) < 600);\nexport const preset: Preset = forced && PRESETS.includes(forced) ? forced : mobileDevice ? 'low' : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
 "force mobile low")
 
+# Reduce one-time canopy baking and disable the expensive post chain on mobile/low preset.
+patch("src/veg/Canopy.ts",
+"const BAKE = 2048;",
+"const BAKE = Q.renderScale < 0.7 ? 1024 : 2048;",
+"mobile canopy bake resolution")
+patch("src/veg/Canopy.ts",
+"  const CELLS = 512;",
+"  const CELLS = Q.renderScale < 0.7 ? 256 : 512;",
+"mobile canopy mesh density")
+patch("src/veg/Canopy.ts",
+"import { atmo } from '../sky/Atmosphere';",
+"import { atmo } from '../sky/Atmosphere';\nimport { Q } from '../core/quality';",
+"canopy quality import")
+patch("src/core/Engine.ts",
+"    if (params.noPost) {",
+"    if (params.noPost || preset === 'low') {",
+"bypass mobile post processing")
+
 # Carve several broad, naturally irregular grass clearings into the forest mask.
 patch("src/world/Heightfield.ts",
 "    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
@@ -35,7 +53,7 @@ patch("src/veg/Vegetation.ts",
 "const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
 "meadow scatter mask")
 patch("src/veg/Vegetation.ts",
-"      mesh.castShadow = lod.shadow;\n      mesh.receiveShadow = true;",
+"        mesh.castShadow = lod.shadow;\n        mesh.receiveShadow = true;",
 "      mesh.castShadow = lod.shadow && Q.cascades > 1;\n      mesh.receiveShadow = Q.cascades > 1;",
 "vegetation shadow budget")
 patch("src/veg/Vegetation.ts",
