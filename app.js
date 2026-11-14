@@ -3,6 +3,9 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.m
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
 const welcome = document.querySelector("#welcome");
+const avatarSelect = document.querySelector("#avatar-select");
+const enterWorldButton = document.querySelector("#enter-world");
+let selectedAvatar = "boy";
 const startButton = document.querySelector("#start");
 const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
@@ -331,8 +334,20 @@ function addEvents() {
   joystick.addEventListener("pointerup", releaseJoy);
   joystick.addEventListener("pointercancel", releaseJoy);
   startButton.addEventListener("click", () => {
-    started = true;
     welcome.classList.add("hidden");
+    avatarSelect.classList.remove("hidden");
+  });
+  document.querySelectorAll(".avatar-option").forEach(option => {
+    option.addEventListener("click", () => {
+      selectedAvatar = option.dataset.avatar;
+      document.querySelectorAll(".avatar-option").forEach(item => item.classList.toggle("selected", item === option));
+    });
+  });
+  enterWorldButton.addEventListener("click", () => {
+    if (player) scene.remove(player);
+    player = makePlayer(selectedAvatar);
+    started = true;
+    avatarSelect.classList.add("hidden");
     hint.textContent = "Encontrá tu propio camino";
     showToast("¡Bienvenido a ILOX!");
   });
