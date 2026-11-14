@@ -1705,6 +1705,6 @@ main_source = main_source[:a] + real_quad + main_source[b:]
 main_path.write_text(main_source, encoding="utf-8")
 
 patch("src/main.ts",
-"      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;",
-"      quadBike.rotation.y = player.heading;\n    }\n    quadMixer?.update(dt);",
+"    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      for (const wheel of quadWheels) wheel.rotation.x += player.speed * dt / 0.34;\n    }",
+"    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n    }\n    quadMixer?.update(dt);",
 "drive imported quad and advance its real wheel-roll animation")
