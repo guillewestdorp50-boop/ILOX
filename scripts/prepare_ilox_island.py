@@ -563,4 +563,58 @@ patch("src/main.ts",
 "  const terrainLite = new URLSearchParams(location.search).has('terrainlite');\n  const terrainM = createTerrainMaterial(hf, terrainLite);",
 "select terrain A/B shader by URL")
 
+
+
+# Reversible mobile water A/B: retain the full ocean material by default.
+# ?waterlite=1 keeps animated FFT displacement and natural wave geometry, but
+# skips costly per-pixel refraction, shoreline foam/noise, and multi-pass optics.
+# Mobile FFT maps use 128² instead of 256² (4x fewer compute cells per cascade).
+patch("src/water/oceanSim.ts",
+"import { Rng } from '../core/noise';",
+"import { Rng } from '../core/noise';\nimport { Q } from '../core/quality';",
+"mobile ocean simulation quality import")
+patch("src/water/oceanSim.ts",
+"  resolution: 256,",
+"  resolution: Q.oceanSegments <= 48 ? 128 : 256,",
+"reduce mobile ocean FFT resolution")
+patch("src/water/Ocean.ts",
+"    const geo = polarGrid(Q.oceanSegments, 200, 26000);",
+"    const geo = polarGrid(Q.oceanSegments, Q.oceanSegments <= 48 ? 112 : 200, 26000);",
+"reduce mobile ocean grid rings")
+patch("src/water/Ocean.ts",
+"    // ---- fragment\n    const shade = (() => {",
+"""    // ---- fragment
+    // The original cinematic shader remains untouched and is still the default.
+    // This reversible mobile path keeps spectral wave geometry and lit reflections,
+    // while avoiding screen-space refraction, foam lace, shoreline noise and extra
+    // depth/scene texture reads that dominate fragment cost when water fills the screen.
+    if (new URLSearchParams(location.search).has('waterlite')) {
+      const p = positionWorld;
+      const xz = p.xz;
+      const ground = heightAt(xz);
+      const depth = max(ground.negate(), 0);
+      let slope: N = vec2(0);
+      const normalWeights = [1, 0.35, 0.12];
+      for (let i = 0; i < 3; i++) {
+        const der = sim.derivNodes[i].sample(xz.div(sim.patchLengths[i]));
+        slope = slope.add(der.xy.mul(normalWeights[i]));
+      }
+      const N0 = normalize(vec3(slope.x.negate(), 1, slope.y.negate()));
+      const V = normalize(cameraPosition.sub(p));
+      const NdotV = clamp(dot(N0, V), 0.001, 1);
+      const fresnel = float(0.02).add(float(0.98).mul(pow(float(1).sub(NdotV), 5)));
+      const shallow = smoothstep(1.5, 24, depth);
+      const base = mix(vec3(0.025, 0.24, 0.22), vec3(0.006, 0.035, 0.07), shallow);
+      const color = mix(base, vec3(0.34, 0.48, 0.48), fresnel.mul(0.42));
+      m.colorNode = vec4(color, 1);
+      m.roughnessNode = float(0.16);
+      m.metalnessNode = float(0);
+      m.normalNode = transformNormalToView(N0);
+      m.emissiveNode = base.mul(0.035);
+      m.opacityNode = float(1);
+      return m;
+    }
+    const shade = (() => {""",
+"add reversible low-cost water fragment shader")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
