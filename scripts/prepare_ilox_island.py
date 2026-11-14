@@ -5,6 +5,12 @@ import shutil
 import sys
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "island-source")
 
+# Add the original ILOX channel cheer without modifying or removing upstream audio.
+cheer_asset = Path(__file__).parent / "assets" / "channel_cheer.ogg"
+cheer_target = root / "public" / "assets" / "audio" / "channel_cheer.ogg"
+cheer_target.parent.mkdir(parents=True, exist_ok=True)
+shutil.copy2(cheer_asset, cheer_target)
+
 def patch(path, old, new, label):
     p = root / path
     s = p.read_text(encoding="utf-8")
@@ -684,7 +690,7 @@ patch("src/main.ts",
 # It detects only the existing downstream channel after the plunge pool (sample 9+).
 patch("src/player/Player.ts",
 "  state: 'ground' | 'air' | 'swim' = 'ground';",
-"  state: 'ground' | 'air' | 'swim' | 'ride' = 'ground';\n  private channelRide = false;\n  private rideEntryT = -1;\n  private rideTime = 0;\n  private rideArms: { bone: THREE.Object3D; base: THREE.Quaternion; side: number; forearm: boolean }[] = [];\n  private rideArmEuler = new THREE.Euler();\n  private rideArmOffset = new THREE.Quaternion();",
+"  state: 'ground' | 'air' | 'swim' | 'ride' = 'ground';\n  private channelRide = false;\n  private rideEntryT = -1;\n  private rideTime = 0;\n  private rideArms: { bone: THREE.Object3D; side: number; forearm: boolean }[] = [];\n  private rideLegs: { bone: THREE.Object3D; kind: 'thigh' | 'calf' | 'foot' }[] = [];\n  private rideArmEuler = new THREE.Euler();\n  private rideArmOffset = new THREE.Quaternion();\n  private rideLegEuler = new THREE.Euler();\n  private rideLegOffset = new THREE.Quaternion();",
 "add controllable channel ride state and arm pose")
 patch("src/player/Player.ts",
 "  onSplash: ((strength: number, pos: THREE.Vector3) => void) | null = null;",
@@ -795,6 +801,10 @@ patch("src/player/Player.ts",
 # Add a joyful Spanish cheer on channel entry using the device's available speech voice.
 # No external audio assets or network requests are required.
 patch("src/audio/Audio.ts",
+"    for (const f of ['splash_big', 'splash_small', 'thunder_1', 'thunder_2', 'thunder_3', 'land_sand']) this.load(f);",
+"    for (const f of ['splash_big', 'splash_small', 'thunder_1', 'thunder_2', 'thunder_3', 'land_sand', 'channel_cheer']) this.load(f);",
+"load original channel cheer audio")
+patch("src/audio/Audio.ts",
 "  swimStroke(pos: THREE.Vector3) {\n    const list = STEP_FILES.water;\n    this.play(list[Math.floor(Math.random() * list.length)], 0.35, 0.9 + Math.random() * 0.2, 0, pos);\n  }",
 """  swimStroke(pos: THREE.Vector3) {
     const list = STEP_FILES.water;
@@ -803,17 +813,8 @@ patch("src/audio/Audio.ts",
 
   /** A playful one-shot cheer when the current catches the player in the lower channel. */
   cheer() {
-    if (this.muted || !('speechSynthesis' in window)) return;
-    const say = new SpeechSynthesisUtterance('¡Yujuuu!');
-    say.lang = 'es-AR';
-    say.rate = 1.18;
-    say.pitch = 1.85;
-    say.volume = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const spanish = voices.find((v) => v.lang.toLowerCase().startsWith('es-ar'))
-      ?? voices.find((v) => v.lang.toLowerCase().startsWith('es'));
-    if (spanish) say.voice = spanish;
-    window.speechSynthesis.speak(say);
+    if (this.muted) return;
+    this.play('channel_cheer', 0.95, 1.0);
   }""",
 "add joyful channel cheer")
 patch("src/main.ts",
@@ -833,23 +834,35 @@ patch("src/player/Player.ts",
       const n = o.name.replace(/[ _]/g, '').toLowerCase();
       const match = n.match(/^bip01([lr])(upperarm|forearm)$/);
       if (match) this.rideArms.push({
-        bone: o, base: o.quaternion.clone(), side: match[1] === 'l' ? -1 : 1,
+        bone: o, side: match[1] === 'l' ? -1 : 1,
         forearm: match[2] === 'forearm',
       });
+      const leg = n.match(/^bip01[lr](thigh|calf|foot)$/);
+      if (leg) this.rideLegs.push({ bone: o, kind: leg[1] as 'thigh' | 'calf' | 'foot' });
     });""",
 "capture avatar arm bones for ride celebration")
 
 patch("src/player/Player.ts",
 "    this.mixer.update(0);",
 """    this.mixer.update(0);
-    // Layer a small shoulder/forearm celebration over the seated animation.
+    // Layer the ride pose over the current animation pose (not the bind pose).
+    // This preserves each side's animated articulation and avoids a limp arm reset.
     if (this.state === 'ride') {
       const wave = Math.sin(this.rideTime * 5.4);
       for (const arm of this.rideArms) {
+        const animated = arm.bone.quaternion.clone();
         const raise = arm.forearm ? 0.55 + wave * 0.28 : 1.12 + wave * 0.16;
         this.rideArmEuler.set(arm.forearm ? -0.82 : -0.12, 0, arm.side * raise);
         this.rideArmOffset.setFromEuler(this.rideArmEuler);
-        arm.bone.quaternion.copy(arm.base).multiply(this.rideArmOffset);
+        arm.bone.quaternion.copy(animated).multiply(this.rideArmOffset);
+      }
+      // Experimental water-slide leg extension, layered only during the ride.
+      for (const leg of this.rideLegs) {
+        const animated = leg.bone.quaternion.clone();
+        const angle = leg.kind === 'thigh' ? 0.42 : leg.kind === 'calf' ? -0.72 : 0.06;
+        this.rideLegEuler.set(angle, 0, 0);
+        this.rideLegOffset.setFromEuler(this.rideLegEuler);
+        leg.bone.quaternion.copy(animated).multiply(this.rideLegOffset);
       }
     }""",
 "procedural moving celebratory arms during channel ride")
