@@ -21,6 +21,14 @@ def patch_many(path, old, new, expected, label):
         raise SystemExit(f"{label}: expected {expected} matches, found {n}")
     p.write_text(s.replace(old, new), encoding="utf-8")
 
+
+# The ocean is a camera-following surface; without this dry-land depth guard it
+# renders over the prairie even when the generated heightfield is above sea level.
+patch("src/water/Ocean.ts",
+"    const y = max(seaY, mix(seaY, ground.add(sw.sheet), faceW));\n    return vec3(xz.x.add(d.x), y, xz.y.add(d.z));",
+"    const y = max(seaY, mix(seaY, ground.add(sw.sheet), faceW));\n    // ILOX mainland fix: keep waves and beach swash, but hide the ocean below dry land.\n    const dryLand = smoothstep(0.9, 1.6, ground);\n    const visibleY = mix(y, ground.sub(2.0), dryLand);\n    return vec3(xz.x.add(d.x), visibleY, xz.y.add(d.z));",
+"hide camera-following ocean beneath dry prairie terrain")
+
 # Broad prairie world profile: preserve the original generator, but gently reshape its inputs.
 # Coastline expands by 14%, interior relief is reduced, and the volcanic escarpment becomes low rolling terrain.
 patch("src/world/layout.ts",
