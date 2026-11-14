@@ -385,6 +385,11 @@ patch("src/world/RockKit.ts",
 "      const i = Math.round(x + HALF_WORLD - 0.5), j = Math.round(z + HALF_WORLD - 0.5);",
 "       const i = Math.round((x + HALF_WORLD) / (WORLD_SIZE / N) - 0.5), j = Math.round((z + HALF_WORLD) / (WORLD_SIZE / N) - 0.5);",
 "rock kit heightmap coordinates 3")
+# Tighten oriented-box broadphase bounds so long perimeter walls do not fill the entire collider grid.
+patch("src/world/Colliders.ts",
+"    for (const k of this.cells(x - r, x + r, z - r, z + r)) this.bucket(k).obs.push(o);",
+"    const ex = Math.abs(o.c) * hx + Math.abs(o.s) * hz;\n    const ez = Math.abs(o.s) * hx + Math.abs(o.c) * hz;\n    for (const k of this.cells(x - ex, x + ex, z - ez, z + ez)) this.bucket(k).obs.push(o);",
+"tight oriented box collider bounds")
 # A real invisible perimeter keeps the player inside the 2,000,000 m² square.
 patch("src/main.ts",
 "  const colliders = new Colliders();",
