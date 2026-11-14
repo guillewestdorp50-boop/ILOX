@@ -16,7 +16,7 @@ def patch(path, old, new, label):
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
-"  low: { renderScale: 0.68, shadowMap: 512, cascades: 1, shadowFar: 90, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.22, grassFar: 16, lodScale: 0.5, oceanSegments: 80, cloudSteps: 4, rainParticles: 500 },",
+"  low: { renderScale: 0.68, shadowMap: 512, cascades: 1, shadowFar: 90, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.14, grassFar: 12, lodScale: 0.42, oceanSegments: 64, cloudSteps: 2, rainParticles: 250 },",
 "mobile low preset")
 patch("src/core/quality.ts",
 "export const preset: Preset = forced && PRESETS.includes(forced) ? forced : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
@@ -55,6 +55,16 @@ patch("src/main.ts",
 "    veg.update(camera, preset === 'low' ? 18 : 60);",
 "reduce mobile vegetation culling radius")
 
+# Keep water visually alive while halving its expensive compute dispatch cadence on phones.
+patch("src/main.ts",
+"  let canopyK = 0, glareK = 0;",
+"  let canopyK = 0, glareK = 0;\\n  let oceanAccumulator = 0;",
+"ocean compute accumulator")
+patch("src/main.ts",
+"    if (!skip.has('oceansim')) ocean.update(renderer, camera, t, dt);",
+"    if (!skip.has('oceansim')) {\\n      oceanAccumulator += dt;\\n      if (oceanAccumulator >= 1 / 30) {\\n        ocean.update(renderer, camera, t, oceanAccumulator);\\n        oceanAccumulator = 0;\\n      }\\n    }",
+"throttle ocean compute to 30hz")
+
 # Carve several broad, naturally irregular grass clearings into the forest mask.
 patch("src/world/Heightfield.ts",
 "    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
@@ -64,7 +74,7 @@ patch("src/world/Heightfield.ts",
 # Keep clearings open at ground level, not merely as holes in the distant canopy.
 patch("src/veg/Vegetation.ts",
 "const CELL = 32;",
-"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
+"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
 "meadow scatter mask")
 patch("src/veg/Vegetation.ts",
 "mesh.castShadow = lod.shadow;",
