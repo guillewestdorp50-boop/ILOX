@@ -1430,3 +1430,38 @@ patch("src/main.ts",
 "  let photo = false;\n  const setPhoto = (on: boolean) => {",
 "  const cameraModeButton = document.getElementById('ilox-camera-toggle') as HTMLButtonElement | null;\n  let firstPersonMode = false;\n  const setPlayerCameraMode = (firstPerson: boolean) => {\n    firstPersonMode = firstPerson;\n    if (firstPerson) {\n      rig.set('first');\n      player.root.visible = false;\n    } else {\n      rig.set('follow');\n      rig.snapBehind(player.heading);\n      player.root.visible = true;\n    }\n    if (cameraModeButton) {\n      cameraModeButton.textContent = firstPerson ? 'CÁMARA: PRIMERA PERSONA' : 'CÁMARA: TERCERA PERSONA';\n      cameraModeButton.setAttribute('aria-pressed', String(firstPerson));\n    }\n  };\n  cameraModeButton?.addEventListener('click', () => setPlayerCameraMode(!firstPersonMode));\n  let photo = false;\n  const setPhoto = (on: boolean) => {",
 "wire independent player camera selector")
+
+
+# ILOX world layout v2: a broad default plain with the natural perimeter retained.
+# Keep the river corridor and the escarpment that forms the waterfall gorge untouched.
+# The old shovel implementation remains in the build, but is no longer required or exposed.
+patch("src/world/Heightfield.ts",
+"    this.heights = heights;\n    this.mask0 = new Uint8Array(m0);",
+"    // Flatten the central construction/play area at load time, before the height texture is uploaded.\n    // A smooth outer fade preserves the mountainous perimeter as the map's natural walls.\n    const flatCenterX = 0, flatCenterZ = 0, flatLevel = 42;\n    const flatRadius = 410, fadeRadius = 120, outerRadius = flatRadius + fadeRadius;\n    const riverLine = meta.river;\n    const gorgeLine = [[190,150],[165,60],[150,-10],[146,-56],[160,-130],[200,-210],[260,-280]];\n    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));\n    const segmentDistanceSq = (x: number, z: number, a: number[], b: number[]) => {\n      const vx=b[0]-a[0], vz=b[1]-a[1], len=vx*vx+vz*vz;\n      const t=len>0?clamp01(((x-a[0])*vx+(z-a[1])*vz)/len):0;\n      const dx=x-(a[0]+vx*t), dz=z-(a[1]+vz*t); return dx*dx+dz*dz;\n    };\n    for (let j=0;j<N;j++) for (let i=0;i<N;i++) {\n      const x=i-HALF_WORLD+0.5, z=j-HALF_WORLD+0.5;\n      const radial=Math.hypot(x-flatCenterX,z-flatCenterZ);\n      if(radial>=outerRadius) continue;\n      let preserve=false;\n      for(let r=0;r<riverLine.length-1;r++) {\n        const a=riverLine[r], b=riverLine[r+1];\n        const width=Math.max(a[4]||0,b[4]||0);\n        const keep=Math.max(32,width*2+14);\n        if(segmentDistanceSq(x,z,a,b)<keep*keep) { preserve=true; break; }\n      }\n      if(!preserve) for(let r=0;r<gorgeLine.length-1;r++) {\n        if(segmentDistanceSq(x,z,gorgeLine[r],gorgeLine[r+1])<32*32) { preserve=true; break; }\n      }\n      if(preserve) continue;\n      const t=clamp01((outerRadius-radial)/fadeRadius);\n      const blend=radial<=flatRadius?1:t*t*(3-2*t);\n      const k=j*N+i; heights[k] += (flatLevel-heights[k])*blend;\n    }\n    this.heights = heights;\n    this.mask0 = new Uint8Array(m0);",
+"create broad flat central world and preserve river waterfall gorge");
+patch("src/main.ts",
+"      gameContent.innerHTML = '<p>Antes de colocar un piso, nivelá el terreno con la pala. Luego elegí la pieza.</p><button data-build=\"flatten\">🪏 APLANAR</button><button data-build=\"floor\">▰ PISO</button><button data-build=\"wall\">▥ PARED</button><button data-build=\"roof\">▱ TECHO</button><button data-build=\"door\">🚪 PUERTA</button><button data-build=\"window\">▣ VENTANA</button><button data-build=\"stairs\">▤ ESCALERA</button>';",
+"      gameContent.innerHTML = '<p>El terreno central ya está preparado. Elegí la pieza que querés construir.</p><button data-build=\"floor\">▰ PISO</button><button data-build=\"wall\">▥ PARED</button><button data-build=\"roof\">▱ TECHO</button><button data-build=\"door\">🚪 PUERTA</button><button data-build=\"window\">▣ VENTANA</button><button data-build=\"stairs\">▤ ESCALERA</button>';",
+"remove shovel from construction menu while retaining its code");
+patch("src/main.ts",
+"    floorPreviewValid=preparedPlots.has(plotKey(x,z))&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);\n    floorPreviewMaterial.opacity=0.48-Math.min(spread,4)*0.03;",
+"    floorPreviewValid=spread<=0.16&&!builtFloors.some((f)=>Math.hypot(f.x-x,f.z-z)<3.5);\n    floorPreviewMaterial.opacity=0.48-Math.min(spread,4)*0.03;",
+"allow floor placement on naturally flat ground without shovel");
+patch("src/main.ts",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: movelo o usá APLANAR'); return; }",
+"if (!floorPreviewValid) { showBuildStatus('El piso está rojo: buscá una superficie más pareja'); return; }",
+"remove shovel dependency from floor placement message");
+patch("src/main.ts",
+"        rig.set('free'); // keep construction camera independent from the player camera selector.",
+"        // Keep the currently selected camera rig and its live look controls while building.",
+"do not switch camera mode on construction");
+patch_many("src/main.ts",
+"    if (rig.mode === 'free' || rig.mode === 'first') { rig.set('follow'); rig.snapBehind(player.heading); }",
+"    if (rig.mode === 'free') { rig.set('follow'); rig.snapBehind(player.heading); }",
+2,
+"preserve selected camera mode when leaving construction");
+patch_many("src/main.ts",
+"if (rig.mode === 'first') buildPointer.set(0,0); else buildPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);",
+"buildPointer.set(0,0);",
+3,
+"aim all construction actions and previews from the live camera-centre reticle");
