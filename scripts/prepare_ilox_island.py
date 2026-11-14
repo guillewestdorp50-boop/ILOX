@@ -455,4 +455,95 @@ patch("tools/gen-island.ts",
 "falls: { lip, toward: below, s: sFalls, top: lipWater, bottom: poolLevel, width: RIVER[FALLS_INDEX].w, lipGround },",
 "write waterfall lip terrain height into metadata")
 
+
+# Reversible terrain A/B: retain the full original shader and add a cheaper
+# five-layer path selectable with ?terrainlite=1. No original layers or features
+# are deleted; the default remains the full-quality material.
+patch("src/world/TerrainMaterial.ts",
+"export function createTerrainMaterial(hf: Heightfield) {",
+"""function createTerrainLiteMaterial(hf: Heightfield) {
+  const m = new THREE.MeshPhysicalNodeMaterial();
+  m.name = 'terrain-lite';
+  const heightAt = heightLookup(hf);
+  const maskUV = (p: N) => p.add(HALF_WORLD).div(WORLD_SIZE);
+  const liteIndices = [0, 2, 3, 4, 5];
+  const albedoPh = placeholderArray(liteIndices.map((i) => [...TARGET[i].map(toSrgb), 0.5]), true);
+  const normalPh = placeholderArray(liteIndices.map((i) => [0.5, 0.5, ROUGH[i], 1]), false);
+  const albedoNodes: N[] = [];
+  const normalNodes: N[] = [];
+  const sampleA = (layer: number, uvL: N) => {
+    const t = texture(albedoPh, uvL).depth(int(layer));
+    albedoNodes.push(t);
+    return t;
+  };
+  const sampleN = (layer: number, uvL: N) => {
+    const t = texture(normalPh, uvL).depth(int(layer));
+    normalNodes.push(t);
+    return t;
+  };
+  const p = positionWorld;
+  const xz = p.xz;
+  const n = normalize(vec3(
+    heightAt(xz.sub(vec2(1, 0))).sub(heightAt(xz.add(vec2(1, 0)))),
+    2,
+    heightAt(xz.sub(vec2(0, 1))).sub(heightAt(xz.add(vec2(0, 1)))),
+  ));
+  const m0 = texture(hf.mask0Tex, maskUV(xz));
+  const m1 = texture(hf.mask1Tex, maskUV(xz));
+  const slope = float(1).sub(n.y);
+  const rock = max(m1.x, smoothstep(0.42, 0.6, slope)
+    .mul(float(1).sub(m0.x.mul(0.9)))
+    .mul(smoothstep(1.5, 4.0, p.y)));
+  const weights = [m0.x, m0.w.mul(0.85), m0.y, m0.z, rock];
+  const indices = [0, 2, 3, 4, 5];
+  const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];
+  let albedo: N = vec3(0);
+  let rough: N = float(0);
+  let detail: N = vec2(0);
+  let total: N = float(0.0001);
+  for (let i = 0; i < indices.length; i++) {
+    const uvL = xz.div(scales[i]).add(indices[i] * 0.37);
+    const a = sampleA(i, uvL);
+    const t = sampleN(i, uvL);
+    const w = max(weights[i], 0).mul(a.a.mul(1.4).add(0.3)).pow(2.0);
+    albedo = albedo.add(a.rgb.mul(w));
+    rough = rough.add(t.z.mul(w));
+    detail = detail.add(t.xy.mul(2).sub(1).mul(w));
+    total = total.add(w);
+  }
+  albedo = albedo.div(total);
+  rough = rough.div(total);
+  detail = detail.div(total);
+  const finalN = normalize(vec3(n.x.add(detail.x.mul(0.65)), n.y, n.z.sub(detail.y.mul(0.65))));
+  const damp = m1.y.mul(0.28).clamp(0, 0.28);
+  albedo = albedo.mul(float(1).sub(damp));
+  rough = mix(rough, float(0.48), damp);
+  m.colorNode = vec4(albedo, 1);
+  m.roughnessNode = rough;
+  m.metalnessNode = float(0);
+  m.specularIntensityNode = float(0.35);
+  m.normalNode = transformNormalToView(finalN);
+  m.aoNode = float(1);
+  const loadLayers = async () => {
+    const selected = liteIndices.map((i) => LAYERS[i]);
+    const [albedos, normals] = await Promise.all([
+      Promise.all(selected.map((l) => loadKTX2(\`assets/terrain/\${l}_a.ktx2\`))),
+      Promise.all(selected.map((l) => loadKTX2(\`assets/terrain/\${l}_n.ktx2\`))),
+    ]);
+    const A = toArray(albedos, true), Nn = toArray(normals, false);
+    for (const t of albedoNodes) t.value = A;
+    for (const t of normalNodes) t.value = Nn;
+  };
+  return { material: m, loadLayers };
+}
+
+export function createTerrainMaterial(hf: Heightfield, lite = false) {
+  // The original full shader remains the default and is never overwritten.
+  if (lite) return createTerrainLiteMaterial(hf);""",
+"add reversible five-layer terrain shader")
+patch("src/main.ts",
+"  const terrainM = createTerrainMaterial(hf);",
+"  const terrainLite = new URLSearchParams(location.search).has('terrainlite');\n  const terrainM = createTerrainMaterial(hf, terrainLite);",
+"select terrain A/B shader by URL")
+
 print("ILOX natural-world adaptation prepared; mobile view distance defaults to 50 m.")
