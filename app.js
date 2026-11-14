@@ -39,6 +39,35 @@ function seededRandom(seed) {
   };
 }
 
+function makeSky() {
+  const geometry = new THREE.SphereGeometry(260, 32, 18);
+  const material = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    vertexShader: `varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }`,
+    fragmentShader: `varying vec3 vWorldPosition;
+      void main() {
+        vec3 direction = normalize(vWorldPosition - cameraPosition);
+        float height = max(direction.y, 0.0);
+        vec3 horizon = vec3(0.72, 0.79, 0.75);
+        vec3 zenith = vec3(0.20, 0.39, 0.49);
+        vec3 sky = mix(horizon, zenith, pow(height, 0.62));
+        vec3 sunDir = normalize(vec3(-0.48, 0.62, 0.34));
+        float sunGlow = pow(max(dot(direction, sunDir), 0.0), 18.0);
+        float sunCore = pow(max(dot(direction, sunDir), 0.0), 280.0);
+        sky += vec3(0.22, 0.18, 0.10) * sunGlow + vec3(0.95, 0.78, 0.48) * sunCore;
+        gl_FragColor = vec4(sky, 1.0);
+      }`
+  });
+  const dome = new THREE.Mesh(geometry, material);
+  dome.renderOrder = -10;
+  scene.add(dome);
+}
 function makeTerrain() {
   const segments = 180, positions = [], uvs = [], indices = [];
   for (let iz = 0; iz <= segments; iz++) {
@@ -80,23 +109,36 @@ function makeTerrain() {
 function makeTree(x, z, scale, random) {
   const y = terrainHeight(x, z), group = new THREE.Group();
   group.position.set(x, y, z); group.scale.setScalar(scale);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x60452f, roughness: 1 });
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.16, .31, 3.1, 8), trunkMat);
-  trunk.position.y = 1.48; trunk.rotation.z = (random() - .5) * .10; group.add(trunk);
-  const palette = [0x294d32,0x365f39,0x456e40,0x557747,0x31583a];
-  for (let i = 0; i < 7; i++) {
-    const radius = .85 + random() * .65;
+  const bark = new THREE.MeshStandardMaterial({ color: 0x59402c, roughness: 1 });
+  const barkLight = new THREE.MeshStandardMaterial({ color: 0x76563a, roughness: 1 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.13, .34, 4.2, 9, 3), bark);
+  trunk.position.y = 2.0; trunk.rotation.z = (random() - .5) * .12; group.add(trunk);
+  // Ramas que salen del tronco con ángulos y longitudes diferentes.
+  for (let i = 0; i < 5; i++) {
+    const angle = random() * Math.PI * 2;
+    const length = 1.15 + random() * .8;
+    const branch = new THREE.Mesh(new THREE.CylinderGeometry(.035, .105, length, 6), i % 2 ? bark : barkLight);
+    branch.position.set(Math.cos(angle) * .48, 1.65 + i * .43, Math.sin(angle) * .48);
+    branch.rotation.z = Math.cos(angle) * -.72;
+    branch.rotation.x = Math.sin(angle) * .72;
+    group.add(branch);
+  }
+  const palette = [0x294a31,0x355b38,0x426b3d,0x507344,0x3b6239,0x607c49];
+  // Copas orgánicas superpuestas: silueta irregular, no conos repetidos.
+  for (let i = 0; i < 11; i++) {
+    const radius = .72 + random() * .72;
     const crown = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(radius, 1),
-      new THREE.MeshStandardMaterial({ color: palette[Math.floor(random()*palette.length)], roughness: 1, flatShading: false })
+      new THREE.IcosahedronGeometry(radius, 2),
+      new THREE.MeshStandardMaterial({ color: palette[Math.floor(random()*palette.length)], roughness: .96 })
     );
-    crown.position.set((random()-.5)*1.35, 2.7 + random()*1.8, (random()-.5)*1.25);
-    crown.scale.set(1 + random()*.25, .85 + random()*.35, 1 + random()*.2);
+    const ring = i < 7 ? 1 : .52;
+    const angle = random() * Math.PI * 2;
+    crown.position.set(Math.cos(angle) * ring, 3.15 + random() * 2.0, Math.sin(angle) * ring);
+    crown.scale.set(1.0 + random()*.34, .78 + random()*.42, .9 + random()*.32);
     group.add(crown);
   }
   scene.add(group);
 }
-
 function makeRock(x, z, scale, random) {
   const y = terrainHeight(x, z);
   const mesh = new THREE.Mesh(
@@ -276,18 +318,19 @@ function showToast(message) {
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9bb8ae);
-  scene.fog = new THREE.Fog(0x9bb8ae, 105, 235);
+  makeSky();
+  scene.fog = new THREE.Fog(0xb4c4b6, 145, 285);
   camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 280);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.18;
   game.insertBefore(renderer.domElement, game.firstChild);
-  scene.add(new THREE.HemisphereLight(0xe7f1e9, 0x52604a, 1.55));
-  const sun = new THREE.DirectionalLight(0xffedce, 2.7);
-  sun.position.set(-35, 65, 28);
+  scene.add(new THREE.HemisphereLight(0xeaf3ed, 0x46533c, 1.8));
+  const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
+  sun.position.set(-55, 85, 42);
   scene.add(sun);
   makeDistantMountains();
   makeTerrain();
