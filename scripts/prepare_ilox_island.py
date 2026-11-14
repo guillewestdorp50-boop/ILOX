@@ -16,7 +16,7 @@ def patch(path, old, new, label):
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
-"  low: { renderScale: 0.68, shadowMap: 512, cascades: 1, shadowFar: 90, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.14, grassFar: 12, lodScale: 0.42, oceanSegments: 64, cloudSteps: 2, rainParticles: 250 },",
+"  low: { renderScale: 0.68, shadowMap: 512, cascades: 1, shadowFar: 90, ao: false, aoScale: 0.5, taa: false, bloom: false, density: 0.08, grassFar: 8, lodScale: 0.36, oceanSegments: 48, cloudSteps: 2, rainParticles: 150 },",
 "mobile low preset")
 patch("src/core/quality.ts",
 "export const preset: Preset = forced && PRESETS.includes(forced) ? forced : params.test ? 'high' : Math.min(PRESETS.indexOf(guess(gpuName)), 2) >= 0 ? PRESETS[Math.min(PRESETS.indexOf(guess(gpuName)), 2)] : 'high';",
