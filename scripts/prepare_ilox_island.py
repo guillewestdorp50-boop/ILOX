@@ -1014,7 +1014,7 @@ patch("src/main.ts",
     hub.rotation.z = Math.PI / 2;
     void wheel;
   }
-  quadBike.position.set(spot.player[0] + 4, hf.height(spot.player[0] + 4, spot.player[1] + 4) - 0.32, spot.player[1] + 4);
+  quadBike.position.set(spot.player[0] + 3, hf.height(spot.player[0] + 3, spot.player[1] + 3), spot.player[1] + 3);
   quadBike.rotation.y = spot.yaw;
   scene.add(quadBike);
   let quadMounted = false;
@@ -1041,7 +1041,7 @@ patch("src/main.ts",
 "keyboard mount and dismount")
 patch("src/main.ts",
 "    player.update(dt, playerIntent, rig.yaw);\n    rig.update(dt,",
-"    player.update(dt, playerIntent, rig.yaw);\n    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y - 0.32, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      player.root.position.y += 0.48;\n    }\n    rig.update(dt,",
+"    player.update(dt, playerIntent, rig.yaw);\n    if (quadMounted) {\n      quadBike.position.set(player.pos.x, player.pos.y, player.pos.z);\n      quadBike.rotation.y = player.heading;\n      player.root.position.y += 0.48;\n    }\n    rig.update(dt,",
 "drive quad with player movement and camera follow")
 
 
