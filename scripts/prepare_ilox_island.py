@@ -115,7 +115,7 @@ patch("src/main.ts",
 "ocean compute accumulator")
 patch("src/main.ts",
 "    if (!skip.has('oceansim')) ocean.update(renderer, camera, t, dt);",
-"    if (!skip.has('oceansim')) {\n      oceanAccumulator += dt;\n      if (oceanAccumulator >= 1 / 30) {\n        ocean.update(renderer, camera, t, oceanAccumulator);\n        oceanAccumulator = 0;\n      }\n    }",
+"    if (!skip.has('oceansim')) {\n      oceanAccumulator += dt;\n      if (oceanAccumulator >= (new URLSearchParams(location.search).has('ocean20') ? 1 / 20 : 1 / 30)) {\n        ocean.update(renderer, camera, t, oceanAccumulator);\n        oceanAccumulator = 0;\n      }\n    }",
 "throttle ocean compute to 30hz")
 
 # Carve several broad, naturally irregular grass clearings into the forest mask.
@@ -494,7 +494,24 @@ patch("src/world/TerrainMaterial.ts",
   const rock = max(m1.x, smoothstep(0.42, 0.6, slope)
     .mul(float(1).sub(m0.x.mul(0.9)))
     .mul(smoothstep(1.5, 4.0, p.y)));
-  const weights = [m0.x, m0.w.mul(0.85), m0.y, m0.z, rock];
+  // Preserve original mask semantics and base coverage while sampling five layers.
+  // Fallback weights prevent uncovered mask pixels from becoming black.
+  const h = heightAt(xz);
+  const underwater = smoothstep(0.15, -0.5, h);
+  const pool = hf.meta.pool;
+  const dPool = length(xz.sub(vec2(pool.p[0], pool.p[1])));
+  const poolBank = smoothstep(pool.r + 15, pool.r + 4, dPool)
+    .mul(smoothstep(pool.level + 9, pool.level + 2, h));
+  const notRock = float(1).sub(rock);
+  const wBase = float(1).sub(max(max(m0.x, rock), max(max(m0.y, m0.z), m0.w))).clamp(0, 1);
+  const noSand = float(1).sub(poolBank);
+  const weights = [
+    m0.x.mul(float(1).sub(underwater)).mul(noSand),
+    m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
+    m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
+    m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
+    rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
+  ];
   const indices = [0, 2, 3, 4, 5];
   const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];
   let albedo: N = vec3(0);
