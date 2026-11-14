@@ -577,14 +577,14 @@ patch("src/world/TerrainMaterial.ts",
 "  const liteIndices = uniformGround ? [3, 5] : [0, 2, 3, 4, 5];",
 "load only grass and basalt for uniform ground")
 patch("src/world/TerrainMaterial.ts",
-`  const weights = [
+"""  const weights = [
     m0.x.mul(float(1).sub(underwater)).mul(noSand),
     m0.w.mul(float(1).sub(m0.x)).mul(notRock).add(wBase.mul(0.55)).add(poolBank.mul(0.55)),
     m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
     m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
     rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
-  ];`,
-`  const weights = uniformGround
+  ];""",
+"""  const weights = uniformGround
     ? [float(1).sub(rock), rock]
     : [
         m0.x.mul(float(1).sub(underwater)).mul(noSand),
@@ -592,7 +592,7 @@ patch("src/world/TerrainMaterial.ts",
         m0.y.mul(notRock).mul(float(1).sub(m0.x.mul(0.8))).add(wBase.mul(0.45)),
         m0.z.mul(float(1).sub(rock.mul(0.7))).mul(noSand),
         rock.mul(float(1).sub(m0.w.mul(0.5))).add(poolBank.mul(0.5)),
-      ];`,
+      ];""",
 "uniform grass and slope rock weights")
 patch("src/world/TerrainMaterial.ts",
 "  const indices = [0, 2, 3, 4, 5];\n  const scales = [SCALE[0], SCALE[2], SCALE[3], SCALE[4], SCALE[5]];",
