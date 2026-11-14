@@ -159,7 +159,7 @@ patch("src/main.ts",
 "remove buildings")
 patch("src/main.ts",
 "  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'beach')) ?? SPOTS[0];",
-"  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'jungle')) ?? SPOTS[0];",
+"  const spot = SPOTS.find((s) => s.name === (params.spot ?? 'village')) ?? SPOTS[0];",
 "natural spawn")
 patch("src/main.ts",
 "  const hud = new Hud(params.hud);",
@@ -987,7 +987,7 @@ index_html = index_html.replace(jump_marker, jump_marker + game_markup, 1)
 landscape_marker = '    </div>\n    <script type="module" src="./src/main.ts"></script>'
 if landscape_marker not in index_html:
     raise SystemExit("ILOX landscape overlay insertion point missing")
-index_html = index_html.replace(landscape_marker, '    </div>\n    <div id="ilox-landscape-block"><div><strong>ILOX</strong><p>Iniciando en horizontal…</p><span>Si el teléfono no gira automáticamente, rotalo para jugar</span></div></div>\n    <script type="module" src="./src/main.ts"></script>', 1)
+index_html = index_html.replace(landscape_marker, '    </div>\n    <div id="ilox-landscape-block"><div><strong>ILOX</strong><p>Iniciando en horizontal…</p><span>Si el teléfono no gira automáticamente, rotalo para jugar</span></div></div>\n    <script>\n      (() => {\n        const updateOrientation = () => {\n          const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth >= window.innerHeight;\n          document.body.classList.toggle("ilox-landscape", landscape);\n        };\n        updateOrientation();\n        window.addEventListener("resize", updateOrientation, { passive: true });\n        window.addEventListener("orientationchange", updateOrientation, { passive: true });\n        try { screen.orientation?.addEventListener?.("change", updateOrientation); } catch {}\n        try { window.matchMedia("(orientation: landscape)").addEventListener("change", updateOrientation); } catch {}\n      })();\n    </script>\n    <script type="module" src="./src/main.ts"></script>', 1)
 game_css = """
       body:not(.ilox-game-ready) #ilox-touch, body:not(.ilox-game-ready) #ilox-toolbar, body:not(.ilox-game-ready) #ilox-game-panel, body:not(.ilox-game-ready) #ilox-build-status, body:not(.ilox-game-ready) #ilox-graphics-toggle, body:not(.ilox-game-ready) #ilox-aim-dot, body:not(.ilox-game-ready) #ilox-aim-distance { display:none !important; }
       #ilox-toolbar { position:absolute; left:50%; bottom:max(8px,env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; gap:6px; pointer-events:auto; }
@@ -1001,7 +1001,7 @@ game_css = """
       #ilox-game-content button { min-height:48px; border:1px solid rgba(235,240,225,.25); border-radius:8px; color:#f7f4e9; background:rgba(75,100,76,.55); font:600 10px system-ui; }
       #ilox-game-content button.selected { border-color:#e4cf91; background:rgba(117,105,57,.75); }
       #ilox-build-status { display:none; position:fixed; z-index:88; left:50%; bottom:136px; transform:translateX(-50%); max-width:90vw; padding:7px 10px; border-radius:7px; color:#fff; background:rgba(0,0,0,.76); font:600 11px system-ui; text-align:center; pointer-events:none; }
-      #ilox-landscape-block { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; text-align:center; color:#f7f4e9; background:#101b16; font:14px system-ui; }
+      body.ilox-landscape #ilox-landscape-block { display:none !important; }\n      #ilox-landscape-block { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; text-align:center; color:#f7f4e9; background:#101b16; font:14px system-ui; }
       #ilox-landscape-block strong { font:300 32px Georgia,serif; letter-spacing:.3em; } #ilox-landscape-block p { margin:16px 0 8px; font-size:17px; }
       body.ilox-building .ilox-action { pointer-events:none !important; }
       @media (orientation:portrait) and (pointer:coarse) { #ilox-landscape-block { display:flex; } #ilox-touch { display:none !important; } }
