@@ -40,3 +40,8 @@ Probar en el teléfono objetivo mirando por separado: cielo, suelo cercano, hori
 4. Cielo y suelo mantienen fluidez al mirar directamente hacia ellos.
 5. Se conservan controles táctiles, pantalla completa y navegación del personaje.
 6. El mundo original sigue intacto y accesible.
+
+
+## Vista previa Android
+- La rama genera un APK de prueba al recibir cambios en el escenario, sin publicar ni reemplazar el sitio estable.
+- El APK debe superar `node --check app.js`, la compilación Gradle y la carga de recursos antes de probarse en el teléfono.
