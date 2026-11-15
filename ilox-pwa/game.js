@@ -139,6 +139,20 @@ const activePointers = new Map(); let pinchStartDistance = 0, pinchStartZoom = 1
 const keys = new Set();
 const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.1;
+// Dependencias declarativas: cada componente indica qué estructura principal necesita.
+const BUILD_DEPENDENCIES={
+  water:{parents:["pool"],label:"pileta",parentField:"poolStructureId"}
+};
+function findRequiredParent(kind,x,z){
+  const rule=BUILD_DEPENDENCIES[kind];
+  if(!rule)return null;
+  if(rule.parents.includes("pool")){
+    return buildRecords.find(item=>item.kind==="pool"&&
+      Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&
+      Math.abs(z-item.z)<(item.poolDepth||6)/2-.35)||null;
+  }
+  return null;
+}
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
@@ -1282,11 +1296,19 @@ function createBuildPiece(record, options = {}) {
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
   if(kind==="rock"){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(.68,1),mat(0x85877e));o.position.y=.48;o.scale.set(1.1,.7,.9);o.rotation.set(.2,.4,.1);o.castShadow=true;group.add(o);}
   if(kind==="water"){
-    const w=record.poolWidth||6,d=record.poolDepth||6,geo=new THREE.PlaneGeometry(w-.62,d-.62,32,32);
-    const water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x21bde5,roughness:.12,metalness:.08,transparent:false,opacity:1,side:THREE.DoubleSide,depthWrite:true}));
-    water.rotation.x=-Math.PI/2;water.position.y=.015;water.renderOrder=4;
-    water.userData.water=true;water.userData.basePositions=geo.attributes.position.array.slice();
-    group.add(water);group.userData.water=true;group.userData.buildHeight=.02;
+    const w=record.poolWidth||6,d=record.poolDepth||6;
+    // Superficie estable: no deformar la malla cada frame evita actualizaciones repetidas
+    // de vértices/normales que pueden producir parpadeos en móviles.
+    const geo=new THREE.PlaneGeometry(w-.62,d-.62,1,1);
+    const material=new THREE.MeshPhongMaterial({
+      color:0x16bce8, specular:0x9beaff, shininess:85,
+      transparent:true, opacity:.88, side:THREE.DoubleSide,
+      depthWrite:false
+    });
+    const water=new THREE.Mesh(geo,material);
+    water.rotation.x=-Math.PI/2;water.position.y=.035;water.renderOrder=8;
+    water.frustumCulled=false;water.userData.water=true;
+    group.add(water);group.userData.water=true;group.userData.buildHeight=.04;
   }
   if(kind==="chair"){box(.95,.12,.9,wood,0,.72,0);box(.95,.85,.12,wood,0,1.15,-.39);for(const sx of [-.38,.38])for(const sz of [-.32,.32])box(.12,.68,.12,darkWood,sx,.34,sz);}
   if(kind==="table"){box(1.4,.14,1.2,wood,0,.92,0);for(const sx of [-.55,.55])for(const sz of [-.42,.42])box(.12,.9,.12,darkWood,sx,.45,sz);}
@@ -2057,7 +2079,7 @@ function placeBuildAtPointer(event){
   x=snap.x;z=snap.z;if(snap.snapped)buildRotation=snap.rotation;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
   let containingPool=null;
-  if(buildTool==="water"){containingPool=buildRecords.find(item=>item.kind==="pool"&&Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&Math.abs(z-item.z)<(item.poolDepth||6)/2-.35);if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
+  if(buildTool==="water"){containingPool=findRequiredParent("water",x,z);if(!containingPool){showToast("Primero colocá una PILETA. El agua necesita una estructura que la contenga.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
   if(isPoolTool&&buildRecords.some(item=>item.kind==="pool"&&Math.abs(item.x-x)<poolWidth/2+(item.poolWidth||6)/2&&Math.abs(item.z-z)<poolDepth/2+(item.poolDepth||6)/2)){showToast("Ese espacio ya tiene una pileta.");return;}
   if(buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"){
     const currentFoundation=foundationAt(x,z);
@@ -2346,7 +2368,7 @@ function animate() {
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
   updateBuildGravity(delta);
-  for(const group of buildGroups){if(group.userData.animalMixer){ group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;group.userData.roamTimer-=delta; if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;} const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22; if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:.42;group.position.x+=dx/dist*speed*delta;group.position.z+=dz/dist*speed*delta;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=group.position.x;group.userData.buildRecord.z=group.position.z;} const next=moving?(actions.walk||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}if(group.userData.water){const water=group.children.find(child=>child.userData.water);if(water){const pos=water.geometry.attributes.position,base=water.userData.basePositions,t=clock.elapsedTime;for(let i=0;i<pos.count;i++){const x=base[i*3],z=base[i*3+1];pos.setZ(i,Math.sin(x*4+t*1.8)*.012+Math.cos(z*4+t*1.4)*.012);}pos.needsUpdate=true;water.geometry.computeVertexNormals();}}}
+  for(const group of buildGroups){if(group.userData.animalMixer){ group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;group.userData.roamTimer-=delta; if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;} const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22; if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:.42;group.position.x+=dx/dist*speed*delta;group.position.z+=dz/dist*speed*delta;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=group.position.x;group.userData.buildRecord.z=group.position.z;} const next=moving?(actions.walk||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraDistance;
