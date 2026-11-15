@@ -2,13 +2,6 @@ name: ILOX Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [experiment/urban-rural-map]
-    paths:
-      - "app.js"
-      - "index.html"
-      - "styles.css"
-      - "manifest.webmanifest"
       - ".github/workflows/android-apk.yml"
 
 permissions:
