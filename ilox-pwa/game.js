@@ -1198,6 +1198,10 @@ async function enterMultiplayerWorld(worldId){
     return count;
   }catch(error){
     activeMultiplayerWorldId=null;multiplayerUserId=null;
+    if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
+    for(const avatar of remotePlayers.values())scene.remove(avatar);
+    remotePlayers.clear();clearCurrentBuildWorld();loadBuilds();
+    document.querySelector("#mp-leave-world")?.classList.add("hidden");
     showToast(error.message||"No se pudo entrar al mundo compartido.");
     throw error;
   }
