@@ -316,3 +316,12 @@ body{background:#201747;color:#fff}
 @keyframes welcome-button-pulse{0%,100%{box-shadow:0 0 0 7px #ffffff12,0 12px 36px #0c164d99,0 0 36px #ffcb7770}50%{box-shadow:0 0 0 13px #ffffff0a,0 15px 42px #0c164dbb,0 0 48px #ffcb7799}}
 @media(max-width:600px){.welcome{gap:clamp(34px,9vh,76px)}.welcome-brand{font-size:clamp(48px,15vw,72px)}.start-button{min-width:min(270px,82vw);min-height:72px;font-size:16px}}
 @media(prefers-reduced-motion:reduce){.welcome-stars circle,.welcome-cloud,.welcome-orbit,.welcome-island,.welcome-fireflies circle,.start-button{animation:none!important}}
+
+
+/* ILOX v95: chat fuera del área del botón MENÚ y de los controles de cámara. */
+.mp-chat-toggle{top:calc(116px + env(safe-area-inset-top));left:auto;right:12px}
+.mp-chat-panel{top:calc(164px + env(safe-area-inset-top));left:auto;right:12px}
+@media(max-width:600px){
+  .mp-chat-toggle{top:calc(112px + env(safe-area-inset-top));left:auto;right:10px;width:40px;height:40px}
+  .mp-chat-panel{top:calc(158px + env(safe-area-inset-top));left:auto;right:10px;width:min(340px,calc(100% - 20px));max-height:52dvh}
+}
