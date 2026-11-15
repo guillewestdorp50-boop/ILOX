@@ -757,7 +757,7 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
-    let forward = -moveZ;
+    let forward = moveZ;
     let strafe = 0;
     if (keys.has("w") || keys.has("arrowup")) forward -= 1;
     if (keys.has("s") || keys.has("arrowdown")) forward += 1;
