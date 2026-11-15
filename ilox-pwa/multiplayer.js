@@ -53,6 +53,29 @@ export async function joinWorld(inviteCode) {
   return data;
 }
 
+export async function getChatMessages(worldId) {
+  const { data, error } = await client.from("multiplayer_chat_messages")
+    .select("id,world_id,user_id,display_name,message,created_at")
+    .eq("world_id", worldId).order("created_at", { ascending: false }).limit(50);
+  if (error) throw error;
+  return (data || []).reverse();
+}
+
+async function sendWorldChatMessage(channel, worldId, message, displayName) {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError || !user) throw userError || new Error("No hay una sesión activa.");
+  const safeMessage = String(message || "").trim().slice(0, 500);
+  if (!safeMessage) throw new Error("Escribí un mensaje antes de enviarlo.");
+  const safeName = String(displayName || "Jugador").trim().slice(0, 32) || "Jugador";
+  const { data, error } = await client.from("multiplayer_chat_messages").insert({
+    world_id: worldId, user_id: user.id, display_name: safeName, message: safeMessage
+  }).select("id,world_id,user_id,display_name,message,created_at").single();
+  if (error) throw error;
+  const status = await channel.send({ type: "broadcast", event: "chat_message", payload: { message: data } });
+  if (status !== "ok") console.warn("ILOX multiplayer: el mensaje quedó guardado, pero no se pudo avisar en vivo:", status);
+  return data;
+}
+
 export async function getWorldStructures(worldId) {
   const { data, error } = await client.from("multiplayer_structures")
     .select("id,world_id,owner_id,kind,payload,version")
@@ -166,6 +189,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
+    .on("broadcast", { event: "chat_message" }, ({ payload }) => handlers.onChatMessage?.(payload?.message))
     .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()));
   return new Promise((resolve, reject) => {
     channel.subscribe(async status => {
@@ -177,6 +201,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
           userId: user.id,
           sendPlayerState: payload => channel.send({ type: "broadcast", event: "player_state", payload }),
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
+          sendChatMessage: (message, displayName) => sendWorldChatMessage(channel, worldId, message, displayName),
           updatePresence: payload => channel.track({ ...payload, user_id: user.id }),
           close: () => client.removeChannel(channel)
           });
