@@ -56,6 +56,7 @@ let cameraMode = "third", cameraLocked = false;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
 
+const polyHavenLoader = new GLTFLoader();
 // Las tres piletas ILOX se construyen con geometría propia; no dependen de modelos externos.
 const POOL_DESIGNS = Object.freeze({
   small: {width:6,depth:6,water:0x28c9df,tile:0x9ee7e8,edge:0xf4f3e9},
