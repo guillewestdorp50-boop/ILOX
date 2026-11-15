@@ -253,7 +253,7 @@ replace_once(audio_path,
 
 
 # Eliminar los trinos sintéticos de aves: no son grabaciones naturales y suenan artificiales.
-replace_once(audio_path, "  private birdCountdown = 3;\\n", "")
+replace_once(audio_path, "  private birdCountdown = 3;", "")
 replace_once(audio_path,
              """    // Trinos de aves a intervalos irregulares.
     this.birdCountdown -= dt;
