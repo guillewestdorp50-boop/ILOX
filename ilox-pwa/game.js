@@ -1101,7 +1101,11 @@ function createBuildPiece(record, options = {}) {
     for(const side of [-1,1]){const knob=new THREE.Mesh(new THREE.SphereGeometry(.055,14,12),metal);knob.position.set(leafWidth-.09,1.42,side*.075);hinge.add(knob);}
     for(const yy of [.16,doorHeight-.24]){const h=new THREE.Mesh(new THREE.BoxGeometry(.045,.12,.19),metal);h.position.set(.015,yy,0);hinge.add(h);}
     group.userData.doorLeafPivot=hinge;group.userData.buildHeight=doorHeight;
-    if(record.open)hinge.rotation.y=Math.PI/2;
+    if(record.open){
+      hinge.rotation.y=Math.PI/2;
+      group.userData.doorIsOpen=true;
+      group.userData.doorAutoCloseAt=Date.now()+3000;
+    }
   }
   if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
   if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
@@ -1185,7 +1189,7 @@ async function loadMultiplayerStructures(worldId){
   clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
   for(const row of rows){
     const record={...(row.payload||{}),kind:row.kind,cloudId:row.id,cloudOwnerId:row.owner_id};
-    if(record.kind==="door"){record.pin=null;record.open=false;}
+    if(record.kind==="door")record.pin=null;
     buildRecords.push(record);createBuildPiece(record);
     multiplayerCloudSnapshot.set(row.id,multiplayerFingerprint(record));
   }
@@ -1777,8 +1781,10 @@ function openDoorLeaf(group){
   const pivot=group?.userData.doorLeafPivot;if(!pivot)return;
   pivot.rotation.y=Math.PI/2;
   group.userData.doorIsOpen=true;
+  if(group.userData.buildRecord)group.userData.buildRecord.open=true;
   group.userData.doorAutoCloseAt=Date.now()+3000;
   group.userData.doorPreviousLocalZ=null;
+  if(activeMultiplayerWorldId)persistBuilds();
 }
 doorPinForm?.addEventListener("submit",async event=>{
   event.preventDefault();const record=doorPinTarget;if(!record)return;
@@ -1989,6 +1995,10 @@ function animate() {
         if(now>=group.userData.doorAutoCloseAt){
           group.userData.doorLeafPivot.rotation.y=0;
           group.userData.doorIsOpen=false;
+          if(group.userData.buildRecord?.open){
+            group.userData.buildRecord.open=false;
+            if(activeMultiplayerWorldId)persistBuilds();
+          }
           group.userData.doorAutoCloseAt=0;
           group.userData.doorPreviousLocalZ=null;
         }
