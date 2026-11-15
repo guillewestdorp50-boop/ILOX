@@ -34,6 +34,21 @@
     <div class="touch-note">MOVER</div>
     <div class="look-note">DESLIZÁ PARA MIRAR</div>
   </div>
+  <div id="game-hud" aria-hidden="true">
+    <div class="hud-top">
+      <div class="hud-brand">ILOX <span>VALLE DEL BOSQUE</span></div>
+      <div class="hud-level"><span class="hud-dot"></span> EXPLORADOR · NIVEL 1</div>
+    </div>
+    <div class="hud-bottom-right">
+      <div class="camera-hint">DESLIZÁ PARA MIRAR</div>
+      <button id="sprint-button" type="button" aria-label="Mantener para correr"><span class="sprint-icon">➜</span><span>CORRER</span></button>
+    </div>
+  </div>
+  <div id="rotate-prompt" role="status" aria-live="polite">
+    <div class="rotate-phone"><span></span></div>
+    <strong>GIRÁ TU TELÉFONO</strong>
+    <p>ILOX se juega en pantalla horizontal</p>
+  </div>
   <script type="module" src="./src/main.ts"></script>
 </body>
 </html>
