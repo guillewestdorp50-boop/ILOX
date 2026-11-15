@@ -982,7 +982,7 @@ function placeBuildAtPointer(event){
         }
       }
     }
-    if(best){x=Math.round(best.x/1.5)*1.5;z=Math.round(best.z/1.5)*1.5;}
+    if(best){x=best.x;z=best.z;}
   }
   const ground=terrainHeight(x,z);let baseY=buildTool==="water"?containingPool.y+.76:ground;
   if(onPiece&&buildTool!=="water"){
