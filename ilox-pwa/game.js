@@ -344,155 +344,152 @@ function makeMeadowDetails() {
 }
 function makePlayer(kind = "boy") {
   const group = new THREE.Group();
-  const isAdult = kind === "man" || kind === "woman";
+  const isBuilder = kind === "builder";
+  const isAstronaut = kind === "astronaut";
+  const isRobot = kind === "robot";
   const isFemale = kind === "woman" || kind === "girl";
-  const scale = isAdult ? 1.0 : 0.79;
-  const jacketColor = kind === "builder" ? 0xd18a32 : kind === "astronaut" ? 0xe4e9ee : kind === "robot" ? 0x657b8a : 0x315a8c;
-  const jacket = new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.82 });
-  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x744f86 : kind === "builder" ? 0x3d4850 : kind === "astronaut" ? 0x536779 : kind === "robot" ? 0x344653 : 0x394b5c, roughness: 0.88, metalness: kind === "robot" ? 0.25 : 0 });
-  const skin = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x9cc9d6 : kind === "woman" ? 0xc98d68 : kind === "girl" ? 0xd9a27d : 0xd49a76, roughness: 0.75, metalness: kind === "robot" ? 0.75 : 0 });
-  const hair = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x263b4b : kind === "woman" ? 0x33251e : kind === "girl" ? 0x493026 : 0x30251f, roughness: 1 });
-  const canvas = new THREE.MeshStandardMaterial({ color: 0x887957, roughness: 1 });
-  const canvasLight = new THREE.MeshStandardMaterial({ color: 0xa18d68, roughness: 1 });
-  const leather = new THREE.MeshStandardMaterial({ color: 0x49382a, roughness: 1 });
-  const bootMat = new THREE.MeshStandardMaterial({ color: 0x302820, roughness: 1 });
-  const buckleMat = new THREE.MeshStandardMaterial({ color: 0xb49a61, metalness: 0.25, roughness: 0.7 });
+  const adult = kind === "woman" || isBuilder;
+  const scale = adult ? 1 : 0.94;
+  const mat = (color, roughness = 0.86, metalness = 0) =>
+    new THREE.MeshStandardMaterial({ color, roughness, metalness });
+  const skin = mat(kind === "girl" ? 0xc98b65 : kind === "woman" ? 0xb97855 : 0xd49a76, 0.92);
+  const hair = mat(kind === "girl" ? 0x3a241c : kind === "woman" ? 0x241a16 : 0x30231d, 1);
+  const shirtColor = isBuilder ? 0x263c36 : isAstronaut ? 0xe2e7e9 : isRobot ? 0x536a79 : kind === "girl" ? 0x8a547f : kind === "woman" ? 0x315d76 : 0x315a8c;
+  const shirt = mat(shirtColor);
+  const pants = mat(isBuilder ? 0x303b40 : isAstronaut ? 0x526779 : isRobot ? 0x344653 : kind === "girl" ? 0x4b3d63 : 0x394b5c);
+  const bootMat = mat(isBuilder ? 0x292b2b : 0x302820);
+  const gloveMat = mat(isBuilder ? 0x34383a : 0x4b4239);
+  const beltMat = mat(0x34302a);
+  const metal = mat(0xb5b9b5, 0.38, 0.65);
+  const gold = mat(0xd3a53b, 0.45, 0.35);
+  const white = mat(0xf2eee4, 0.55);
+  const dark = mat(0x252321, 0.5);
+  const add = (parent, geometry, material, x, y, z, sx=1, sy=1, sz=1) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x,y,z); mesh.scale.set(sx,sy,sz);
+    mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh);
+    return mesh;
+  };
+  const capsule = (parent, radius, length, material, x,y,z, sx=1,sy=1,sz=1) =>
+    add(parent, new THREE.CapsuleGeometry(radius,length,5,10), material,x,y,z,sx,sy,sz);
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.82, 0.42), jacket);
-  torso.position.y = 1.36;
-  group.add(torso);
-
-  // Capucha negra: volumen de tela detrás de la cabeza, visible de perfil y desde atrás.
-  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.36, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.78), jacket);
-  hood.position.set(0, 1.99, 0.105);
-  hood.scale.set(1, 1.04, 0.82);
-  group.add(hood);
-
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.12, 0.18, 12), skin);
-  neck.position.y = 1.79;
-  group.add(neck);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skin);
-  head.position.set(0, 2.02, -0.015);
-  head.scale.set(1, 1, 1);
-  group.add(head);
-  if(kind !== "robot") {
-    const eyeMat=new THREE.MeshStandardMaterial({color:0x28231f,roughness:0.55});
-    const eyeWhite=new THREE.MeshStandardMaterial({color:0xf4eee2,roughness:0.5});
-    for(const side of [-1,1]) {
-      const eye=new THREE.Mesh(new THREE.SphereGeometry(0.035,10,8),eyeWhite);
-      eye.position.set(side*0.083,2.045,-0.239); group.add(eye);
-      const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.018,8,6),eyeMat);
-      pupil.position.set(side*0.083,2.045,-0.269); group.add(pupil);
+  if (isRobot) {
+    const body = add(group,new THREE.CapsuleGeometry(.34,.48,5,12),shirt,0,1.34,0,1,1,.82);
+    add(group,new THREE.SphereGeometry(.29,20,16),metal,0,2.02,0,1,1.05,.9);
+    add(group,new THREE.BoxGeometry(.38,.13,.08),mat(0x35d8ef,.22,.5),0,2.04,-.255);
+    add(group,new THREE.CylinderGeometry(.035,.045,.22,10),metal,0,2.36,0);
+    add(group,new THREE.SphereGeometry(.07,12,10),gold,0,2.49,0);
+    for (const side of [-1,1]) add(group,new THREE.BoxGeometry(.14,.22,.18),metal,side*.31,2.02,0);
+  } else {
+    // Cuerpo con volúmenes redondeados y ropa superpuesta, en lugar de piezas cúbicas.
+    add(group,new THREE.CapsuleGeometry(.34,.48,6,14),shirt,0,1.34,0,1.08,1,.78);
+    add(group,new THREE.CylinderGeometry(.105,.12,.18,14),skin,0,1.76,0);
+    add(group,new THREE.SphereGeometry(.285,24,20),skin,0,2.05,-.015,0.94,1.08,.9);
+    // Rasgos faciales: ojos, cejas, nariz y boca, orientados hacia el frente (-Z).
+    for (const side of [-1,1]) {
+      add(group,new THREE.SphereGeometry(.035,12,10),white,side*.09,2.075,-.255);
+      add(group,new THREE.SphereGeometry(.018,10,8),dark,side*.09,2.075,-.285);
+      add(group,new THREE.SphereGeometry(.035,10,8),hair,side*.09,2.13,-.267,1.15,.35,.45);
     }
-    const nose=new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6),skin);
-    nose.position.set(0,1.985,-0.255); nose.scale.set(0.75,1,0.8); group.add(nose);
-    const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.014,0.012),new THREE.MeshStandardMaterial({color:0x754b43}));
-    mouth.position.set(0,1.94,-0.246); group.add(mouth);
-  }
-  if (kind === "robot") {
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.39,0.13,0.12), new THREE.MeshStandardMaterial({color:0x35d8ef,emissive:0x126477,metalness:0.5,roughness:0.2}));
-    visor.position.set(0,2.04,-0.235); group.add(visor);
-    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.045,0.28,8), jacket); antenna.position.set(0,2.34,0); group.add(antenna);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8), new THREE.MeshStandardMaterial({color:0xffc85a,emissive:0x664000})); tip.position.set(0,2.5,0); group.add(tip);
-  }
-  const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.265, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), hair);
-  hairCap.position.set(0, 2.12, -0.025);
-  group.add(hairCap);
-  if (isFemale) {
-    const hairBack = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), hair);
-    hairBack.position.set(0, 1.91, -0.16);
-    hairBack.scale.set(0.95, 1.12, 0.72);
-    group.add(hairBack);
-  }
-  if (kind === "builder") {
-    const helmetMat = new THREE.MeshStandardMaterial({color:0xf0b72f,roughness:0.7});
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.31,16,12,0,Math.PI*2,0,Math.PI*0.55),helmetMat);
-    helmet.position.set(0,2.19,0); group.add(helmet);
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.07,16),helmetMat);
-    brim.position.y=2.08; group.add(brim);
-  }
-  if (kind === "astronaut") {
-    const glassHelmet = new THREE.Mesh(new THREE.SphereGeometry(0.36,20,16),new THREE.MeshPhysicalMaterial({color:0x8ed8ec,transparent:true,opacity:0.28,roughness:0.08,metalness:0.12}));
-    glassHelmet.position.set(0,2.03,0); group.add(glassHelmet);
-    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.29,0.07,8,20),new THREE.MeshStandardMaterial({color:0x9aa9b4,metalness:0.55}));
-    collar.position.y=1.78; group.add(collar);
-  }
-  if (kind === "robot") {
-    const earMat=new THREE.MeshStandardMaterial({color:0x35cce0,metalness:0.65,roughness:0.25});
-    for(const side of [-1,1]) { const ear=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.24,0.2),earMat); ear.position.set(side*0.29,2.02,0); group.add(ear); }
+    add(group,new THREE.SphereGeometry(.035,10,8),skin,0,2.015,-.276,.8,1.15,.8);
+    add(group,new THREE.CapsuleGeometry(.012,.055,3,6),mat(0x754b43),0,1.96,-.274,1,.35,.45);
+    // Cabello con volumen y mechones diferenciados.
+    add(group,new THREE.SphereGeometry(.27,20,14,0,Math.PI*2,0,Math.PI*.58),hair,0,2.17,.005,1.04,.72,1);
+    if (isFemale) {
+      add(group,new THREE.SphereGeometry(.20,16,12),hair,0,1.98,.17,.92,1.22,.85);
+      for (const side of [-1,1]) capsule(group,.075,.22,hair,side*.22,1.99,.08,1,1.35,1);
+    } else {
+      add(group,new THREE.SphereGeometry(.12,14,10),hair,0,2.23,-.19,1.25,.5,.65);
+    }
   }
 
-  // Avatar humanoide cúbico estilo Roblox: torso, cabeza y extremidades rectangulares.
+  // Cuello, hombros y extremidades articuladas con silueta anatómica.
   const arms = [], legs = [];
-  for (const side of [-1, 1]) {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.66, 0.24), jacket);
-    arm.position.set(side * 0.48, 1.38, 0);
-    arm.rotation.z = side * -0.12;
-    group.add(arm); arms.push(arm);
-    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.20, 0.22), skin);
-    hand.position.set(side * 0.48, 1.00, -0.005);
-    group.add(hand);
+  for (const side of [-1,1]) {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side*.37,1.56,0);
+    group.add(shoulder);
+    capsule(shoulder,.115,.36,shirt,0,-.20,0,1,1.05,1);
+    const elbow = new THREE.Group(); elbow.position.set(0,-.40,0); shoulder.add(elbow);
+    capsule(elbow,.085,.34,shirt,0,-.19,0,1,1,1);
+    add(elbow,new THREE.SphereGeometry(.082,12,10),skin,0,-.40,-.005,1,.85,.9);
+    add(elbow,new THREE.CapsuleGeometry(.075,.07,4,8),isBuilder?gloveMat:skin,0,-.49,-.01);
+    arms.push(shoulder);
 
-    const legPivot = new THREE.Group();
-    legPivot.position.set(side * 0.18, 0.91, 0);
-    group.add(legPivot);
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.70, 0.30), pants);
-    leg.position.set(0, -0.34, 0);
-    legPivot.add(leg);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.18, 0.40), bootMat);
-    boot.position.set(0, -0.78, -0.055);
-    boot.scale.set(1.05, 0.72, 1.45);
-    legPivot.add(boot); legs.push(legPivot);
+    const hip = new THREE.Group(); hip.position.set(side*.18,.99,0); group.add(hip);
+    capsule(hip,.145,.42,pants,0,-.26,0,1,1.12,1);
+    add(hip,new THREE.SphereGeometry(.145,14,12),pants,0,-.51,0,1,.7,1);
+    add(hip,new THREE.CapsuleGeometry(.13,.10,4,8),bootMat,0,-.61,-.045,1,.72,1.35);
+    legs.push(hip);
   }
 
-  // Mochila pequeña de lona vintage, con tapa, correas y bolsillos laterales.
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.66, 0.27), canvas);
-  pack.position.set(0, 1.31, 0.34);
-  pack.rotation.x = -0.06;
-  group.add(pack);
-  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.16, 0.30), canvasLight);
-  flap.position.set(0, 1.68, 0.34);
-  group.add(flap);
-  const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.10), canvasLight);
-  pocket.position.set(0, 1.22, 0.51);
-  group.add(pocket);
-  for (const side of [-1, 1]) {
-    const sidePocket = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.22, 10), canvas);
-    sidePocket.rotation.z = Math.PI / 2;
-    sidePocket.position.set(side * 0.31, 1.31, 0.34);
-    group.add(sidePocket);
-    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.69, 0.07), leather);
-    strap.position.set(side * 0.20, 1.34, 0.18);
-    group.add(strap);
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.075, 0.025), buckleMat);
-    buckle.position.set(side * 0.20, 1.40, 0.145);
-    group.add(buckle);
+  // Chaqueta/chaleco del constructor con bandas reflectantes reales y bolsillos.
+  if (isBuilder) {
+    const vest = mat(0xf08a18,0.78);
+    const reflective = mat(0xe8e8d5,0.38,0.12);
+    add(group,new THREE.CapsuleGeometry(.355,.43,5,14),vest,0,1.37,-.012,1.08,1,.80);
+    for (const y of [1.20,1.48]) {
+      const band = add(group,new THREE.CylinderGeometry(.355,.355,.075,24,1,true),reflective,0,y,0,1.02,1,.80);
+      band.rotation.z = Math.PI/2;
+    }
+    add(group,new THREE.BoxGeometry(.07,.62,.035),reflective,0,1.39,-.305);
+    for (const side of [-1,1]) {
+      add(group,new THREE.BoxGeometry(.17,.18,.035),vest,side*.20,1.18,-.305);
+      add(group,new THREE.BoxGeometry(.13,.10,.045),gold,side*.20,1.12,-.33);
+    }
+    // Cinturón de herramientas, hebilla, bolsillos y herramientas visibles.
+    add(group,new THREE.CylinderGeometry(.30,.30,.10,20),beltMat,0,1.02,0,1.05,1,.82);
+    add(group,new THREE.BoxGeometry(.13,.12,.045),gold,0,1.02,-.27);
+    for (const side of [-1,1]) {
+      add(group,new THREE.BoxGeometry(.18,.22,.12),leatherMaterial(),side*.29,.91,-.02);
+      add(group,new THREE.CylinderGeometry(.025,.025,.28,8),metal,side*.30,.88,-.12);
+    }
+    // Casco amarillo de obra con visera, ala y nervaduras.
+    const helmet = mat(0xf4bd24,.58);
+    add(group,new THREE.SphereGeometry(.30,20,14,0,Math.PI*2,0,Math.PI*.52),helmet,0,2.31,0,1.08,.86,1);
+    add(group,new THREE.CylinderGeometry(.34,.34,.055,24),helmet,0,2.20,0,1,1,.95);
+    add(group,new THREE.BoxGeometry(.075,.22,.045),gold,0,2.37,-.22);
+    add(group,new THREE.BoxGeometry(.34,.045,.045),gold,0,2.30,-.04);
   }
 
-  // Parche de tela con la marca ILOX en la parte alta de la espalda, visible sobre la mochila.
-  const logoCanvas = document.createElement("canvas");
-  logoCanvas.width = 512; logoCanvas.height = 128;
-  const ctx = logoCanvas.getContext("2d");
-  ctx.clearRect(0, 0, 512, 128);
-  ctx.fillStyle = "#e7d29a";
-  ctx.font = "900 82px Arial";
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("ILOX", 256, 67);
+  if (isAstronaut) {
+    add(group,new THREE.CylinderGeometry(.27,.29,.13,20),metal,0,1.79,0);
+    add(group,new THREE.SphereGeometry(.37,24,18),new THREE.MeshPhysicalMaterial({color:0x8ed8ec,transparent:true,opacity:.22,roughness:.08,metalness:.12}),0,2.06,0);
+    add(group,new THREE.BoxGeometry(.42,.42,.16),white,0,1.35,.31);
+  }
+
+  // Calzado, costuras y detalles de ropa.
+  for (const side of [-1,1]) {
+    add(group,new THREE.BoxGeometry(.12,.08,.035),dark,side*.18,.98,-.19);
+  }
+  if (!isBuilder && !isRobot) {
+    add(group,new THREE.BoxGeometry(.44,.24,.12),beltMat,0,1.01,.015);
+  }
+
+  // Mochila de exploración de lona con correas, tapa y bolsillos (espalda +Z).
+  const packMat = mat(isBuilder ? 0x414b43 : 0x756247);
+  add(group,new THREE.BoxGeometry(.48,.62,.25),packMat,0,1.34,.34,1,1,1);
+  add(group,new THREE.BoxGeometry(.50,.15,.27),mat(0x9a815b),0,1.68,.34);
+  add(group,new THREE.BoxGeometry(.27,.22,.08),mat(0x9a815b),0,1.25,.50);
+  for (const side of [-1,1]) {
+    add(group,new THREE.BoxGeometry(.065,.65,.055),dark,side*.18,1.34,.19);
+    add(group,new THREE.CylinderGeometry(.075,.075,.18,10),packMat,side*.27,1.34,.34);
+  }
+  const logoCanvas = document.createElement("canvas"); logoCanvas.width=512; logoCanvas.height=128;
+  const ctx=logoCanvas.getContext("2d"); ctx.clearRect(0,0,512,128);
+  ctx.fillStyle="#e7d29a"; ctx.font="900 82px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("ILOX",256,67);
   const logoTexture = new THREE.CanvasTexture(logoCanvas);
-  const logo = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.48, 0.12),
-    new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true, side: THREE.DoubleSide })
-  );
-  logo.position.set(0, 1.83, 0.285);
-  group.add(logo);
+  add(group,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
 
   group.scale.setScalar(scale);
-  group.position.set(0, terrainHeight(0, 0), 0);
-  group.userData.avatarKind = kind;
-  group.userData.legs = legs;
-  group.userData.arms = arms;
+  group.position.set(0,terrainHeight(0,0),0);
+  group.userData.avatarKind=kind;
+  group.userData.legs=legs;
+  group.userData.arms=arms;
   scene.add(group);
   return group;
+
+  function leatherMaterial() { return mat(0x49382a,1); }
 }
 function showToast(message) {
   toast.textContent = message;
