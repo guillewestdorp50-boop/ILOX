@@ -24,9 +24,14 @@ let importedNatureReady = false;
 let lookPointer = null;
 let lastLookX = 0, lastLookY = 0;
 const keys = new Set();
-const worldSize = 220;
+const urbanRuralMode = new URLSearchParams(location.search).has("urban");
+const worldSize = urbanRuralMode ? 1732.05 : 220;
 
 function terrainHeight(x, z) {
+  if (urbanRuralMode) {
+    return Math.sin(x * 0.0032) * 0.65 + Math.cos(z * 0.0027) * 0.55
+      + Math.sin((x + z) * 0.0018) * 0.28;
+  }
   const rolling = Math.sin(x * 0.035) * 2.3 + Math.cos(z * 0.029) * 2.1
     + Math.sin((x + z) * 0.021) * 1.7 + Math.cos((x - z) * 0.047) * 0.65;
   const hillA = 7 * Math.exp(-((x - 48) ** 2 + (z + 45) ** 2) / 1100);
@@ -44,7 +49,7 @@ function seededRandom(seed) {
 }
 
 function makeSky() {
-  const geometry = new THREE.SphereGeometry(260, 32, 18);
+  const geometry = new THREE.SphereGeometry(urbanRuralMode ? 5000 : 260, 32, 18);
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
@@ -260,6 +265,138 @@ function makeMeadowDetails() {
   }
   grass.instanceMatrix.needsUpdate=true; scene.add(grass);
 }
+
+function makeUrbanRuralMap() {
+  const random = seededRandom(31415926);
+  const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x555750, roughness: 1 });
+  const dirtMaterial = new THREE.MeshStandardMaterial({ color: 0x9a8c6e, roughness: 1 });
+  const wallGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const wallsMaterial = new THREE.MeshStandardMaterial({ roughness: 0.96, vertexColors: true });
+  const buildings = new THREE.InstancedMesh(wallGeometry, wallsMaterial, 64);
+  buildings.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  let count = 0;
+
+  // A compact, legible town: seven streets in each direction, with a central plaza.
+  const streetLines = [-240, -160, -80, 0, 80, 160, 240];
+  const roadGeo = new THREE.PlaneGeometry(12, 520);
+  for (const x of streetLines) {
+    const road = new THREE.Mesh(roadGeo, roadMaterial);
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(x, terrainHeight(x, 0) + 0.035, 0);
+    road.receiveShadow = false;
+    scene.add(road);
+  }
+  const crossGeo = new THREE.PlaneGeometry(520, 12);
+  for (const z of streetLines) {
+    const road = new THREE.Mesh(crossGeo, roadMaterial);
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, terrainHeight(0, z) + 0.04, z);
+    scene.add(road);
+  }
+
+  // Small plaza at the town center, intentionally kept open for later construction.
+  const plaza = new THREE.Mesh(new THREE.PlaneGeometry(58, 58),
+    new THREE.MeshStandardMaterial({ color: 0xb2a98f, roughness: 1 }));
+  plaza.rotation.x = -Math.PI / 2;
+  plaza.position.set(0, terrainHeight(0, 0) + 0.055, 0);
+  scene.add(plaza);
+
+  // Low-rise town buildings, grouped into one draw call for mobile performance.
+  for (let z = -200; z <= 200; z += 80) {
+    for (let x = -200; x <= 200; x += 80) {
+      if (Math.abs(x) < 35 && Math.abs(z) < 35) continue;
+      const slots = [[-20,-20],[20,-20],[-20,20],[20,20]];
+      for (const [ox, oz] of slots) {
+        if (random() < 0.22 || count >= 64) continue;
+        const px = x + ox, pz = z + oz;
+        const w = 13 + random() * 9, d = 13 + random() * 9;
+        const h = 5 + random() * (Math.abs(x) < 120 && Math.abs(z) < 120 ? 10 : 4);
+        dummy.position.set(px, terrainHeight(px, pz) + h / 2, pz);
+        dummy.scale.set(w, h, d);
+        dummy.rotation.y = (random() - 0.5) * 0.08;
+        dummy.updateMatrix();
+        buildings.setMatrixAt(count, dummy.matrix);
+        const palette = [0xc5b99c, 0xb7b09d, 0xa89b83, 0xd0c7b2, 0x8d978a];
+        color.setHex(palette[Math.floor(random() * palette.length)]);
+        buildings.setColorAt(count, color);
+        count++;
+      }
+    }
+  }
+  buildings.count = count;
+  buildings.instanceMatrix.needsUpdate = true;
+  if (buildings.instanceColor) buildings.instanceColor.needsUpdate = true;
+  scene.add(buildings);
+
+  // Rural houses beyond the urban grid: spaced out, simple and inexpensive.
+  const ruralHomes = new THREE.InstancedMesh(wallGeometry,
+    new THREE.MeshStandardMaterial({ color: 0xb8aa8e, roughness: 1 }), 24);
+  let homeCount = 0;
+  for (let i = 0; i < 24; i++) {
+    const angle = random() * Math.PI * 2;
+    const radius = 340 + random() * 440;
+    const x = Math.cos(angle) * radius, z = Math.sin(angle) * radius;
+    const h = 4 + random() * 2;
+    dummy.position.set(x, terrainHeight(x, z) + h / 2, z);
+    dummy.scale.set(10 + random() * 5, h, 9 + random() * 5);
+    dummy.rotation.y = random() * Math.PI;
+    dummy.updateMatrix();
+    ruralHomes.setMatrixAt(homeCount++, dummy.matrix);
+  }
+  ruralHomes.count = homeCount;
+  ruralHomes.instanceMatrix.needsUpdate = true;
+  scene.add(ruralHomes);
+
+  // Two pale rural tracks lead away from town; no water geometry or water simulation exists here.
+  const track = new THREE.Mesh(new THREE.PlaneGeometry(7, 900), dirtMaterial);
+  track.rotation.x = -Math.PI / 2;
+  track.rotation.z = 0.34;
+  track.position.set(430, 0.06, 0);
+  scene.add(track);
+  const track2 = new THREE.Mesh(new THREE.PlaneGeometry(7, 900), dirtMaterial);
+  track2.rotation.x = -Math.PI / 2;
+  track2.rotation.z = -0.29;
+  track2.position.set(-410, 0.06, 30);
+  scene.add(track2);
+
+  // A sparse tree belt in the rural transition, instanced instead of hundreds of separate meshes.
+  const trunkGeo = new THREE.CylinderGeometry(0.45, 0.7, 7, 5);
+  const crownGeo = new THREE.IcosahedronGeometry(4.2, 0);
+  const trunks = new THREE.InstancedMesh(trunkGeo,
+    new THREE.MeshStandardMaterial({ color: 0x66503a, roughness: 1 }), 150);
+  const crowns = new THREE.InstancedMesh(crownGeo,
+    new THREE.MeshStandardMaterial({ color: 0x526b43, roughness: 1, flatShading: true }), 150);
+  for (let i = 0; i < 150; i++) {
+    const angle = random() * Math.PI * 2;
+    const radius = 300 + random() * 520;
+    const x = Math.cos(angle) * radius, z = Math.sin(angle) * radius;
+    dummy.position.set(x, terrainHeight(x, z) + 3.5, z);
+    dummy.scale.setScalar(0.65 + random() * 0.65);
+    dummy.rotation.set(0, random() * Math.PI, 0);
+    dummy.updateMatrix(); trunks.setMatrixAt(i, dummy.matrix);
+    dummy.position.y += 5;
+    dummy.scale.setScalar(0.8 + random() * 0.6);
+    dummy.updateMatrix(); crowns.setMatrixAt(i, dummy.matrix);
+  }
+  trunks.instanceMatrix.needsUpdate = true;
+  crowns.instanceMatrix.needsUpdate = true;
+  scene.add(trunks, crowns);
+
+  // A few broad, low-cost field patches give the outskirts a rural reading without dense grass.
+  const fieldMaterial = new THREE.MeshStandardMaterial({ color: 0x75834c, roughness: 1 });
+  for (let i = 0; i < 18; i++) {
+    const x = (random() - 0.5) * 1450, z = (random() - 0.5) * 1450;
+    if (Math.abs(x) < 300 && Math.abs(z) < 300) continue;
+    const patch = new THREE.Mesh(new THREE.PlaneGeometry(95 + random() * 65, 70 + random() * 55), fieldMaterial);
+    patch.rotation.x = -Math.PI / 2;
+    patch.rotation.z = random() * Math.PI;
+    patch.position.set(x, terrainHeight(x, z) + 0.018, z);
+    scene.add(patch);
+  }
+}
+
 function makePlayer(kind = "boy") {
   const group = new THREE.Group();
   const isAdult = kind === "man" || kind === "woman";
@@ -379,8 +516,8 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9bb8ae);
   makeSky();
-  scene.fog = new THREE.Fog(0xb4c4b6, 145, 285);
-  camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 280);
+  scene.fog = urbanRuralMode ? new THREE.Fog(0xb4c4b6, 900, 2600) : new THREE.Fog(0xb4c4b6, 145, 285);
+  camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, urbanRuralMode ? 3200 : 280);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
   renderer.setSize(innerWidth, innerHeight);
@@ -392,19 +529,23 @@ function init() {
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
   scene.add(sun);
-  makeDistantMountains();
   makeTerrain();
-  makeMeadowDetails();
-  makeRiver();
+  if (urbanRuralMode) {
+    makeUrbanRuralMap();
+  } else {
+    makeDistantMountains();
+    makeMeadowDetails();
+    makeRiver();
+  }
   const random = seededRandom(20261114);
-  for (let i = 0; i < 230; i++) {
+  for (let i = 0; i < (urbanRuralMode ? 0 : 230); i++) {
     const x = (random() - 0.5) * 190;
     const z = (random() - 0.5) * 190;
     if (Math.hypot(x, z) < 21) continue;
     if (Math.abs(x - (Math.sin(z * 0.025) * 17 - 15)) < 5) continue;
     makeTree(x, z, 0.72 + random() * 0.65, random);
   }
-  for (let i = 0; i < 95; i++) {
+  for (let i = 0; i < (urbanRuralMode ? 0 : 95); i++) {
     const x = (random() - 0.5) * 195;
     const z = (random() - 0.5) * 195;
     if (Math.hypot(x, z) < 13) continue;
@@ -412,7 +553,7 @@ function init() {
   }
   player = makePlayer();
   clock = new THREE.Clock();
-  camera.position.set(0, player.position.y + 4.1, 8.5);
+  camera.position.set(0, player.position.y + 4.1, urbanRuralMode ? 10.5 : 8.5);
   camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
   addEvents();
   animate();
@@ -522,7 +663,7 @@ function animate() {
     player.position.y = terrainHeight(player.position.x, player.position.z);
     if (length > 0.08) player.rotation.y = Math.atan2(dx, dz);
   }
-  const distance = 8.5;
+  const distance = urbanRuralMode ? 10.5 : 8.5;
   const targetX = player.position.x + Math.sin(yaw) * distance;
   const targetZ = player.position.z + Math.cos(yaw) * distance;
   const targetY = player.position.y + 3.2 + pitch * 5;
