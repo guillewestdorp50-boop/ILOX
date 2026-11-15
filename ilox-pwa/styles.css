@@ -120,3 +120,10 @@ h1 em{font-style:normal;color:#e8d29a}
 .jump-button{pointer-events:auto;position:absolute;right:25px;bottom:calc(38px + env(safe-area-inset-bottom));z-index:6;width:68px;height:68px;border-radius:50%;border:2px solid #ffffff85;background:#173d31eF;color:#fff;font-size:25px;font-weight:950;box-shadow:0 5px 18px #0008;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
 .jump-button small{font-size:8px;letter-spacing:.12em}
 @media(max-width:600px){.camera-controls{top:calc(66px + env(safe-area-inset-top));right:10px}.camera-menu-toggle{width:36px;height:34px}.camera-menu-toggle svg{width:27px;height:21px}.camera-mode-panel{top:40px}.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:31px;height:30px}.jump-button{right:18px;bottom:calc(34px + env(safe-area-inset-bottom));width:62px;height:62px}}
+
+/* ILOX v44: pantalla de partida limpia, sin textos promocionales del inicio */
+.hud-minimal{position:absolute;z-index:15;top:calc(10px + env(safe-area-inset-top));right:12px;left:auto;padding:0;pointer-events:none}
+.hud-minimal #fullscreen{pointer-events:auto}
+.hud-minimal .brand,.hud-minimal .world-label{display:none!important}
+.welcome.hidden,.avatar-select.hidden{display:none!important}
+.bottom-hint,.controls-help,.asset-credit{display:none!important}
