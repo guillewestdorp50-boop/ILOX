@@ -350,7 +350,7 @@ async function loadRemoteAvatarModel(character, kind) {
   const variant = Number(variantText) || 0;
   const avatarUrl = avatarType === "soldier" ? RIGGED_AVATAR_URL :
     HUMAN_AVATAR_MODELS[avatarType]?.[variant % (HUMAN_AVATAR_MODELS[avatarType]?.length || 1)];
-  if (!avatarUrl) return;
+  if (!avatarUrl) { character.userData.remoteModelLoading = false; return; }
   const token = (character.userData.remoteModelToken || 0) + 1;
   character.userData.remoteModelToken = token;
   let promise = remoteAvatarModelPromises.get(avatarUrl);
@@ -388,6 +388,8 @@ async function loadRemoteAvatarModel(character, kind) {
     character.userData.riggedAvatar = true;
   } catch (error) {
     console.warn("ILOX multiplayer: no se pudo cargar el modelo remoto", kind, error);
+  } finally {
+    if (character.userData.remoteModelToken === token) character.userData.remoteModelLoading = false;
   }
 }
 
@@ -1248,7 +1250,10 @@ function updateRemotePlayer(data){
     remotePlayers.set(userId,avatar);
   }else avatar.userData.netTarget.copy(target);
   avatar.userData.remoteLastSeen=Date.now();
-  if (!avatar.userData.riggedAvatar) loadRemoteAvatarModel(avatar, avatarKind);
+  if (!avatar.userData.riggedAvatar && !avatar.userData.remoteModelLoading) {
+    avatar.userData.remoteModelLoading = true;
+    loadRemoteAvatarModel(avatar, avatarKind);
+  }
   avatar.userData.netRotation=Number(data.rotation)||0;
   avatar.userData.remoteMoving=!!data.moving;
   avatar.userData.remoteSwimming=!!data.swimming;
