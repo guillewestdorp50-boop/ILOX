@@ -9,6 +9,9 @@ on:
       - 'ilox-forest-index.html'
       - 'ilox-forest.css'
       - 'ilox-pwa/**'
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
       - '.github/workflows/test-ilox-landscape.yml'
   workflow_dispatch:
 
@@ -55,6 +58,8 @@ jobs:
       - name: Validar PWA ILOX y orientación horizontal
         run: |
           node --check ilox-pwa/app.js
+          node --input-type=module --check < ilox-pwa/game.js
+          test -s ilox-pwa/game.js
           node --check ilox-pwa/sw.js
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('ilox-pwa/manifest.webmanifest','utf8'));if(m.orientation!=='landscape')throw new Error('PWA must request landscape orientation');for(const f of ['index.html','styles.css','app.js','manifest.webmanifest','sw.js','icon.svg'])if(!fs.statSync('ilox-pwa/'+f).size)throw new Error('Missing '+f);"
           grep -q "orientation.*landscape" manifest.webmanifest
