@@ -56,61 +56,12 @@ let cameraMode = "third", cameraLocked = false;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
 
-const polyHavenLoader = new GLTFLoader();
-// Kit modular CC0: baldosa de fondo y pared cerámica de tanque de pileta, agua separada.
-const POOL_KIT_ASSETS = {
-  floor: "https://cdn.3dassets.dev/assets/35234/v1/model.glb",
-  wall: "https://cdn.3dassets.dev/assets/35235/v1/model.glb"
-};
-const poolKitPromises = new Map();
-async function loadPoolKitAsset(key) {
-  if (!poolKitPromises.has(key)) {
-    poolKitPromises.set(key, polyHavenLoader.loadAsync(POOL_KIT_ASSETS[key]).catch(error => {
-      poolKitPromises.delete(key);
-      throw error;
-    }));
-  }
-  return poolKitPromises.get(key);
-}
-async function loadModularPoolShell(group, record) {
-  try {
-    const [floorGltf, wallGltf] = await Promise.all([loadPoolKitAsset("floor"), loadPoolKitAsset("wall")]);
-    if (group.parent !== scene) return;
-    const width = record.poolWidth || 6, depth = record.poolDepth || 6, bottom = -2;
-    for (const child of [...group.children]) {
-      group.remove(child);
-      child.traverse?.(object => {
-        object.geometry?.dispose();
-        if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => material.dispose());
-      });
-    }
-    const addModule = (source, x, y, z, rotation = 0) => {
-      const module = cloneSkeleton(source.scene);
-      module.position.set(x, y, z);
-      module.rotation.y = rotation;
-      module.traverse(object => {
-        if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; }
-      });
-      group.add(module);
-    };
-    for (let x = -width / 2 + 1; x < width / 2; x += 2) {
-      for (let z = -depth / 2 + 1; z < depth / 2; z += 2) addModule(floorGltf, x, bottom, z);
-    }
-    for (let x = -width / 2 + 1; x < width / 2; x += 2) {
-      addModule(wallGltf, x, bottom, -depth / 2, 0);
-      addModule(wallGltf, x, bottom, depth / 2, Math.PI);
-    }
-    for (let z = -depth / 2 + 1; z < depth / 2; z += 2) {
-      addModule(wallGltf, -width / 2, bottom, z, Math.PI / 2);
-      addModule(wallGltf, width / 2, bottom, z, -Math.PI / 2);
-    }
-    group.userData.buildHeight = 2.12;
-    group.userData.poolKitReady = true;
-    group.updateMatrixWorld(true);
-  } catch (error) {
-    console.warn("ILOX: no se pudo cargar el kit modular de pileta; se conserva el modelo alternativo.", error);
-  }
-}
+// Las tres piletas ILOX se construyen con geometría propia; no dependen de modelos externos.
+const POOL_DESIGNS = Object.freeze({
+  small: {width:6,depth:6,water:0x28c9df,tile:0x9ee7e8,edge:0xf4f3e9},
+  large: {width:12,depth:12,water:0x20b9dc,tile:0x8edce7,edge:0xf8f5eb},
+  municipal: {width:24,depth:12,water:0x168fca,tile:0xd7edf0,edge:0xf6f4ec}
+});
 const avatarModelLoader = new GLTFLoader();
 const animalModelLoader = new GLTFLoader();
 const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb",pig:"https://gobkit.com/freebies/animal005/Pig.glb",goat:"https://gobkit.com/freebies/animalB/Goat.glb"};
@@ -1324,13 +1275,40 @@ function createBuildPiece(record, options = {}) {
   }
   if(kind==="platea"){const slab=mat(0xb8b9b3,.88);box(6,.3,6,slab,0,.15,0);group.userData.isFoundation=true;group.userData.buildHeight=.3;}
   if(kind==="pool"){
-    const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);
-    // Fallback geométrico hasta que termine de cargar el kit modular seco.
-    box(w,.3,d,pf,0,-depth-.37,0);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);
-    box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);
-    box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);
-    box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);
-    box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);
+    const design=POOL_DESIGNS[record.poolDesign]||POOL_DESIGNS.small;
+    const w=record.poolWidth||design.width,d=record.poolDepth||design.depth,depth=2;
+    const shell=mat(0x6b9da5,.88),inner=mat(design.tile,.72),rim=mat(design.edge,.62),accent=mat(record.poolDesign==="municipal"?0x176fa7:0x22aebc,.55);
+    // Vasija monolítica con paredes dobles y fondo revestido: toda la geometría es original de ILOX.
+    box(w,.34,d,shell,0,-depth-.38,0);
+    box(w-.48,.12,d-.48,inner,0,-depth-.17,0);
+    box(.34,depth+.24,d,shell,-w/2+.17,-depth/2+.10,0);
+    box(.34,depth+.24,d,shell,w/2-.17,-depth/2+.10,0);
+    box(w-.34,depth+.24,.34,shell,0,-depth/2+.10,-d/2+.17);
+    box(w-.34,depth+.24,.34,shell,0,-depth/2+.10,d/2-.17);
+    // Revestimiento interior en bandas y borde perimetral ancho.
+    box(.045,depth-.12,d-.62,inner,-w/2+.365,-depth/2+.10,0);
+    box(.045,depth-.12,d-.62,inner,w/2-.365,-depth/2+.10,0);
+    box(w-.62,depth-.12,.045,inner,0,-depth/2+.10,-d/2+.365);
+    box(w-.62,depth-.12,.045,inner,0,-depth/2+.10,d/2-.365);
+    box(w+.22,.22,.48,rim,0,.11,-d/2+.20);box(w+.22,.22,.48,rim,0,.11,d/2-.20);
+    box(.48,.22,d-.18,rim,-w/2+.20,.11,0);box(.48,.22,d-.18,rim,w/2-.20,.11,0);
+    // Línea decorativa de mosaicos bajo la coronación.
+    for(let side of [-1,1])box(w-.85,.10,.055,accent,0,-.34,side*(d/2-.37));
+    if(record.poolDesign==="municipal"){
+      // Carriles de natación y escalerillas en ambos extremos de la pileta municipal.
+      for(let lane=-2;lane<=2;lane++)box(.035,.018,d-1.15,mat(0xf4fbff),lane*w/6,-.035,0);
+      for(let side of [-1,1]){
+        cyl(side*(w/2-.72),-.42,-d/2+.9,.055,.055,.84,mat(0xb8c5c8,.3,.7));
+        cyl(side*(w/2-.72),-.42,d/2-.9,.055,.055,.84,mat(0xb8c5c8,.3,.7));
+      }
+    }else if(record.poolDesign==="large"){
+      // Escalones sumergidos en una esquina para facilitar la entrada.
+      for(let step=0;step<3;step++)box(1.05,.18,.62,inner,-w/2+.78+step*.42,-.34-step*.28,-d/2+.62+step*.42);
+      for(const sx of [-1,1])cyl(sx*.34,.55,-d/2+.5,.045,.045,1.0,mat(0xb8c5c8,.3,.7));
+    }else{
+      // Escalera compacta integrada en un lateral.
+      for(let i=0;i<3;i++)box(.65,.12,.22,inner,-w/2+.48+i*.18,-.35-i*.30,-d/2+.55+i*.12);
+    }
     group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
   }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
@@ -1390,8 +1368,7 @@ function createBuildPiece(record, options = {}) {
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);
-  if(kind==="pool"){refreshTerrainSurface();loadModularPoolShell(group,record);}
-  else if(kind==="platea")refreshTerrainSurface();
+  if(kind==="pool"||kind==="platea")refreshTerrainSurface();
   if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
   return group;
 }
@@ -2184,7 +2161,9 @@ function placeBuildAtPointer(event){
   if(buildTool==="platea"){const n=buildRecords.find(r=>r.kind==="platea"&&((Math.abs(Math.abs(r.x-x)-6)<.2&&Math.abs(r.z-z)<.2)||(Math.abs(Math.abs(r.z-z)-6)<.2&&Math.abs(r.x-x)<.2)));if(n)baseY=n.y;else{let top=-Infinity;for(let ix=-2;ix<=2;ix++)for(let iz=-2;iz<=2;iz++)top=Math.max(top,terrainHeight(x+ix*1.5,z+iz*1.5));baseY=top+.04;}}
   if(isPoolTool){let top=-Infinity;for(let ix=-poolWidth/2;ix<=poolWidth/2;ix+=1.5)for(let iz=-poolDepth/2;iz<=poolDepth/2;iz+=1.5)top=Math.max(top,terrainHeight(x+ix,z+iz));baseY=top+.04;}
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const sr=root.userData.buildRecord;if(sr){const normal=hit.face?hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize():new THREE.Vector3(0,1,0);baseY=normal.y<.65?sr.y:sr.y+(root.userData.buildHeight||1.5);}else baseY=new THREE.Box3().setFromObject(root).max.y;}
-  const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:2.4),rotation:buildRotation,color:selectedBlockColor};if(isPoolTool){record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
+  const poolDesign=buildTool==="pool-municipal"?"municipal":buildTool==="pool-large"?"large":"small";
+  const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:2.4),rotation:buildRotation,color:selectedBlockColor};
+  if(isPoolTool){record.poolDesign=poolDesign;record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
   const isAnimal=["sheep","cow","horse","chicken","pig","goat"].includes(buildTool);
   createBuildPiece(record,{notify:isAnimal});persistBuilds();
@@ -2266,7 +2245,10 @@ function toggleDoorAtPointer(event){
   openDoorPinDialog(record,"unlock");
 }
 
-function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked||player.userData.isSwimming)return;playerVerticalVelocity=8.4;playerGrounded=false;}
+function triggerJump(){if(!started||!player||cameraLocked)return;
+  if(player.userData.isSwimming){player.userData.poolExitJumpUntil=Date.now()+950;player.userData.isSwimming=false;playerVerticalVelocity=8.4;playerGrounded=false;return;}
+  if(!playerGrounded)return;playerVerticalVelocity=8.4;playerGrounded=false;
+}
 function updateMoveStick(event) {
   const rect = movePad.getBoundingClientRect();
   const radius = Math.min(rect.width, rect.height) * 0.36;
@@ -2332,7 +2314,7 @@ function animate() {
         if (!solidKinds.has(kind) || !g.visible) continue;
         // Dentro del agua, las paredes dejan de bloquear al nadador; al entrar
         // se permite cruzar el borde desde un salto, y al nadar se puede salir.
-        if(kind==="pool"&&(playerSwimming||(filledPoolAtCandidate&&player.position.y>=(g.userData.buildRecord.y||0)+.18)))continue;
+        if(kind==="pool"&&player.position.y>=(g.userData.buildRecord.y||0)+.22)continue;
         g.updateMatrixWorld(true);
         let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
@@ -2341,7 +2323,7 @@ function animate() {
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     const pool=buildRecords.find(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(player.position.x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(player.position.z-p.z)<(p.poolDepth||6)/2-.48);
-    const surface=pool?pool.y:-Infinity,swimming=!!pool&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
+    const surface=pool?pool.y:-Infinity,swimming=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(swimming){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
     else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
     const moving = inputLength > 0.08;
