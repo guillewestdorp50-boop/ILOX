@@ -15,10 +15,14 @@ const movePad = document.querySelector("#move-pad");
 const moveKnob = document.querySelector("#move-knob");
 const cameraControls = document.querySelector("#camera-controls");
 const cameraLockButton = document.querySelector("#camera-lock");
+const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
+const cameraModePanel = document.querySelector("#camera-mode-panel");
+const jumpButton = document.querySelector("#jump-button");
 const menuToggle = document.querySelector("#menu-toggle");
 const menuPanel = document.querySelector("#menu-panel");
 const buildPanel = document.querySelector("#build-panel");
 let moveStickPointer = null;
+let playerVerticalVelocity = 0, playerGrounded = true;
 let moveStick = { x: 0, y: 0 };
 
 let scene, camera, renderer, player, clock, terrainMesh;
@@ -669,9 +673,11 @@ function addEvents() {
   });
   addEventListener("keydown", e => {
     keys.add(e.key.toLowerCase());
+    if(e.key===" "||e.key==="Spacebar")triggerJump();
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+  jumpButton.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();triggerJump();});
   movePad.addEventListener("pointerdown", e => {
     if (!started || cameraLocked || e.button !== 0 || moveStickPointer !== null) return;
     e.preventDefault();
@@ -946,6 +952,7 @@ function placeBuildAtPointer(event){
   const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en sector habilitado":"¡Pieza colocada y alineada!");
 }
+function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked)return;playerVerticalVelocity=7.2;playerGrounded=false;}
 function updateMoveStick(event) {
   const rect = movePad.getBoundingClientRect();
   const radius = Math.min(rect.width, rect.height) * 0.36;
@@ -1015,7 +1022,7 @@ function animate() {
     };
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
-    player.position.y = terrainHeight(player.position.x, player.position.z);
+    const groundY=terrainHeight(player.position.x,player.position.z);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;
     const moving = inputLength > 0.08;
     if (player.userData.isRiggedAvatar) {
       player.userData.mixer?.update(delta);
