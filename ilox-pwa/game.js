@@ -911,6 +911,7 @@ function addEvents() {
       document.querySelector("#mp-code-value").textContent=created.invite_code;
       document.querySelector("#mp-created-code").classList.remove("hidden");
       status.textContent="¡Partida creada! Compartí este código con tu compañero. El mundo ya queda guardado en línea.";
+      renderMultiplayerWorldList();
     }catch(error){showMultiplayerError(error);}
     finally{button.disabled=false;}
   });
@@ -925,6 +926,7 @@ function addEvents() {
       await enterMultiplayerWorld(worldId);
       document.querySelector("#mp-created-code").classList.add("hidden");
       status.textContent="¡Te uniste al mundo! Las construcciones se guardan automáticamente.";
+      renderMultiplayerWorldList();
     }catch(error){showMultiplayerError(error);}
     finally{button.disabled=false;}
   });
@@ -933,6 +935,7 @@ function addEvents() {
     try{await navigator.clipboard.writeText(code);showToast("Código copiado.");}
     catch{showToast("No se pudo copiar. Compartí el código: "+code);}
   });
+  addEventListener("online",()=>{if(activeMultiplayerWorldId)syncMultiplayerStructures();});
   document.querySelector("#mp-leave-world")?.addEventListener("click",async()=>{
     await leaveMultiplayerWorld();document.querySelector("#multiplayer-dialog").classList.add("hidden");
   });
@@ -1310,6 +1313,32 @@ async function openMultiplayerPermissions(){
   }catch(error){showToast(error.message||"No se pudieron cargar los permisos.");}
 }
 
+async function renderMultiplayerWorldList(){
+  const host=document.querySelector("#mp-world-list");
+  host.innerHTML='<div class="mp-permission-empty">Buscando partidas guardadas…</div>';
+  try{
+    const worlds=await Multiplayer.listMyWorlds();
+    host.innerHTML="";
+    if(!worlds.length){host.innerHTML='<div class="mp-permission-empty">Todavía no tenés mundos multijugador guardados. Creá uno o ingresá con un código.</div>';return;}
+    for(const world of worlds){
+      const button=document.createElement("button");button.type="button";button.className="mp-world-row";
+      const info=document.createElement("div");
+      const title=document.createElement("strong");title.textContent=world.name;
+      const meta=document.createElement("small");meta.textContent=world.role==="owner"?"Tu mundo · propietario":"Mundo compartido";
+      info.append(title,meta);
+      const action=document.createElement("span");action.textContent=activeMultiplayerWorldId===world.id?"CONECTADO":"ENTRAR →";
+      button.append(info,action);
+      button.addEventListener("click",async()=>{
+        try{
+          document.querySelector("#multiplayer-status").textContent="Abriendo "+world.name+"…";
+          await enterMultiplayerWorld(world.id);
+          document.querySelector("#multiplayer-dialog").classList.add("hidden");
+        }catch(error){showMultiplayerError(error);}
+      });
+      host.appendChild(button);
+    }
+  }catch(error){host.innerHTML='<div class="mp-permission-empty">No se pudieron cargar tus partidas. Revisá la conexión.</div>';console.warn(error);}
+}
 function openMultiplayerDialog(){
   const dialog=document.querySelector("#multiplayer-dialog");
   const nameInput=document.querySelector("#mp-display-name");
@@ -1317,6 +1346,7 @@ function openMultiplayerDialog(){
   document.querySelector("#mp-leave-world")?.classList.toggle("hidden",!activeMultiplayerWorldId);
   document.querySelector("#multiplayer-status").textContent=activeMultiplayerWorldId?"Estás conectado a un mundo compartido. Podés copiar el código o volver a tu mundo individual.":"Creá un mundo nuevo o ingresá el código de un compañero.";
   dialog.classList.remove("hidden");
+  renderMultiplayerWorldList();
 }
 function showMultiplayerError(error){
   const message=String(error?.message||error||"Error desconocido");
