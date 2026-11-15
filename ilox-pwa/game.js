@@ -36,6 +36,7 @@ let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserI
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
+const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
 let moveStickPointer = null;
 let playerVerticalVelocity = 0, playerGrounded = true;
@@ -341,6 +342,52 @@ async function loadRiggedAvatar(kind) {
   } catch (error) {
     console.warn("ILOX: no se pudo cargar el GLB humanoide; se mantiene el personaje de respaldo.", error);
     if (token === avatarLoadToken) showToast("No se pudo descargar el modelo 3D; seguimos con el personaje de respaldo");
+  }
+}
+
+async function loadRemoteAvatarModel(character, kind) {
+  const [avatarType, variantText = "0"] = String(kind).split(":");
+  const variant = Number(variantText) || 0;
+  const avatarUrl = avatarType === "soldier" ? RIGGED_AVATAR_URL :
+    HUMAN_AVATAR_MODELS[avatarType]?.[variant % (HUMAN_AVATAR_MODELS[avatarType]?.length || 1)];
+  if (!avatarUrl) return;
+  const token = (character.userData.remoteModelToken || 0) + 1;
+  character.userData.remoteModelToken = token;
+  let promise = remoteAvatarModelPromises.get(avatarUrl);
+  if (!promise) {
+    promise = (avatarType === "soldier" ? avatarModelLoader : HUMAN_MODEL_LOADER).loadAsync(avatarUrl);
+    remoteAvatarModelPromises.set(avatarUrl, promise);
+    promise.catch(() => remoteAvatarModelPromises.delete(avatarUrl));
+  }
+  try {
+    const gltf = await promise;
+    if (!remotePlayers.has(character.userData.remoteUserId) || character.userData.remoteModelToken !== token) return;
+    const model = cloneSkeleton(gltf.scene);
+    if (avatarType !== "soldier") model.rotation.y = Math.PI;
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3(); bounds.getSize(size);
+    const scale = PLAYER_HEIGHT / Math.max(size.y, 0.001);
+    model.scale.setScalar(scale);
+    model.position.y = -bounds.min.y * scale;
+    model.traverse(object => {
+      if (!object.isMesh) return;
+      object.castShadow = true; object.receiveShadow = true;
+    });
+    while (character.children.length) character.remove(character.children[0]);
+    character.add(model);
+    character.userData.riggedMixer = new THREE.AnimationMixer(model);
+    character.userData.actions = {};
+    for (const clip of gltf.animations) {
+      const name = clip.name.toLowerCase();
+      if (name.includes("idle")) character.userData.actions.idle = character.userData.riggedMixer.clipAction(clip);
+      else if (name.includes("walk")) character.userData.actions.walk = character.userData.riggedMixer.clipAction(clip);
+      else if (name.includes("run")) character.userData.actions.run = character.userData.riggedMixer.clipAction(clip);
+    }
+    const idle = character.userData.actions.idle || (gltf.animations[0] && character.userData.riggedMixer.clipAction(gltf.animations[0]));
+    if (idle) { idle.play(); character.userData.currentAction = idle; }
+    character.userData.riggedAvatar = true;
+  } catch (error) {
+    console.warn("ILOX multiplayer: no se pudo cargar el modelo remoto", kind, error);
   }
 }
 
@@ -818,6 +865,7 @@ function addEvents() {
     started = true;
     cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
+    if(multiplayerSession) Multiplayer.updateMyAvatar(selectedAvatar).catch(error=>console.warn("ILOX multiplayer: no se pudo actualizar el avatar",error));
     avatarSelect.classList.add("hidden");
     menuToggle.classList.remove("hidden");
     hint.textContent = "";
@@ -1200,6 +1248,7 @@ function updateRemotePlayer(data){
     remotePlayers.set(userId,avatar);
   }else avatar.userData.netTarget.copy(target);
   avatar.userData.remoteLastSeen=Date.now();
+  if (!avatar.userData.riggedAvatar) loadRemoteAvatarModel(avatar, avatarKind);
   avatar.userData.netRotation=Number(data.rotation)||0;
   avatar.userData.remoteMoving=!!data.moving;
   avatar.userData.remoteSwimming=!!data.swimming;
@@ -1231,11 +1280,13 @@ function syncRemotePresence(state){
   const seen=new Set();
   for(const entries of Object.values(state||{})){
     for(const entry of entries||[]){
-      if(!entry.user_id||entry.user_id===multiplayerUserId)continue;
-      seen.add(entry.user_id);
-      updateRemotePlayer({userId:entry.user_id,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
+      const userId=entry.user_id||entry.userId;
+      if(!userId||userId===multiplayerUserId)continue;
+      seen.add(userId);
+      updateRemotePlayer({userId,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
     }
   }
+  for(const userId of remotePlayers.keys())if(!seen.has(userId))removeRemotePlayer(userId);
 }
 // Punto de encuentro compartido: todos los jugadores aparecen cerca del origen del mundo.
 const MULTIPLAYER_SPAWN_CENTER = Object.freeze({ x: 0, z: 0 });
@@ -1896,13 +1947,17 @@ function animate() {
     player.rotation.y = playerHeading;
   }
   for(const [remoteId,avatar] of remotePlayers){
-    if(Date.now()-(avatar.userData.remoteLastSeen||0)>8000){removeRemotePlayer(remoteId);continue;}
     const target=avatar.userData.netTarget;
     if(target)avatar.position.lerp(target,1-Math.exp(-delta*13));
     const targetRotation=avatar.userData.netRotation||0;
     const angle=Math.atan2(Math.sin(targetRotation-avatar.rotation.y),Math.cos(targetRotation-avatar.rotation.y));
     avatar.rotation.y+=angle*(1-Math.exp(-delta*14));
     const moving=!!avatar.userData.remoteMoving,swimming=!!avatar.userData.remoteSwimming;
+    if(avatar.userData.riggedMixer){
+      avatar.userData.riggedMixer.update(delta);
+      setRiggedAvatarMotion(avatar,moving);
+      continue;
+    }
     avatar.userData.remoteWalkPhase=(avatar.userData.remoteWalkPhase||0)+(moving?delta*10.5:0);
     const phase=avatar.userData.remoteWalkPhase;
     const swing=swimming?Math.sin(phase*1.7)*.24:moving?Math.sin(phase)*.48:0;
@@ -1967,7 +2022,7 @@ function animate() {
   updateBuildPlacementGuide();
   if(multiplayerSession&&player){
     const now=performance.now();
-    if(now-multiplayerLastDbState>250){
+    if(now-multiplayerLastDbState>100){
       multiplayerLastDbState=now;
       const state={userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,moving:localMoving,swimming:!!player.userData.isSwimming,jumping:!playerGrounded};
       multiplayerSession.sendPlayerState(state).catch(error=>console.warn("ILOX multiplayer: sincronización de jugador falló",error));
