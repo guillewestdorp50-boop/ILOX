@@ -96,7 +96,7 @@
         <div class="mp-separator">TUS MUNDOS GUARDADOS</div>
         <div id="mp-world-list" class="mp-world-list"><div class="mp-permission-empty">Cargando tus partidas…</div></div>
         <div class="mp-separator">O ENTRAR A UNA PARTIDA EXISTENTE</div>
-        <input id="mp-invite-code" class="door-pin-input" maxlength="12" autocapitalize="characters" placeholder="CÓDIGO DE INVITACIÓN">
+        <input id="mp-invite-code" class="door-pin-input" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="one-time-code" placeholder="CÓDIGO DE 5 DÍGITOS">
         <button id="mp-join-world" class="door-pin-secondary" type="button">UNIRME AL MUNDO</button>
         <div id="mp-created-code" class="mp-created-code hidden">
           <span>CÓDIGO PARA COMPARTIR</span>
@@ -128,6 +128,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-door-security-v71"></script>
+  <script type="module" src="./game.js?v=ilox-multiplayer-code-5-v72"></script>
 </body>
 </html>
