@@ -96,6 +96,32 @@ export async function getStructurePermissions(structureId) {
   return data || [];
 }
 
+export async function getPermissionsForStructures(structureIds) {
+  if (!structureIds?.length) return [];
+  const { data, error } = await client.from("multiplayer_structure_permissions")
+    .select("structure_id,user_id,can_edit").in("structure_id", structureIds);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function grantStructurePermissions(structureIds, userId) {
+  const { data: { user } } = await client.auth.getUser();
+  for (const structureId of structureIds) {
+    const { error } = await client.from("multiplayer_structure_permissions").upsert({
+      structure_id: structureId, user_id: userId, can_edit: true, granted_by: user.id
+    }, { onConflict: "structure_id,user_id" });
+    if (error) throw error;
+  }
+}
+
+export async function revokeStructurePermissions(structureIds, userId) {
+  for (const structureId of structureIds) {
+    const { error } = await client.from("multiplayer_structure_permissions")
+      .delete().eq("structure_id", structureId).eq("user_id", userId);
+    if (error) throw error;
+  }
+}
+
 export async function grantStructurePermission(structureId, userId) {
   const { data: { user } } = await client.auth.getUser();
   const { error } = await client.from("multiplayer_structure_permissions").upsert({
