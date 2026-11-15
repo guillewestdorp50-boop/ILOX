@@ -14,11 +14,13 @@ on:
       - "Validar ILOX urbano-rural"
       - "Verificar ILOX The Forest con avatar en tercera persona"
       - "Validar PWA ILOX World Hub"
+      - "Validar ILOX horizontal con HUD móvil"
     types: [completed]
     branches:
       - experiment/urban-rural-map
       - experiment/the-forest-third-person
       - experiment/ilox-pwa-world-hub
+      - experiment/ilox-landscape-gameplay-v2
   workflow_dispatch:
 
 permissions:
@@ -53,14 +55,14 @@ jobs:
       - name: Obtener adaptación ILOX The Forest
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch == 'experiment/the-forest-third-person' && github.event.workflow_run.head_sha || 'experiment/the-forest-third-person' }}
+          ref: ${{ github.event.workflow_run.head_branch == 'experiment/ilox-landscape-gameplay-v2' && github.event.workflow_run.head_sha || (github.event.workflow_run.head_branch == 'experiment/the-forest-third-person' && github.event.workflow_run.head_sha || 'experiment/the-forest-third-person') }}
           path: forest-preview-source
           persist-credentials: false
 
       - name: Obtener PWA ILOX World Hub aislada
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch == 'experiment/ilox-pwa-world-hub' && github.event.workflow_run.head_sha || 'experiment/ilox-pwa-world-hub' }}
+          ref: ${{ github.event.workflow_run.head_branch == 'experiment/ilox-landscape-gameplay-v2' && github.event.workflow_run.head_sha || (github.event.workflow_run.head_branch == 'experiment/ilox-pwa-world-hub' && github.event.workflow_run.head_sha || 'experiment/ilox-pwa-world-hub') }}
           path: ilox-pwa-source
           persist-credentials: false
 
