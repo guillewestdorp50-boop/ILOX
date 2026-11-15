@@ -893,10 +893,10 @@ function addEvents() {
   document.querySelector("#mp-permissions-close")?.addEventListener("click",()=>document.querySelector("#mp-permissions-dialog").classList.add("hidden"));
   document.querySelector("#mp-permission-structure")?.addEventListener("change",()=>renderMultiplayerPermissionRows().catch(error=>showToast(error.message)));
   document.querySelector("#mp-grant-permission")?.addEventListener("click",async()=>{
-    const structureId=document.querySelector("#mp-permission-structure").value;
+    const structureIds=selectedPermissionStructureIds();
     const userId=document.querySelector("#mp-permission-player").value;
-    if(!structureId||!userId){showToast("Elegí una pieza y un compañero.");return;}
-    try{await Multiplayer.grantStructurePermission(structureId,userId);await renderMultiplayerPermissionRows();showToast("Permiso concedido. Tu compañero ya puede modificar esta pieza.");}
+    if(!structureIds.length||!userId){showToast("Elegí una construcción y un compañero.");return;}
+    try{await Multiplayer.grantStructurePermissions(structureIds,userId);await renderMultiplayerPermissionRows();showToast("Permiso concedido sobre toda la selección.");}
     catch(error){showToast(error.message||"No se pudo conceder el permiso.");}
   });
   document.querySelector("#mp-create-world")?.addEventListener("click",async()=>{
@@ -1219,6 +1219,11 @@ async function leaveMultiplayerWorld(){
   showToast("Volviste a tu mundo individual. Tu construcción sigue intacta.");
 }
 
+function selectedPermissionStructureIds(){
+  const value=document.querySelector("#mp-permission-structure").value;
+  if(value.startsWith("group:"))return value.slice(6).split(",").filter(Boolean);
+  return value?[value]:[];
+}
 async function refreshMultiplayerPermissions(){
   const structureSelect=document.querySelector("#mp-permission-structure");
   const playerSelect=document.querySelector("#mp-permission-player");
@@ -1227,10 +1232,36 @@ async function refreshMultiplayerPermissions(){
   if(!activeMultiplayerWorldId){status.textContent="Primero entrá a un mundo multijugador.";return;}
   const ownStructures=buildRecords.filter(record=>record.cloudId&&record.cloudOwnerId===multiplayerUserId);
   structureSelect.innerHTML="";
-  ownStructures.forEach((record,index)=>{
+  const ownedPlateas=ownStructures.filter(record=>record.kind==="platea");
+  const visited=new Set(),grouped=new Set();
+  for(const foundation of ownedPlateas){
+    if(visited.has(foundation.cloudId))continue;
+    const cluster=[foundation],queue=[foundation];visited.add(foundation.cloudId);
+    while(queue.length){
+      const current=queue.shift();
+      for(const candidate of ownedPlateas){
+        if(!visited.has(candidate.cloudId)&&plateasAreAdjacent(current,candidate)){
+          visited.add(candidate.cloudId);cluster.push(candidate);queue.push(candidate);
+        }
+      }
+    }
+    const groupRecords=ownStructures.filter(record=>{
+      const base=record.kind==="platea"?record:foundationAt(record.x,record.z);
+      return base&&cluster.some(item=>item.cloudId===base.cloudId);
+    });
+    const ids=groupRecords.map(record=>record.cloudId);
+    ids.forEach(id=>grouped.add(id));
+    if(ids.length){
+      const option=document.createElement("option");
+      option.value="group:"+ids.join(",");
+      option.textContent="CONSTRUCCIÓN COMPLETA · "+ids.length+" piezas";
+      structureSelect.appendChild(option);
+    }
+  }
+  ownStructures.filter(record=>!grouped.has(record.cloudId)).forEach(record=>{
     const option=document.createElement("option");
     option.value=record.cloudId;
-    option.textContent=(index+1)+". "+String(record.kind).toUpperCase()+" · "+record.x.toFixed(1)+", "+record.z.toFixed(1);
+    option.textContent=String(record.kind).toUpperCase()+" · "+record.x.toFixed(1)+", "+record.z.toFixed(1);
     structureSelect.appendChild(option);
   });
   const members=await Multiplayer.listWorldMembers(activeMultiplayerWorldId);
@@ -1241,27 +1272,30 @@ async function refreshMultiplayerPermissions(){
     option.textContent=member.display_name||("Jugador "+member.user_id.slice(0,6));
     playerSelect.appendChild(option);
   });
-  if(!ownStructures.length){status.textContent="Todavía no tenés piezas guardadas en línea para compartir.";list.innerHTML="";return;}
+  if(!ownStructures.length){status.textContent="Todavía no tenés construcciones guardadas en línea para compartir.";list.innerHTML="";return;}
   if(!playerSelect.options.length){status.textContent="Todavía no se unió ningún compañero a este mundo.";list.innerHTML="";return;}
-  status.textContent="Podés autorizar a un compañero a modificar o eliminar una pieza tuya.";
+  status.textContent="Podés autorizar una construcción completa (plateas conectadas) o una pieza individual.";
   await renderMultiplayerPermissionRows();
 }
 async function renderMultiplayerPermissionRows(){
-  const structureId=document.querySelector("#mp-permission-structure").value;
+  const ids=selectedPermissionStructureIds();
   const list=document.querySelector("#mp-permission-current");
   list.innerHTML="";
-  if(!structureId)return;
-  const permissions=await Multiplayer.getStructurePermissions(structureId);
+  if(!ids.length)return;
+  const permissions=await Multiplayer.getPermissionsForStructures(ids);
   const members=await Multiplayer.listWorldMembers(activeMultiplayerWorldId);
-  const active=permissions.filter(item=>item.can_edit);
-  if(!active.length){list.innerHTML='<div class="mp-permission-empty">Nadie más tiene permiso sobre esta pieza.</div>';return;}
-  for(const permission of active){
-    const member=members.find(item=>item.user_id===permission.user_id);
+  const grouped=new Map();
+  for(const permission of permissions.filter(item=>item.can_edit)){
+    grouped.set(permission.user_id,(grouped.get(permission.user_id)||0)+1);
+  }
+  if(!grouped.size){list.innerHTML='<div class="mp-permission-empty">Nadie más tiene permiso sobre esta construcción.</div>';return;}
+  for(const [userId,count] of grouped){
+    const member=members.find(item=>item.user_id===userId);
     const row=document.createElement("div");row.className="mp-permission-row";
-    const label=document.createElement("span");label.textContent=(member?.display_name||"Compañero")+" · puede modificar";
+    const label=document.createElement("span");label.textContent=(member?.display_name||"Compañero")+" · "+count+"/"+ids.length+" piezas autorizadas";
     const button=document.createElement("button");button.type="button";button.textContent="RETIRAR";
     button.addEventListener("click",async()=>{
-      try{await Multiplayer.revokeStructurePermission(structureId,permission.user_id);await renderMultiplayerPermissionRows();showToast("Permiso retirado.");}
+      try{await Multiplayer.revokeStructurePermissions(ids,userId);await renderMultiplayerPermissionRows();showToast("Permiso retirado de toda la selección.");}
       catch(error){showToast(error.message||"No se pudo retirar el permiso.");}
     });
     row.append(label,button);list.appendChild(row);
