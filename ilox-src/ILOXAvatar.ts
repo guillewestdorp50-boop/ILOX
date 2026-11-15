@@ -14,8 +14,10 @@ export class ILOXAvatar {
     const female = kind === 'woman' || kind === 'girl';
     const jacket = new THREE.MeshStandardMaterial({ color: 0x151719, roughness: 0.92 });
     const pants = new THREE.MeshStandardMaterial({ color: kind === 'girl' ? 0x4a5360 : 0x555b50, roughness: 1 });
-    const skinColor = kind === 'woman' ? 0xc98d68 : kind === 'girl' ? 0xd9a27d : 0xd49a76;\n    const skin = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.95 });
-    const hairColor = kind === 'woman' ? 0x33251e : kind === 'girl' ? 0x493026 : 0x30251f;\n    const hair = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 1 });
+    const skinColor = kind === 'woman' ? 0xc98d68 : kind === 'girl' ? 0xd9a27d : 0xd49a76;
+    const skin = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.95 });
+    const hairColor = kind === 'woman' ? 0x33251e : kind === 'girl' ? 0x493026 : 0x30251f;
+    const hair = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 1 });
     const canvas = new THREE.MeshStandardMaterial({ color: 0x887957, roughness: 1 });
     const canvasLight = new THREE.MeshStandardMaterial({ color: 0xa18d68, roughness: 1 });
     const leather = new THREE.MeshStandardMaterial({ color: 0x49382a, roughness: 1 });
