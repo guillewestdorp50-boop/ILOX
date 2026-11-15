@@ -719,7 +719,10 @@ function addEvents() {
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
-    if (buildMode && started && !pointerDragged && activePointers.size===0) placeBuildAtPointer(e);
+    if (started && !pointerDragged && activePointers.size===0) {
+      if(buildMode) placeBuildAtPointer(e);
+      else toggleDoorAtPointer(e);
+    }
     lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
     if(lookPointer!==null){const p=activePointers.get(lookPointer);lastLookX=p.x;lastLookY=p.y;pointerDragged=true;}
   });
@@ -839,7 +842,7 @@ function addEvents() {
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
-        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="door"?"Apuntá al hueco entre dos bloques enfrentados; la puerta se mide y encaja sola.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
       });buildToolsHost.appendChild(button);
     }
@@ -913,7 +916,20 @@ function createBuildPiece(record, options = {}) {
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
-  if(kind==="door"){const doorHeight=1.94,frameWidth=1.1,post=.1;box(post,doorHeight,.16,wall,-(frameWidth-post)/2,doorHeight/2,0);box(post,doorHeight,.16,wall,(frameWidth-post)/2,doorHeight/2,0);box(frameWidth,.1,.16,wall,0,doorHeight-.05,0);box(frameWidth-post-.08,.06,.07,wood,0,doorHeight-.13,-.04);box(frameWidth-post-.12,doorHeight-.18,.07,wood,0,(doorHeight-.18)/2,-.04);ball((frameWidth-post-.12)/2-.08,.98,-.09,.045,.045,.045,metal);group.userData.buildHeight=doorHeight;}
+  if(kind==="door"){
+    const doorHeight=2.0,frameWidth=Math.max(.82,Math.min(1.62,record.doorWidth||1.1)),post=.09,leafWidth=frameWidth-post*2-.06;
+    box(post,doorHeight,.16,wall,-frameWidth/2+post/2,doorHeight/2,0);
+    box(post,doorHeight,.16,wall,frameWidth/2-post/2,doorHeight/2,0);
+    box(frameWidth,.1,.16,wall,0,doorHeight-.05,0);
+    const hinge=new THREE.Group();hinge.position.set(-frameWidth/2+post,.08,.015);group.add(hinge);
+    const leaf= new THREE.Mesh(new THREE.BoxGeometry(leafWidth,doorHeight-.16,.075),wood);
+    leaf.position.set(leafWidth/2,(doorHeight-.16)/2,0);leaf.castShadow=true;leaf.receiveShadow=true;hinge.add(leaf);
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(leafWidth,.055,.09),darkWood);rail.position.set(leafWidth/2,.32,.005);hinge.add(rail);
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(.055,14,12),metal);knob.position.set(leafWidth-.09,1.02,.075);hinge.add(knob);
+    for(const yy of [.16,doorHeight-.24]){const h=new THREE.Mesh(new THREE.BoxGeometry(.045,.12,.19),metal);h.position.set(.015,yy,0);hinge.add(h);}
+    group.userData.doorLeafPivot=hinge;group.userData.buildHeight=doorHeight;
+    if(record.open)hinge.rotation.y=Math.PI/2;
+  }
   if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
   if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
@@ -990,6 +1006,28 @@ function foundationContainsFootprint(x,z,kind,rotation=0){
   return true;
 }
 
+function findDoorOpening(x,z){
+  const supports=buildRecords.filter(r=>["wall","block","brick"].includes(r.kind));
+  let best=null,bestDistance=2.35;
+  const halfSize=r=>r.kind==="wall"?[.75,.08]:[.75,.75];
+  const halfAlong=(r,ax,az)=>{const [hx,hz]=halfSize(r),a=r.rotation||0;return hx*Math.abs(Math.cos(a)*ax-Math.sin(a)*az)+hz*Math.abs(Math.sin(a)*ax+Math.cos(a)*az);};
+  for(let i=0;i<supports.length;i++)for(let j=i+1;j<supports.length;j++){
+    const a=supports[i],b=supports[j],dx=b.x-a.x,dz=b.z-a.z,dist=Math.hypot(dx,dz);
+    if(dist<.1||Math.abs((a.y||0)-(b.y||0))>.38)continue;
+    const ax=dx/dist,az=dz/dist,perp=Math.abs(-az*(b.x-a.x)+ax*(b.z-a.z));
+    if(perp>.24)continue;
+    if(a.kind==="wall"&&Math.abs(Math.cos((a.rotation||0))*ax-Math.sin((a.rotation||0))*az)<.92)continue;
+    if(b.kind==="wall"&&Math.abs(Math.cos((b.rotation||0))*ax-Math.sin((b.rotation||0))*az)<.92)continue;
+    const gap=dist-halfAlong(a,ax,az)-halfAlong(b,ax,az);
+    if(gap<.82||gap>1.68)continue;
+    const mx=(a.x+b.x)/2,mz=(a.z+b.z)/2,near=Math.hypot(mx-x,mz-z);
+    if(near>bestDistance)continue;
+    const rotation=Math.abs(ax)>=Math.abs(az)?(ax>=0?0:Math.PI):(az>=0?Math.PI/2:-Math.PI/2);
+    bestDistance=near;best={x:mx,z:mz,rotation,width:gap,supportA:{x:a.x,z:a.z},supportB:{x:b.x,z:b.z},baseY:((a.y||0)+(b.y||0))/2};
+  }
+  return best;
+}
+
 function updateBuildPlacementGuide(){
   if(!scene||!renderer||!camera||!buildMode||buildTool==="erase"||!buildPointer){if(buildGuide)buildGuide.visible=false;return;}
   const rect=renderer.domElement.getBoundingClientRect();
@@ -1005,12 +1043,15 @@ function updateBuildPlacementGuide(){
   const poolTool=["pool-small","pool-large","pool-municipal"].includes(buildTool);
   if(buildTool==="platea"||buildTool==="water"||poolTool){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
   if(buildTool==="platea"){x=Math.round(x/6)*6;z=Math.round(z/6)*6;}
-  const [w,d]=buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
+  const [w,d]=buildTool==="door"&&doorOpening?[doorOpening.width,.16]:buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!poolTool&&pieceHit.face){
     const normal=pieceHit.object.localToWorld(pieceHit.face.normal.clone()).sub(pieceHit.object.getWorldPosition(new THREE.Vector3())).normalize();
     if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}
   }
-  const valid=buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
+  const doorOpening=buildTool==="door"?findDoorOpening(x,z):null;
+  if(buildTool==="door"&&!doorOpening){if(buildGuide)buildGuide.visible=false;return;}
+  if(doorOpening){x=doorOpening.x;z=doorOpening.z;buildRotation=doorOpening.rotation;}
+  const valid=buildTool==="door"?!!doorOpening:buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
@@ -1030,6 +1071,13 @@ function placeBuildAtPointer(event){
   if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
+  if(buildTool==="door"){
+    const opening=findDoorOpening(point.x,point.z);
+    if(!opening){showToast("La puerta necesita dos bloques enfrentados y un hueco libre de 0,82 a 1,68 m.");return;}
+    const record={kind:"door",x:opening.x,z:opening.z,y:opening.baseY,rotation:opening.rotation,color:selectedBlockColor,doorWidth:opening.width,supportA:opening.supportA,supportB:opening.supportB,open:false};
+    if(!foundationAt(record.x,record.z)){showToast("El hueco debe estar apoyado sobre una platea.");return;}
+    buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("Puerta encajada entre los dos bloques: 2,00 m de alto.");return;
+  }
   let x=point.x,z=point.z;
   if(buildTool==="platea"||buildTool==="water"||["pool-small","pool-large","pool-municipal"].includes(buildTool)){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
   const isPoolTool=["pool-small","pool-large","pool-municipal"].includes(buildTool),poolWidth=buildTool==="pool-large"?12:buildTool==="pool-municipal"?24:6,poolDepth=buildTool==="pool-municipal"?12:poolWidth;
@@ -1072,6 +1120,18 @@ function placeBuildAtPointer(event){
   if(isAnimal)showToast("Descargando modelo 3D del animal...");
   else showToast(buildTool==="water"?"Pileta llena: ¡a nadar!":isPoolTool?"Pileta instalada con dos metros de profundidad.":"¡Pieza colocada y alineada!");
 }
+function toggleDoorAtPointer(event){
+  if(!renderer||!camera)return;
+  const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();
+  raycaster.setFromCamera(pointer,camera);
+  const doors=buildGroups.filter(g=>g.userData.buildRecord?.kind==="door");
+  const hit=raycaster.intersectObjects(doors,true)[0];if(!hit)return;
+  let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;
+  const pivot=root.userData.doorLeafPivot,record=root.userData.buildRecord;if(!pivot||!record)return;
+  record.open=!record.open;pivot.rotation.y=record.open?Math.PI/2:0;persistBuilds();
+  showToast(record.open?"Puerta abierta":"Puerta cerrada");
+}
+
 function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked||player.userData.isSwimming)return;playerVerticalVelocity=8.4;playerGrounded=false;}
 function updateMoveStick(event) {
   const rect = movePad.getBoundingClientRect();
