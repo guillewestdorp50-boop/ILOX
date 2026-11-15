@@ -29,8 +29,8 @@ replace_once(engine_path,
 # Reducir el pasto alto un 98,7 % en todos los perfiles de calidad.
 # Se conserva el terreno y su textura; se reducen las instancias reales de matas.
 replace_once(engine_path,
-             "  low: { grassCount: 45000, shadowMapSize: 2048, pixelRatioCap: 1.25 },\\n  med: { grassCount: 130000, shadowMapSize: 3072, pixelRatioCap: 1.6 },\\n  high: { grassCount: 220000, shadowMapSize: 4096, pixelRatioCap: 2 }",
-             "  low: { grassCount: 585, shadowMapSize: 2048, pixelRatioCap: 1.25 },\\n  med: { grassCount: 1690, shadowMapSize: 3072, pixelRatioCap: 1.6 },\\n  high: { grassCount: 2860, shadowMapSize: 4096, pixelRatioCap: 2 }")
+             "  low: { grassCount: 45000, shadowMapSize: 2048, pixelRatioCap: 1.25 },\n  med: { grassCount: 130000, shadowMapSize: 3072, pixelRatioCap: 1.6 },\n  high: { grassCount: 220000, shadowMapSize: 4096, pixelRatioCap: 2 }",
+             "  low: { grassCount: 585, shadowMapSize: 2048, pixelRatioCap: 1.25 },\n  med: { grassCount: 1690, shadowMapSize: 3072, pixelRatioCap: 1.6 },\n  high: { grassCount: 2860, shadowMapSize: 4096, pixelRatioCap: 2 }")
 
 replace_once(engine_path,
              "    await createLandmarks(this.field, this.scene, colliders);\n    this.drone = new Drone(this.scene, this.field);\n",
