@@ -1,0 +1,63 @@
+name: Validar ILOX horizontal con HUD móvil
+
+on:
+  push:
+    branches: [experiment/ilox-landscape-gameplay-v2]
+    paths:
+      - 'scripts/prepare_ilox_forest.py'
+      - 'ilox-src/**'
+      - 'ilox-forest-index.html'
+      - 'ilox-forest.css'
+      - 'ilox-pwa/**'
+      - '.github/workflows/test-ilox-landscape.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener ILOX
+        uses: actions/checkout@v4
+      - name: Obtener The Forest (MIT)
+        uses: actions/checkout@v4
+        with:
+          repository: jalexiscv/TheForest
+          ref: d343fe58a1bd6b72c4fadcc09eec332519ec41e1
+          path: vendor/theforest
+          persist-credentials: false
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vendor/theforest/package-lock.json
+      - name: Instalar dependencias
+        working-directory: vendor/theforest
+        run: npm ci
+      - name: Aplicar integración ILOX
+        run: |
+          python3 scripts/prepare_ilox_forest.py vendor/theforest
+          mkdir -p vendor/theforest/public
+          cp manifest.webmanifest vendor/theforest/public/manifest.webmanifest
+          cp LICENSE-TheForest.txt vendor/theforest/LICENSE-TheForest.txt
+      - name: Validar TypeScript y compilar el mundo
+        working-directory: vendor/theforest
+        run: |
+          npm run typecheck
+          npm run build
+          test -s dist/index.html
+          test -s dist/manifest.webmanifest
+          grep -q 'GIRÁ TU TELÉFONO' dist/index.html
+          grep -q 'sprint-button' dist/index.html
+      - name: Validar PWA ILOX y orientación horizontal
+        run: |
+          node --check ilox-pwa/app.js
+          node --check ilox-pwa/sw.js
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('ilox-pwa/manifest.webmanifest','utf8'));if(m.orientation!=='landscape')throw new Error('PWA must request landscape orientation');for(const f of ['index.html','styles.css','app.js','manifest.webmanifest','sw.js','icon.svg'])if(!fs.statSync('ilox-pwa/'+f).size)throw new Error('Missing '+f);"
+          grep -q "orientation.*landscape" manifest.webmanifest
+          grep -q "setSprintInput" ilox-src/main.ts
+          grep -q "setSprintInput" ilox-src/ThirdPersonController.ts
+          echo "ILOX landscape PWA and touch controls verified."
