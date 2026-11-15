@@ -1335,25 +1335,32 @@ async function loadAnimalModel(group,kind,notify=false){
     if(notify)showToast("No se pudo cargar el animal 3D. No quedó colocado.");
   }
 }
-let localBuildSaveTimer=null;
+let localBuildSaveTimer=null,localBuildSaveMaxTimer=null;
 function writeLocalBuildSave(){
   const key=activeMultiplayerWorldId?"ilox-mp-cache-"+activeMultiplayerWorldId:"ilox-builds-v1";
   const records=buildRecords.map(record=>activeMultiplayerWorldId?multiplayerPayload(record):record);
   localStorage.setItem(key,JSON.stringify(records));
-  localBuildSaveTimer=null;
+  if(localBuildSaveTimer)clearTimeout(localBuildSaveTimer);
+  if(localBuildSaveMaxTimer)clearTimeout(localBuildSaveMaxTimer);
+  localBuildSaveTimer=null;localBuildSaveMaxTimer=null;
 }
 function flushLocalBuildSave(){
   if(localBuildSaveTimer){clearTimeout(localBuildSaveTimer);localBuildSaveTimer=null;}
+  if(localBuildSaveMaxTimer){clearTimeout(localBuildSaveMaxTimer);localBuildSaveMaxTimer=null;}
   try{writeLocalBuildSave();return true;}
   catch(error){showToast("No se pudo guardar el mundo en este dispositivo.");return false;}
 }
 function persistBuilds(){
-  // Guardado local agrupado: construir rápido no dispara escrituras bloqueantes en cada pieza.
+  // Guardado local agrupado: pausa corta o límite máximo de 3 segundos durante construcción continua.
   if(localBuildSaveTimer)clearTimeout(localBuildSaveTimer);
   localBuildSaveTimer=setTimeout(()=>{
     try{writeLocalBuildSave();}
-    catch(error){localBuildSaveTimer=null;showToast("No se pudo guardar el mundo en este dispositivo.");}
+    catch(error){localBuildSaveTimer=null;localBuildSaveMaxTimer=null;showToast("No se pudo guardar el mundo en este dispositivo.");}
   },650);
+  if(!localBuildSaveMaxTimer)localBuildSaveMaxTimer=setTimeout(()=>{
+    try{writeLocalBuildSave();}
+    catch(error){localBuildSaveTimer=null;localBuildSaveMaxTimer=null;showToast("No se pudo guardar el mundo en este dispositivo.");}
+  },3000);
   // La nube se actualiza por tandas, no con cada objeto colocado.
   if(activeMultiplayerWorldId)scheduleMultiplayerSync();
   return true;
