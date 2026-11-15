@@ -928,7 +928,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.78,cow:1.42,horse:1.62,chicken:.58};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&record.y>terrainHeight(record.x,record.z)+.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function placeBuildAtPointer(event){
