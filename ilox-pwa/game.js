@@ -776,7 +776,7 @@ function addEvents() {
     loadRiggedAvatar(selectedAvatar);
     avatarSelect.classList.add("hidden");
     menuToggle.classList.remove("hidden");
-    hint.textContent = "Explorá y construí tu propio mundo";
+    hint.textContent = "";
     loadBuilds();
     showToast("¡Tu mundo, tus reglas!");
   });
