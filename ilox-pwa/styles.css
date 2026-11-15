@@ -68,3 +68,10 @@ h1 em{font-style:normal;color:#e8d29a}
 .materials-toggle.hidden{display:none}
 .build-panel{max-width:min(390px,calc(100vw - 24px));}
 .build-tools{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+
+
+/* Paleta de colores para bloques de construcción */
+.block-palette{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 8px;margin:8px 0;border-radius:14px;background:rgba(12,18,25,.72)}
+.palette-label{font-size:11px;font-weight:800;letter-spacing:1px;color:#e8edf3;margin-right:4px}
+.block-color{width:34px;height:34px;min-width:34px;border-radius:9px;border:2px solid rgba(255,255,255,.55);background:var(--swatch);box-shadow:0 2px 7px rgba(0,0,0,.35);padding:0}
+.block-color.selected{outline:3px solid #fff;outline-offset:3px;transform:scale(1.06)}
