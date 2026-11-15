@@ -36,7 +36,7 @@ replace_once(engine_path, "    this.controller.enabled = playing;",
              "    this.controller.setEnabled(playing);")
 replace_once(engine_path,
              "  /** Arranca el audio; debe invocarse desde un gesto del usuario (clic). */",
-             "  setMoveInput(x: number, y: number): void {\n    this.controller.setMoveInput(x, y);\n  }\n\n  look(dx: number, dy: number): void {\n    this.controller.look(dx, dy);\n  }\n\n  /** Arranca el audio; debe invocarse desde un gesto del usuario (clic). */")
+             "  setMoveInput(x: number, y: number): void {\n    this.controller.setMoveInput(x, y);\n  }\n\n  setSprintInput(active: boolean): void {\n    this.controller.setSprintInput(active);\n  }\n\n  look(dx: number, dy: number): void {\n    this.controller.look(dx, dy);\n  }\n\n  /** Arranca el audio; debe invocarse desde un gesto del usuario (clic). */")
 replace_once(engine_path, "    this.drone.update(dt, t, p);\n", "")
 
 # Mantener el audio ambiental usando la interfaz pública del nuevo controlador.
