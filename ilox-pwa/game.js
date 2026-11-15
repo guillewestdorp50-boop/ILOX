@@ -10,8 +10,8 @@ let selectedAvatar = "boy";
 const startButton = document.querySelector("#start");
 const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
-const joystick = document.querySelector("#joystick");
-const stick = document.querySelector("#stick");
+const movePad = document.querySelector("#move-pad");
+const pressedMoveButtons = new Set();
 
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
@@ -20,7 +20,7 @@ const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.48;
 let moveX = 0, moveZ = 0;
-let joyPointer = null;
+
 const polyHavenLoader = new GLTFLoader();
 const proceduralTreeGroups = [];
 let importedNatureReady = false;
@@ -601,19 +601,26 @@ function addEvents() {
     e.preventDefault();
     cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, buildMode?3.2:4.2, 20);
   }, {passive:false});
-  joystick.addEventListener("pointerdown", e => {
-    joyPointer = e.pointerId;
-    joystick.setPointerCapture(e.pointerId);
-    updateJoystick(e);
+  movePad.querySelectorAll(".move-arrow").forEach(button => {
+    const direction = button.dataset.move;
+    const press = e => {
+      e.preventDefault();
+      button.setPointerCapture(e.pointerId);
+      pressedMoveButtons.add(direction);
+      button.classList.add("pressed");
+      updateArrowMovement();
+    };
+    const release = e => {
+      e.preventDefault();
+      pressedMoveButtons.delete(direction);
+      button.classList.remove("pressed");
+      updateArrowMovement();
+    };
+    button.addEventListener("pointerdown", press);
+    button.addEventListener("pointerup", release);
+    button.addEventListener("pointercancel", release);
+    button.addEventListener("lostpointercapture", release);
   });
-  joystick.addEventListener("pointermove", e => { if (joyPointer === e.pointerId) updateJoystick(e); });
-  const releaseJoy = e => {
-    if (joyPointer !== e.pointerId) return;
-    joyPointer = null; moveX = 0; moveZ = 0;
-    stick.style.transform = "translate(0,0)";
-  };
-  joystick.addEventListener("pointerup", releaseJoy);
-  joystick.addEventListener("pointercancel", releaseJoy);
   startButton.addEventListener("click", () => {
     welcome.classList.add("hidden");
     avatarSelect.classList.remove("hidden");
@@ -748,18 +755,9 @@ function placeBuildAtPointer(event) {
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
-function updateJoystick(e) {
-  const rect = joystick.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  let dx = e.clientX - cx;
-  let dy = e.clientY - cy;
-  const max = 35;
-  const length = Math.hypot(dx, dy);
-  if (length > max) { dx = dx / length * max; dy = dy / length * max; }
-  stick.style.transform = `translate(${dx}px,${dy}px)`;
-  moveX = 0;
-  moveZ = dy / max;
+function updateArrowMovement() {
+  moveX = (pressedMoveButtons.has("right") ? 1 : 0) - (pressedMoveButtons.has("left") ? 1 : 0);
+  moveZ = (pressedMoveButtons.has("down") ? 1 : 0) - (pressedMoveButtons.has("up") ? 1 : 0);
 }
 
 function animate() {
@@ -767,7 +765,7 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
     let forward = -moveZ;
-    let strafe = 0;
+    let strafe = moveX;
     if (keys.has("w") || keys.has("arrowup")) forward -= 1;
     if (keys.has("s") || keys.has("arrowdown")) forward += 1;
     if (keys.has("a") || keys.has("arrowleft")) strafe -= 1;
