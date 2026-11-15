@@ -633,18 +633,21 @@ function makePlayer(kind = "explorer:0") {
   const isFantasy = ["elf","knight","ninja","mage","orc","fairy"].includes(kind);
   const isAstronaut = kind === "astronaut";
   const isRobot = kind === "robot";
+  const isToon = ["burbu","marea","pipo","zarpa","luma"].includes(kind);
   const isFemale = kind === "woman" || kind === "girl";
   const adult = kind === "woman" || isBuilder || kind === "knight";
   const scale = adult ? 1 : 0.94;
   const mat = (color, roughness = 0.86, metalness = 0) =>
     new THREE.MeshStandardMaterial({ color, roughness, metalness });
   const skinTones = [0xd49a76,0xb97855,0x8e5b42,0xe0b18d,0x70452f];
-  const skin = mat(kind === "girl" ? 0xc98b65 : kind === "woman" ? 0xb97855 : skinTones[variant % skinTones.length], 0.92);
+  const toonSkinColors = {burbu:0xffd95c,marea:0xffa0a0,pipo:0xc98b65,zarpa:0x536b86,luma:0xd99bcf};
+  const skin = mat(isToon ? toonSkinColors[kind] : kind === "girl" ? 0xc98b65 : kind === "woman" ? 0xb97855 : skinTones[variant % skinTones.length], 0.92);
   const hairColors = [0x30231d,0x5a321f,0x171717,0x9a6734,0x6d344f,0x344b72,0xb5a06c,0x4c6b47,0x773c2b,0xaaa7a0];
   const hair = mat(hairColors[(variant + (kind === "girl" ? 2 : 0)) % hairColors.length], 1);
   const shirtColor = isBuilder ? 0x263c36 : isAstronaut ? 0xe2e7e9 : isRobot ? 0x536a79 : kind === "girl" ? 0x8a547f : kind === "woman" ? 0x315d76 : 0x315a8c;
   const palette = [0x315a8c,0x8a547f,0x386b52,0x9b542f,0x5b5b91,0x9b813c,0x347d86,0x873d4c,0x596b39,0x6b5547];
-  const shirt = mat(isBuilder ? shirtColor : isAstronaut ? shirtColor : isRobot ? shirtColor : palette[variant % palette.length]);
+  const toonShirtColors = {burbu:0xffc928,marea:0x38b9d4,pipo:0x4b9a63,zarpa:0x42536d,luma:0x9a64bd};
+  const shirt = mat(isToon ? toonShirtColors[kind] : isBuilder ? shirtColor : isAstronaut ? shirtColor : isRobot ? shirtColor : palette[variant % palette.length]);
   const pants = mat(isBuilder ? 0x303b40 : isAstronaut ? 0x526779 : isRobot ? 0x344653 : kind === "girl" ? 0x4b3d63 : 0x394b5c);
   const bootMat = mat(isBuilder ? 0x292b2b : 0x302820);
   const gloveMat = mat(isBuilder ? 0x34383a : 0x4b4239);
@@ -662,7 +665,48 @@ function makePlayer(kind = "explorer:0") {
   const capsule = (parent, radius, length, material, x,y,z, sx=1,sy=1,sz=1) =>
     add(parent, new THREE.CapsuleGeometry(radius,length,5,10), material,x,y,z,sx,sy,sz);
 
-  if (isRobot) {
+  if (isToon) {
+    const fur = mat(kind==="burbu"?0xffd22e:kind==="marea"?0xf49a9b:kind==="pipo"?0xc98b65:kind==="zarpa"?0x536b86:0xc56bc2,0.88);
+    const accent = mat(kind==="burbu"?0x2d9e9a:kind==="marea"?0x4a9ec2:kind==="pipo"?0xe6c56c:kind==="zarpa"?0x7cc7c2:0x573c88,0.82);
+    const eyeWhite = mat(0xfffaf0,0.48), pupil = mat(0x202536,0.42), blush = mat(0xf28b83,0.8);
+    if(kind==="burbu"){
+      add(rig,new THREE.SphereGeometry(.43,24,20),fur,0,1.38,0,1.08,1.26,.78);
+      add(rig,new THREE.SphereGeometry(.31,24,18),fur,0,2.10,-.015,1.05,.94,.88);
+      for(const side of [-1,1]){add(rig,new THREE.SphereGeometry(.095,16,12),eyeWhite,side*.115,2.13,-.265);add(rig,new THREE.SphereGeometry(.047,12,10),pupil,side*.115,2.13,-.345);add(rig,new THREE.SphereGeometry(.045,12,10),blush,side*.235,1.99,-.19);}
+      add(rig,new THREE.TorusGeometry(.075,.012,6,18,Math.PI),pupil,0,1.98,-.29);
+      for(let i=0;i<4;i++)add(rig,new THREE.SphereGeometry(.035,8,8),accent,(i-1.5)*.18,1.48+(i%2)*.13,-.31);
+      add(rig,new THREE.SphereGeometry(.13,12,10),accent,0,1.77,.03,1,.48,.8);
+    } else if(kind==="marea"){
+      const star=new THREE.Shape();
+      for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2===0?.57:.29,x=Math.cos(a)*r,y=Math.sin(a)*r;i===0?star.moveTo(x,y):star.lineTo(x,y);}
+      star.closePath();
+      const starMesh=add(rig,new THREE.ShapeGeometry(star),fur,0,1.45,0,1,1.12,1);starMesh.rotation.y=Math.PI;
+      add(rig,new THREE.SphereGeometry(.20,18,14),accent,0,1.40,-.035,1.15,1.15,.28);
+      for(const side of [-1,1]){add(rig,new THREE.SphereGeometry(.075,14,12),eyeWhite,side*.13,1.88,-.045);add(rig,new THREE.SphereGeometry(.034,10,8),pupil,side*.13,1.88,-.105);}
+      add(rig,new THREE.TorusGeometry(.065,.012,6,16,Math.PI),pupil,0,1.72,-.07);
+      add(rig,new THREE.SphereGeometry(.055,10,8),blush,-.29,1.67,-.04);add(rig,new THREE.SphereGeometry(.055,10,8),blush,.29,1.67,-.04);
+    } else if(kind==="pipo"){
+      add(rig,new THREE.CapsuleGeometry(.34,.48,6,14),shirt,0,1.34,0,1.04,1,.8);
+      add(rig,new THREE.SphereGeometry(.30,22,18),skin,0,2.06,-.015,1,.98,.9);
+      for(const side of [-1,1]){add(rig,new THREE.SphereGeometry(.065,14,12),eyeWhite,side*.105,2.09,-.265);add(rig,new THREE.SphereGeometry(.03,10,8),pupil,side*.105,2.09,-.325);add(rig,new THREE.SphereGeometry(.025,8,8),blush,side*.21,1.99,-.24);}
+      add(rig,new THREE.CapsuleGeometry(.014,.07,3,6),pupil,0,1.96,-.285);
+      const cap=add(rig,new THREE.SphereGeometry(.32,18,12,0,Math.PI*2,0,Math.PI*.48),accent,0,2.27,.01,1.08,.62,1);cap.rotation.z=-.12;
+      add(rig,new THREE.CylinderGeometry(.29,.29,.055,18),accent,0,2.22,-.055,1,.7,1);
+      for(let i=0;i<3;i++)add(rig,new THREE.BoxGeometry(.10,.42,.035),accent,-.22+i*.22,1.38,-.315);
+    } else if(kind==="zarpa"){
+      add(rig,new THREE.SphereGeometry(.34,22,18),fur,0,1.38,0,1.02,1.20,.82);
+      add(rig,new THREE.SphereGeometry(.30,22,18),fur,0,2.08,0,1.08,.98,.88);
+      for(const side of [-1,1]){const ear=add(rig,new THREE.ConeGeometry(.12,.34,8),fur,side*.21,2.43,0);ear.rotation.z=side*-.22;add(rig,new THREE.ConeGeometry(.055,.22,8),accent,side*.21,2.43,-.018);add(rig,new THREE.SphereGeometry(.07,14,12),eyeWhite,side*.11,2.11,-.255);add(rig,new THREE.SphereGeometry(.033,10,8),pupil,side*.11,2.11,-.315);}
+      add(rig,new THREE.SphereGeometry(.12,14,10),accent,0,1.99,-.27,1.25,.72,.65);
+      add(rig,new THREE.SphereGeometry(.045,10,8),pupil,0,2.03,-.335);
+    } else {
+      add(rig,new THREE.CapsuleGeometry(.29,.62,6,12),fur,0,1.38,0,1.08,1.22,.78);
+      add(rig,new THREE.SphereGeometry(.28,20,16),fur,0,2.10,-.015,1,.98,.88);
+      for(const side of [-1,1]){const ear=add(rig,new THREE.CapsuleGeometry(.065,.30,4,8),fur,side*.18,2.47,.015,1,.72,1);ear.rotation.z=side*-.18;add(rig,new THREE.SphereGeometry(.07,12,10),eyeWhite,side*.10,2.12,-.255);add(rig,new THREE.SphereGeometry(.032,10,8),pupil,side*.10,2.12,-.315);}
+      add(rig,new THREE.CylinderGeometry(.035,.035,.40,8),accent,0,1.70,-.30,1,1,.35);
+      add(rig,new THREE.SphereGeometry(.10,12,10),accent,0,1.48,-.31,1.3,.7,.5);
+    }
+  } else if (isRobot) {
     const body = add(rig,new THREE.CapsuleGeometry(.34,.48,5,12),shirt,0,1.34,0,1,1,.82);
     add(rig,new THREE.SphereGeometry(.29,20,16),metal,0,2.02,0,1,1.05,.9);
     add(rig,new THREE.BoxGeometry(.38,.13,.08),mat(0x35d8ef,.22,.5),0,2.04,-.255);
@@ -754,20 +798,25 @@ function makePlayer(kind = "explorer:0") {
     add(rig,new THREE.BoxGeometry(.44,.24,.12),beltMat,0,1.01,.015);
   }
 
-  // Mochila de exploración de lona con correas, tapa y bolsillos (espalda +Z).
-  const packMat = mat(isBuilder ? 0x414b43 : 0x756247);
-  add(rig,new THREE.BoxGeometry(.48,.62,.25),packMat,0,1.34,.34,1,1,1);
-  add(rig,new THREE.BoxGeometry(.50,.15,.27),mat(0x9a815b),0,1.68,.34);
-  add(rig,new THREE.BoxGeometry(.27,.22,.08),mat(0x9a815b),0,1.25,.50);
-  for (const side of [-1,1]) {
-    add(rig,new THREE.BoxGeometry(.065,.65,.055),dark,side*.18,1.34,.19);
-    add(rig,new THREE.CylinderGeometry(.075,.075,.18,10),packMat,side*.27,1.34,.34);
+  // Mochila de lona para exploradores; la pandilla toon lleva su propio emblema.
+  if(!isToon){
+    const packMat = mat(isBuilder ? 0x414b43 : 0x756247);
+    add(rig,new THREE.BoxGeometry(.48,.62,.25),packMat,0,1.34,.34,1,1,1);
+    add(rig,new THREE.BoxGeometry(.50,.15,.27),mat(0x9a815b),0,1.68,.34);
+    add(rig,new THREE.BoxGeometry(.27,.22,.08),mat(0x9a815b),0,1.25,.50);
+    for (const side of [-1,1]) {
+      add(rig,new THREE.BoxGeometry(.065,.65,.055),dark,side*.18,1.34,.19);
+      add(rig,new THREE.CylinderGeometry(.075,.075,.18,10),packMat,side*.27,1.34,.34);
+    }
+    const logoCanvas = document.createElement("canvas"); logoCanvas.width=512; logoCanvas.height=128;
+    const ctx=logoCanvas.getContext("2d"); ctx.clearRect(0,0,512,128);
+    ctx.fillStyle="#e7d29a"; ctx.font="900 82px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("ILOX",256,67);
+    const logoTexture = new THREE.CanvasTexture(logoCanvas);
+    add(rig,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
+  }else{
+    add(rig,new THREE.CircleGeometry(.11,20),mat(0xfff0bd),0,1.25,-.34);
+    add(rig,new THREE.BoxGeometry(.10,.025,.012),mat(0x283c4c),0,1.25,-.455);
   }
-  const logoCanvas = document.createElement("canvas"); logoCanvas.width=512; logoCanvas.height=128;
-  const ctx=logoCanvas.getContext("2d"); ctx.clearRect(0,0,512,128);
-  ctx.fillStyle="#e7d29a"; ctx.font="900 82px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("ILOX",256,67);
-  const logoTexture = new THREE.CanvasTexture(logoCanvas);
-  add(rig,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
 
   // Variantes fantásticas con siluetas reconocibles, no solo cambios de color.
   if (kind === "elf") { for (const side of [-1,1]) { const ear=add(rig,new THREE.ConeGeometry(.09,.34,8),skin,side*.34,2.06,-.01); ear.rotation.z=side*-Math.PI/2; } }
@@ -776,10 +825,20 @@ function makePlayer(kind = "explorer:0") {
   if (kind === "mage") { const robe=mat(0x493b78); add(rig,new THREE.CylinderGeometry(.22,.43,.85,16),robe,0,1.14,0); add(rig,new THREE.ConeGeometry(.34,.55,16),robe,0,2.40,0); }
   if (kind === "orc") { const tusk=mat(0xf0e6ce); for(const side of [-1,1]) add(rig,new THREE.ConeGeometry(.055,.20,8),tusk,side*.13,1.94,-.26); add(rig,new THREE.SphereGeometry(.32,18,14),mat(0x66834d),0,2.05,-.01,1.05,1.08,.92); }
   if (kind === "fairy") { const wing=mat(0x9edbe0,.3,.15); for(const side of [-1,1]) { const w=add(rig,new THREE.SphereGeometry(.22,16,12),wing,side*.40,1.62,.25,1.25,1.7,.28); w.rotation.z=side*.35; } }
+  let toonTail=null;
+  if(kind==="zarpa"||kind==="luma"){
+    toonTail=new THREE.Group();toonTail.position.set(0,1.12,.30);rig.add(toonTail);
+    const points=kind==="zarpa"?[new THREE.Vector3(0,0,0),new THREE.Vector3(.16,.02,.30),new THREE.Vector3(.24,.16,.58),new THREE.Vector3(.12,.34,.72)]:[new THREE.Vector3(0,0,0),new THREE.Vector3(-.10,.02,.32),new THREE.Vector3(-.22,.18,.62),new THREE.Vector3(-.12,.34,.86)];
+    const tailCurve=new THREE.CatmullRomCurve3(points);
+    const tailMat=mat(kind==="zarpa"?0x536b86:0xc56bc2,.9);
+    const tailMesh=new THREE.Mesh(new THREE.TubeGeometry(tailCurve,16,.075,8,false),tailMat);tailMesh.castShadow=true;toonTail.add(tailMesh);
+  }
   // Ajuste de tonos y rasgos por variante para que las cien opciones se distingan.
   group.scale.setScalar(scale);
   group.position.set(0,terrainHeight(0,0),0);
   group.userData.avatarKind=kind;
+  group.userData.toonTail=toonTail;
+  group.userData.toonType=isToon?kind:null;
   group.userData.legs=legs;
   group.userData.arms=arms;
   group.userData.rig=rig;
@@ -788,6 +847,8 @@ function makePlayer(kind = "explorer:0") {
 
   function leatherMaterial() { return mat(0x49382a,1); }
 }
+function isToonType(type){return ["burbu","marea","pipo","zarpa","luma"].includes(type);}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
@@ -921,7 +982,8 @@ function addEvents() {
     ["man","👨","Hombre 3D",12],["woman","👩","Mujer 3D",10],["boy","👦","Niño 3D",2],["girl","👧","Niña 3D",1],
     ["soldier","🧍","Humano original",1],["explorer","🧑‍🦰","Explorador",10],["builder","👷","Constructor",10],["builderwoman","👩‍🔧","Constructora",10],
     ["astronaut","🧑‍🚀","Astronauta",8],["robot","🤖","Robot",8],["elf","🧝","Elfo",7],
-    ["knight","🛡️","Caballero",7],["ninja","🥷","Ninja",7],["mage","🧙","Mago",7]
+    ["knight","🛡️","Caballero",7],["ninja","🥷","Ninja",7],["mage","🧙","Mago",7],
+    ["burbu","🫧","Burbu",1],["marea","⭐","Marea",1],["pipo","🧢","Pipo",1],["zarpa","🐈","Zarpa",1],["luma","🦊","Luma",1]
   ];
   const avatarGrid = document.querySelector(".avatar-options");
   avatarGrid.innerHTML = "";
@@ -934,8 +996,14 @@ function addEvents() {
     if(type==="soldier"){
       const otherHeading=document.createElement("div");
       otherHeading.className="avatar-section-title";
-      otherHeading.textContent="FANTASÍA Y PERSONAJES CLÁSICOS";
+      otherHeading.textContent="FANTASÍA Y ROBÓTICOS ORIGINALES";
       avatarGrid.appendChild(otherHeading);
+    }
+    if(type==="burbu"){
+      const toonHeading=document.createElement("div");
+      toonHeading.className="avatar-section-title";
+      toonHeading.textContent="ILOX TOON CREW · PERSONAJES ORIGINALES";
+      avatarGrid.appendChild(toonHeading);
     }
     for (let variant=0; variant<count; variant++) {
       const option=document.createElement("button");
@@ -943,7 +1011,8 @@ function addEvents() {
       const displayName=HUMAN_AVATAR_LABELS[type]?.[variant] || label+(count>1?" "+(variant+1):"");
       option.className="avatar-option"+(human?" human-avatar":"")+(firstAvatar?" selected":"");
       option.dataset.avatar=type+":"+variant;
-      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+displayName+'</strong><small>'+(human?"MODELO HUMANO 3D · ANIMADO":"Modelo "+String(variant+1).padStart(2,"0"))+'</small>';
+      const toon=isToonType(type);
+      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+displayName+'</strong><small>'+(human?"MODELO HUMANO 3D · ANIMADO":toon?"3D ORIGINAL · ANIMADO":"Modelo "+String(variant+1).padStart(2,"0"))+'</small>';
       avatarGrid.appendChild(option);firstAvatar=false;
     }
   });
@@ -2310,6 +2379,7 @@ function animate() {
     }
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
+    if(player.userData.toonTail){player.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2)*.42;player.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7)*.16;}
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
   }
@@ -2320,6 +2390,7 @@ function animate() {
     const angle=Math.atan2(Math.sin(targetRotation-avatar.rotation.y),Math.cos(targetRotation-avatar.rotation.y));
     avatar.rotation.y+=angle*(1-Math.exp(-delta*14));
     const moving=!!avatar.userData.remoteMoving,swimming=!!avatar.userData.remoteSwimming;
+    if(avatar.userData.toonTail){avatar.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2+avatar.position.x)*.42;avatar.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7+avatar.position.z)*.16;}
     if(avatar.userData.riggedMixer){
       avatar.userData.riggedMixer.update(delta);
       const hasWalkClip=!!(avatar.userData.actions?.walk||avatar.userData.actions?.run);
