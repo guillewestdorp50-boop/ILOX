@@ -57,6 +57,60 @@ let cameraMode = "third", cameraLocked = false;
 
 
 const polyHavenLoader = new GLTFLoader();
+// Kit modular CC0: baldosa de fondo y pared cerámica de tanque de pileta, agua separada.
+const POOL_KIT_ASSETS = {
+  floor: "https://cdn.3dassets.dev/assets/35234/v1/model.glb",
+  wall: "https://cdn.3dassets.dev/assets/35235/v1/model.glb"
+};
+const poolKitPromises = new Map();
+async function loadPoolKitAsset(key) {
+  if (!poolKitPromises.has(key)) {
+    poolKitPromises.set(key, polyHavenLoader.loadAsync(POOL_KIT_ASSETS[key]).catch(error => {
+      poolKitPromises.delete(key);
+      throw error;
+    }));
+  }
+  return poolKitPromises.get(key);
+}
+async function loadModularPoolShell(group, record) {
+  try {
+    const [floorGltf, wallGltf] = await Promise.all([loadPoolKitAsset("floor"), loadPoolKitAsset("wall")]);
+    if (group.parent !== scene) return;
+    const width = record.poolWidth || 6, depth = record.poolDepth || 6, bottom = -2;
+    for (const child of [...group.children]) {
+      group.remove(child);
+      child.traverse?.(object => {
+        object.geometry?.dispose();
+        if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => material.dispose());
+      });
+    }
+    const addModule = (source, x, y, z, rotation = 0) => {
+      const module = cloneSkeleton(source.scene);
+      module.position.set(x, y, z);
+      module.rotation.y = rotation;
+      module.traverse(object => {
+        if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; }
+      });
+      group.add(module);
+    };
+    for (let x = -width / 2 + 1; x < width / 2; x += 2) {
+      for (let z = -depth / 2 + 1; z < depth / 2; z += 2) addModule(floorGltf, x, bottom, z);
+    }
+    for (let x = -width / 2 + 1; x < width / 2; x += 2) {
+      addModule(wallGltf, x, bottom, -depth / 2, 0);
+      addModule(wallGltf, x, bottom, depth / 2, Math.PI);
+    }
+    for (let z = -depth / 2 + 1; z < depth / 2; z += 2) {
+      addModule(wallGltf, -width / 2, bottom, z, Math.PI / 2);
+      addModule(wallGltf, width / 2, bottom, z, -Math.PI / 2);
+    }
+    group.userData.buildHeight = 2.12;
+    group.userData.poolKitReady = true;
+    group.updateMatrixWorld(true);
+  } catch (error) {
+    console.warn("ILOX: no se pudo cargar el kit modular de pileta; se conserva el modelo alternativo.", error);
+  }
+}
 const avatarModelLoader = new GLTFLoader();
 const animalModelLoader = new GLTFLoader();
 const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb",pig:"https://gobkit.com/freebies/animal005/Pig.glb",goat:"https://gobkit.com/freebies/animalB/Goat.glb"};
@@ -104,8 +158,17 @@ function foundationHasDoor(foundation){
   }
   return buildRecords.some(record=>record.kind==="door"&&connected.has(foundationAt(record.x,record.z)));
 }
-function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-2:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!kind||kind==="water")continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
-function refreshTerrainSurface(){if(!terrainMesh)return;const a=terrainMesh.geometry.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i),f=foundationAt(x,z);a.setY(i,f?Math.min(terrainHeight(x,z),f.y-.36):terrainHeight(x,z));}a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();}
+function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.936:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!kind||kind==="water")continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
+function refreshTerrainSurface(){
+  if(!terrainMesh)return;
+  const a=terrainMesh.geometry.attributes.position;
+  for(let i=0;i<a.count;i++){
+    const x=a.getX(i),z=a.getZ(i),f=foundationAt(x,z);
+    const cutY=f?(f.kind==="pool"?f.y-2.08:f.y-.36):terrainHeight(x,z);
+    a.setY(i,Math.min(terrainHeight(x,z),cutY));
+  }
+  a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();
+}
 
 function terrainHeight(x, z) {
   // Planicie uniforme: misma cota desde el centro hasta los cuatro bordes del mapa.
@@ -1126,7 +1189,16 @@ function createBuildPiece(record, options = {}) {
     box(1.5,1.5,1.5,material,0,.75,0);
   }
   if(kind==="platea"){const slab=mat(0xb8b9b3,.88);box(6,.3,6,slab,0,.15,0);group.userData.isFoundation=true;group.userData.buildHeight=.3;}
-  if(kind==="pool"){const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);box(w,.3,d,pf,0,-depth-.37,0);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;}
+  if(kind==="pool"){
+    const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);
+    // Fallback geométrico hasta que termine de cargar el kit modular seco.
+    box(w,.3,d,pf,0,-depth-.37,0);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);
+    box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);
+    box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);
+    box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);
+    box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);
+    group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
+  }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
@@ -1162,7 +1234,13 @@ function createBuildPiece(record, options = {}) {
   if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
   if(kind==="rock"){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(.68,1),mat(0x85877e));o.position.y=.48;o.scale.set(1.1,.7,.9);o.rotation.set(.2,.4,.1);o.castShadow=true;group.add(o);}
-  if(kind==="water"){const w=record.poolWidth||6,d=record.poolDepth||6,geo=new THREE.PlaneGeometry(w-.62,d-.62,32,32),water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x3dadd0,roughness:.16,metalness:.12,transparent:true,opacity:.84,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.userData.water=true;water.userData.basePositions=geo.attributes.position.array.slice();group.add(water);group.userData.water=true;group.userData.buildHeight=.02;}
+  if(kind==="water"){
+    const w=record.poolWidth||6,d=record.poolDepth||6,geo=new THREE.PlaneGeometry(w-.62,d-.62,32,32);
+    const water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x21bde5,roughness:.12,metalness:.08,transparent:false,opacity:1,side:THREE.DoubleSide,depthWrite:true}));
+    water.rotation.x=-Math.PI/2;water.position.y=.015;water.renderOrder=4;
+    water.userData.water=true;water.userData.basePositions=geo.attributes.position.array.slice();
+    group.add(water);group.userData.water=true;group.userData.buildHeight=.02;
+  }
   if(kind==="chair"){box(.95,.12,.9,wood,0,.72,0);box(.95,.85,.12,wood,0,1.15,-.39);for(const sx of [-.38,.38])for(const sz of [-.32,.32])box(.12,.68,.12,darkWood,sx,.34,sz);}
   if(kind==="table"){box(1.4,.14,1.2,wood,0,.92,0);for(const sx of [-.55,.55])for(const sz of [-.42,.42])box(.12,.9,.12,darkWood,sx,.45,sz);}
   if(kind==="bed"){box(1.4,.22,1.5,darkWood,0,.38,0);box(1.32,.2,1.32,mat(0xe4dfd0),0,.58,0);box(.55,.18,.35,mat(0xf4eee0),-.36,.76,-.45);box(1.4,.95,.12,wood,0,.55,-.7);}
@@ -1170,7 +1248,8 @@ function createBuildPiece(record, options = {}) {
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);
-  if(kind==="platea"||kind==="pool")refreshTerrainSurface();
+  if(kind==="pool"){refreshTerrainSurface();loadModularPoolShell(group,record);}
+  else if(kind==="platea")refreshTerrainSurface();
   if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
   return group;
 }
