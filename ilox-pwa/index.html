@@ -51,13 +51,14 @@
       <button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
       <button id="erase-parts" class="menu-action" type="button">⌫ Eliminar por partes</button>
     </section>
-    <div id="camera-controls" class="camera-controls hidden" aria-label="Cámaras del personaje">
-      <div class="camera-mode-group">
-        <button class="camera-mode" data-camera="first" type="button">1ª PERSONA</button>
-        <button class="camera-mode" data-camera="second" type="button">2ª PERSONA</button>
-        <button class="camera-mode selected" data-camera="third" type="button">3ª PERSONA</button>
+    <div id="camera-controls" class="camera-controls hidden" aria-label="Opciones de cámara">
+      <button id="camera-menu-toggle" class="camera-menu-toggle" type="button" aria-label="Cambiar cámara">📷</button>
+      <div id="camera-mode-panel" class="camera-mode-panel hidden">
+        <button class="camera-mode" data-camera="first" type="button" aria-label="Primera persona" title="Primera persona">◉</button>
+        <button class="camera-mode" data-camera="second" type="button" aria-label="Cámara cercana" title="Cámara cercana">◎</button>
+        <button class="camera-mode selected" data-camera="third" type="button" aria-label="Tercera persona" title="Tercera persona">🎥</button>
+        <button id="camera-lock" class="camera-lock" type="button" aria-label="Bloquear movimiento y girar cámara" aria-pressed="false">🔓</button>
       </div>
-      <button id="camera-lock" class="camera-lock" type="button" aria-pressed="false">🔓 GIRO LIBRE</button>
     </div>
     <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
     <div class="touch-ui" id="touch-ui">
@@ -66,12 +67,13 @@
         <div class="move-knob" id="move-knob"></div>
       </div>
       <div class="touch-note">MOVER</div>
+      <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
 remove right joystick markup    </div>
     <div class="controls-help" id="controls-help">JOYSTICK · MOVER Y GIRAR &nbsp; | &nbsp; ARRASTRAR · MIRAR</div>
     <div class="asset-credit">RECURSOS 3D · POLY HAVEN / THREE.JS (MIT)</div>
     <div class="toast" id="toast" role="status"></div>
   </main>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-camera-lock-v33"></script>
+  <script type="module" src="./game.js?v=ilox-real-humans-animals-gravity-v37"></script>
 </body>
 </html>
