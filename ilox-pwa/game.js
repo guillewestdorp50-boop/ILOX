@@ -18,7 +18,7 @@ let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild 
 let selectedBlockColor = 0xff3030;
 const buildRecords = [], buildGroups = [];
 let started = false;
-let yaw = 0, pitch = 0.48;
+let yaw = 0, playerHeading = 0, pitch = 0.48;
 let moveX = 0, moveZ = 0;
 
 const polyHavenLoader = new GLTFLoader();
@@ -773,9 +773,9 @@ function animate() {
     const length = Math.hypot(forward, strafe);
     if (length > 1) { forward /= length; strafe /= length; }
     const speed = 7.2;
-    // Movimiento relativo al rumbo de cámara/personaje, como el control clásico de Roblox.
-    const dx = (Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * speed * delta;
-    const dz = (-Math.cos(yaw) * forward + Math.sin(yaw) * strafe) * speed * delta;
+    // La cámara orbita de forma independiente; el movimiento sigue el rumbo propio del personaje.
+    const dx = (Math.sin(playerHeading) * forward + Math.cos(playerHeading) * strafe) * speed * delta;
+    const dz = (-Math.cos(playerHeading) * forward + Math.sin(playerHeading) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
     const collides = (x,z) => {
@@ -805,8 +805,8 @@ function animate() {
     const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.62 : swing*0.62; });
-    // La orientación y el desplazamiento comparten el mismo rumbo cámara-personaje.
-    player.rotation.y = yaw;
+    // La cámara nunca modifica la orientación del personaje.
+    player.rotation.y = playerHeading;
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = buildMode && firstPersonBuild && player;
