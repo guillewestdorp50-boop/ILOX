@@ -12,6 +12,7 @@ const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
 const pressedMoveButtons = new Set();
+const movePointers = new Map();
 
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
@@ -603,24 +604,27 @@ function addEvents() {
   }, {passive:false});
   movePad.querySelectorAll(".move-arrow").forEach(button => {
     const direction = button.dataset.move;
-    const press = e => {
+    button.addEventListener("pointerdown", e => {
       e.preventDefault();
-      button.setPointerCapture(e.pointerId);
+      // Registrar cada dedo permite mantener ▲ y ▶ simultáneamente.
+      movePointers.set(e.pointerId, { direction, button });
       pressedMoveButtons.add(direction);
       button.classList.add("pressed");
       updateArrowMovement();
-    };
-    const release = e => {
-      e.preventDefault();
-      pressedMoveButtons.delete(direction);
-      button.classList.remove("pressed");
-      updateArrowMovement();
-    };
-    button.addEventListener("pointerdown", press);
-    button.addEventListener("pointerup", release);
-    button.addEventListener("pointercancel", release);
-    button.addEventListener("lostpointercapture", release);
+    });
   });
+  const releaseMovePointer = e => {
+    const active = movePointers.get(e.pointerId);
+    if (!active) return;
+    movePointers.delete(e.pointerId);
+    active.button.classList.remove("pressed");
+    if (![...movePointers.values()].some(item => item.direction === active.direction)) {
+      pressedMoveButtons.delete(active.direction);
+    }
+    updateArrowMovement();
+  };
+  addEventListener("pointerup", releaseMovePointer);
+  addEventListener("pointercancel", releaseMovePointer);
   startButton.addEventListener("click", () => {
     welcome.classList.add("hidden");
     avatarSelect.classList.remove("hidden");
@@ -756,9 +760,9 @@ function placeBuildAtPointer(event) {
 }
 
 function updateArrowMovement() {
-  // Arriba/abajo avanzan o retroceden; izquierda/derecha giran el cuerpo.
-  moveX = (pressedMoveButtons.has("right") ? 1 : 0) - (pressedMoveButtons.has("left") ? 1 : 0);
+  // Vertical = avanzar/retroceder; horizontal = girar el cuerpo.
   moveZ = (pressedMoveButtons.has("down") ? 1 : 0) - (pressedMoveButtons.has("up") ? 1 : 0);
+  moveX = (pressedMoveButtons.has("right") ? 1 : 0) - (pressedMoveButtons.has("left") ? 1 : 0);
 }
 
 function animate() {
@@ -772,7 +776,8 @@ function animate() {
       - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
     forward += keyboardForward;
     const turn = moveX + keyboardTurn;
-    playerHeading += turn * 2.25 * delta;
+    // Giro continuo sin cancelar el avance, también con dos dedos en pantalla.
+    playerHeading += turn * 2.8 * delta;
     const length = Math.abs(forward);
     const speed = 7.2;
     // El giro cambia el rumbo sin cancelar el avance mantenido.
@@ -816,13 +821,16 @@ function animate() {
   if (viewHands) viewHands.visible = !!firstPerson && buildTool !== "erase";
   const distance = buildMode ? cameraDistance : 5.4;
   const orbitDistance = Math.cos(pitch) * distance;
-  const targetX = focus.position.x + Math.sin(yaw) * orbitDistance;
-  const targetZ = focus.position.z + Math.cos(yaw) * orbitDistance;
+  // La cámara conserva su ángulo relativo y acompaña el rumbo del personaje.
+  const cameraYaw = yaw + (player ? playerHeading : 0);
+  const targetX = focus.position.x + Math.sin(cameraYaw) * orbitDistance;
+  const targetZ = focus.position.z + Math.cos(cameraYaw) * orbitDistance;
   const targetY = focus.position.y + 1.8 + Math.sin(pitch) * distance;
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.lerp(eye,1-Math.pow(0.001,delta));
-    camera.lookAt(eye.x-Math.sin(yaw)*10,eye.y+pitch*8,eye.z-Math.cos(yaw)*10);
+    const cameraYaw = yaw + playerHeading;
+    camera.lookAt(eye.x-Math.sin(cameraYaw)*10,eye.y+pitch*8,eye.z-Math.cos(cameraYaw)*10);
   } else {
     camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
     camera.lookAt(focus.position.x, focus.position.y + 1.25, focus.position.z);
