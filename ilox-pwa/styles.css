@@ -164,3 +164,9 @@ h1 em{font-style:normal;color:#e8d29a}
 .mp-created-code strong{font-size:30px;letter-spacing:.22em;color:#fff}
 .mp-created-code.hidden{display:none}
 #multiplayer-dialog .door-pin-card{gap:10px}
+
+
+.mp-permission-list{display:flex;flex-direction:column;gap:7px;max-height:180px;overflow:auto}
+.mp-permission-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #ffffff2b;border-radius:8px;background:#ffffff0b;color:#f4f3e9;font-size:11px}
+.mp-permission-row button{border:1px solid #d9877d;border-radius:7px;background:#642f2b;color:#fff;padding:7px 9px;font-size:9px;font-weight:900}
+.mp-permission-empty{color:#c7d2c9;font-size:11px;line-height:1.45}
