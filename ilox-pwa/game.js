@@ -35,6 +35,13 @@ const avatarModelLoader = new GLTFLoader();
 // Modelo humanoide GLB con malla skinned, texturas PBR y clips Idle/Walk/Run.
 // Recurso de ejemplo oficial de Three.js (licencia MIT).
 const RIGGED_AVATAR_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb";
+const HUMAN_AVATAR_MODELS = {
+  man:["https://gobkit.com/freebies/human001/StoreManager.glb","https://gobkit.com/freebies/human002/ItEngineer.glb","https://gobkit.com/freebies/human015/OfficeWorker.glb"],
+  woman:["https://gobkit.com/freebies/human001/OfficeLady.glb","https://gobkit.com/freebies/human002/Receptionist.glb","https://gobkit.com/freebies/human005/ChiefSurgeon.glb"],
+  boy:["https://gobkit.com/freebies/human019/Schoolboy.glb","https://gobkit.com/freebies/human001/Schoolkid.glb"],
+  girl:["https://gobkit.com/freebies/human019/Schoolgirl.glb"]
+};
+const HUMAN_MODEL_LOADER = new GLTFLoader();
 let avatarLoadToken = 0;
 const proceduralTreeGroups = [];
 let importedNatureReady = false;
@@ -232,13 +239,16 @@ function makeRock(x, z, scale, random) {
 
 
 async function loadRiggedAvatar(kind) {
-  if (!String(kind).startsWith("soldier:")) return;
+  const [avatarType,variantText="0"]=String(kind).split(":");
+  const variant=Number(variantText)||0;
+  const avatarUrl=avatarType==="soldier"?RIGGED_AVATAR_URL:(HUMAN_AVATAR_MODELS[avatarType]?.[variant%HUMAN_AVATAR_MODELS[avatarType].length]);
+  if (!avatarUrl) return;
   const token = ++avatarLoadToken;
   const previous = player;
   const previousPosition = previous ? previous.position.clone() : new THREE.Vector3(0, terrainHeight(0,0), 0);
   const previousHeading = previous ? previous.rotation.y : yaw;
   try {
-    const gltf = await avatarModelLoader.loadAsync(RIGGED_AVATAR_URL);
+    const gltf = avatarType==="soldier" ? await avatarModelLoader.loadAsync(avatarUrl) : await HUMAN_MODEL_LOADER.loadAsync(avatarUrl);
     if (token !== avatarLoadToken || !started) return;
     const model = gltf.scene;
     const bounds = new THREE.Box3().setFromObject(model);
@@ -263,7 +273,7 @@ async function loadRiggedAvatar(kind) {
     imported.add(model);
     imported.position.copy(previousPosition);
     imported.rotation.y = previousHeading;
-    imported.userData.avatarKind = "soldier";
+    imported.userData.avatarKind = avatarType;
     imported.userData.isRiggedAvatar = true;
     imported.userData.mixer = new THREE.AnimationMixer(model);
     imported.userData.actions = {};
@@ -719,22 +729,21 @@ function addEvents() {
     avatarSelect.classList.remove("hidden");
   });
   const avatarCatalog = [
-    ["soldier","🧍","Humano 3D"],["girl","🧑‍🦰","Exploradora"],["builder","👷","Constructor"],
-    ["woman","👩‍🔧","Constructora"],["astronaut","🧑‍🚀","Astronauta"],["robot","🤖","Robot"],
-    ["elf","🧝","Elfo"],["knight","🛡️","Caballero"],["ninja","🥷","Ninja"],
-    ["mage","🧙","Mago"],["orc","👹","Orco"],["fairy","🧚","Hada"]
+    ["soldier","🧍","Humano original",1],["man","👨","Hombre",10],["woman","👩","Mujer",10],
+    ["boy","👦","Niño",10],["girl","👧","Niña",10],["builder","👷","Constructor",10],
+    ["astronaut","🧑‍🚀","Astronauta",10],["robot","🤖","Robot",10],["elf","🧝","Elfo",10],
+    ["knight","🛡️","Caballero",10],["ninja","🥷","Ninja",10],["mage","🧙","Mago",10]
   ];
   const avatarGrid = document.querySelector(".avatar-options");
   avatarGrid.innerHTML = "";
   let firstAvatar = true;
-  avatarCatalog.slice(0,10).forEach(([type,emoji,label]) => {
-    for (let variant=0; variant<10; variant++) {
+  avatarCatalog.forEach(([type,emoji,label,count]) => {
+    for (let variant=0; variant<count; variant++) {
       const option=document.createElement("button");
       option.className="avatar-option"+(firstAvatar?" selected":"");
       option.dataset.avatar=type+":"+variant;
-      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+label+' '+(variant+1)+'</strong><small>Modelo '+String(variant+1).padStart(2,"0")+'</small>';
-      avatarGrid.appendChild(option);
-      firstAvatar=false;
+      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+label+(count>1?" "+(variant+1):"")+'</strong><small>'+(HUMAN_AVATAR_MODELS[type]?"Humano animado":"Modelo "+String(variant+1).padStart(2,"0"))+'</small>';
+      avatarGrid.appendChild(option);firstAvatar=false;
     }
   });
   selectedAvatar = "soldier:0";
