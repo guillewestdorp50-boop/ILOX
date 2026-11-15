@@ -961,7 +961,7 @@ function placeBuildAtPointer(event){
   if(buildTool==="water"){
     containingPool=buildRecords.find(item=>{
       if(item.kind!=="pool")return false;
-      const dx=x-item.x,dz=z-item.z,a=-(item.rotation||0),lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);
+      const dx=x-item.x,dz=z-item.z,a=item.rotation||0,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);
       return Math.abs(lx)<=1.51&&Math.abs(lz)<=1.51;
     });
     if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}
