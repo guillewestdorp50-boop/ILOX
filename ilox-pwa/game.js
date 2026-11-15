@@ -141,15 +141,16 @@ const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.1;
 // Dependencias declarativas: cada componente indica qué estructura principal necesita.
 const BUILD_DEPENDENCIES={
-  water:{parents:["pool"],label:"pileta",parentField:"poolStructureId"}
+  water:{parents:["pool"],label:"pileta",parentField:"poolStructureId",positionFields:["poolX","poolZ"]}
 };
 function findRequiredParent(kind,x,z){
   const rule=BUILD_DEPENDENCIES[kind];
   if(!rule)return null;
-  if(rule.parents.includes("pool")){
-    return buildRecords.find(item=>item.kind==="pool"&&
-      Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&
-      Math.abs(z-item.z)<(item.poolDepth||6)/2-.35)||null;
+  for(const parentKind of rule.parents){
+    const parent=buildRecords.find(item=>item.kind===parentKind&&
+      Math.abs(x-item.x)<(item.poolWidth||item.width||6)/2-.35&&
+      Math.abs(z-item.z)<(item.poolDepth||item.depth||6)/2-.35);
+    if(parent)return parent;
   }
   return null;
 }
@@ -1433,13 +1434,16 @@ async function syncMultiplayerStructures(){
     // una referencia real a la estructura que la contiene.
     const syncRecords=[...buildRecords].sort((a,b)=>(a.kind==="pool"?-1:0)-(b.kind==="pool"?-1:0));
     for(const record of syncRecords){
-      if(record.kind==="water"){
-        const parentPool=buildRecords.find(item=>item.kind==="pool"&&
-          Math.abs(item.x-(record.poolX??record.x))<.05&&
-          Math.abs(item.z-(record.poolZ??record.z))<.05);
-        if(!parentPool)throw new Error("El agua no tiene una pileta asociada.");
-        if(!parentPool.cloudId)throw new Error("Primero se debe guardar la pileta para vincular su agua.");
-        record.poolStructureId=parentPool.cloudId;
+      const dependency=BUILD_DEPENDENCIES[record.kind];
+      if(dependency){
+        const [parentXField,parentZField]=dependency.positionFields||[];
+        const parentX=parentXField?(record[parentXField]??record.x):record.x;
+        const parentZ=parentZField?(record[parentZField]??record.z):record.z;
+        const parent=buildRecords.find(item=>dependency.parents.includes(item.kind)&&
+          Math.abs(item.x-parentX)<.05&&Math.abs(item.z-parentZ)<.05);
+        if(!parent)throw new Error("Falta la estructura principal: "+dependency.label+".");
+        if(!parent.cloudId)throw new Error("Primero se debe guardar la estructura principal ("+dependency.label+").");
+        record[dependency.parentField]=parent.cloudId;
       }
       const fingerprint=multiplayerFingerprint(record);
       if(record.cloudId)currentIds.add(record.cloudId);
