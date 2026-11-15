@@ -720,10 +720,8 @@ function addEvents() {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
     if (started && !pointerDragged && activePointers.size===0) {
-      if(buildMode){
-        if(buildTool==="erase")placeBuildAtPointer(e);
-        else placeBuildAtPointer(e);
-      } else toggleDoorAtPointer(e);
+      if(buildMode)placeBuildAtPointer(e);
+      else toggleDoorAtPointer(e);
     }
     lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
     if(lookPointer!==null){const p=activePointers.get(lookPointer);lastLookX=p.x;lastLookY=p.y;pointerDragged=true;}
