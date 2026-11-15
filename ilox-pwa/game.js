@@ -1010,6 +1010,45 @@ function foundationContainsFootprint(x,z,kind,rotation=0){
   return true;
 }
 
+function autoSnapBuildPlacement(x,z,kind,rotation=0){
+  const snapKinds=new Set(["block","brick","wall","floor","roof","window","stairs"]);
+  if(!snapKinds.has(kind))return {x,z,rotation,snapped:false};
+  const [nw,nd]=buildFootprint(kind),nc=Math.cos(rotation),ns=Math.sin(rotation);
+  const newU={x:nc,z:ns},newV={x:-ns,z:nc};
+  const candidates=[];
+  for(const other of buildRecords){
+    if(!snapKinds.has(other.kind)||Math.abs((other.y||0)-(supportHeightAt(x,z)-1.5))>2.2)continue;
+    const [ow,od]=buildFootprint(other.kind),a=other.rotation||0,oc=Math.cos(a),os=Math.sin(a);
+    const ou={x:oc,z:os},ov={x:-os,z:oc};
+    for(const axis of [ou,ov]){
+      for(const sign of [-1,1]){
+        const normal={x:axis.x*sign,z:axis.z*sign},tangent={x:-normal.z,z:normal.x};
+        const otherHalfN=(ow/2)*Math.abs(normal.x*ou.x+normal.z*ou.z)+(od/2)*Math.abs(normal.x*ov.x+normal.z*ov.z);
+        const otherHalfT=(ow/2)*Math.abs(tangent.x*ou.x+tangent.z*ou.z)+(od/2)*Math.abs(tangent.x*ov.x+tangent.z*ov.z);
+        let candidateRotation=rotation;
+        if(kind==="wall"){
+          const longAxis=other.kind==="wall"?ou:(Math.abs(axis.x)>=Math.abs(axis.z)?{x:1,z:0}:{x:0,z:1});
+          candidateRotation=Math.atan2(longAxis.z,longAxis.x);
+        }
+        const cc=Math.cos(candidateRotation),ss=Math.sin(candidateRotation),cu={x:cc,z:ss},cv={x:-ss,z:cc};
+        const newHalfN=(nw/2)*Math.abs(normal.x*cu.x+normal.z*cu.z)+(nd/2)*Math.abs(normal.x*cv.x+normal.z*cv.z);
+        const newHalfT=(nw/2)*Math.abs(tangent.x*cu.x+tangent.z*cu.z)+(nd/2)*Math.abs(tangent.x*cv.x+tangent.z*cv.z);
+        const available=otherHalfT-newHalfT;
+        if(available<-.015)continue;
+        const along=THREE.MathUtils.clamp((x-other.x)*tangent.x+(z-other.z)*tangent.z,-available,available);
+        const cx=other.x+normal.x*(otherHalfN+newHalfN)+tangent.x*along;
+        const cz=other.z+normal.z*(otherHalfN+newHalfN)+tangent.z*along;
+        const distance=Math.hypot(cx-x,cz-z);
+        if(distance>1.25)continue;
+        if(!foundationContainsFootprint(cx,cz,kind,candidateRotation))continue;
+        candidates.push({x:cx,z:cz,rotation:candidateRotation,distance,snapped:true});
+      }
+    }
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  return candidates[0]||{x,z,rotation,snapped:false};
+}
+
 function findDoorOpening(x,z){
   const supports=buildRecords.filter(r=>["wall","block","brick"].includes(r.kind));
   let best=null,bestDistance=2.35;
@@ -1081,17 +1120,21 @@ function updateBuildPlacementGuide(){
     const normal=pieceHit.object.localToWorld(pieceHit.face.normal.clone()).sub(pieceHit.object.getWorldPosition(new THREE.Vector3())).normalize();
     if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}
   }
+  const snap=autoSnapBuildPlacement(x,z,buildTool,buildRotation);
+  x=snap.x;z=snap.z;
+  const guideRotation=snap.rotation;
   const doorOpening=buildTool==="door"?findDoorOpening(x,z):null;
   if(buildTool==="door"&&!doorOpening){if(buildGuide)buildGuide.visible=false;return;}
   if(doorOpening){x=doorOpening.x;z=doorOpening.z;buildRotation=doorOpening.rotation;}
   const [w,d]=buildTool==="door"&&doorOpening?[doorOpening.width,.16]:buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
+  if(snap.snapped)buildRotation=guideRotation;
   const valid=buildTool==="door"?!!doorOpening:buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
     buildGuide=new THREE.LineLoop(geometry,material);buildGuide.renderOrder=999;buildGuide.frustumCulled=false;scene.add(buildGuide);
   }
-  const c=Math.cos(buildRotation),sn=Math.sin(buildRotation),pts=[];
+  const c=Math.cos(guideRotation),sn=Math.sin(guideRotation),pts=[];
   for(const [dx,dz] of [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]])pts.push(new THREE.Vector3(dx*c-dz*sn,0.035,dx*sn+dz*c));
   buildGuide.geometry.dispose();buildGuide.geometry=new THREE.BufferGeometry().setFromPoints(pts);
   buildGuide.position.set(x,buildTool==="platea"?terrainHeight(x,z)+.05:supportHeightAt(x,z)+.035,z);
@@ -1118,6 +1161,8 @@ function placeBuildAtPointer(event){
   if(buildTool==="platea"){x=Math.round(x/6)*6;z=Math.round(z/6)*6;}
   if(isPoolTool){x=Math.round(x/(poolWidth/2))*(poolWidth/2);z=Math.round(z/(poolDepth/2))*(poolDepth/2);}
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}}
+  const snap=autoSnapBuildPlacement(x,z,buildTool,buildRotation);
+  x=snap.x;z=snap.z;if(snap.snapped)buildRotation=snap.rotation;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
   let containingPool=null;
   if(buildTool==="water"){containingPool=buildRecords.find(item=>item.kind==="pool"&&Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&Math.abs(z-item.z)<(item.poolDepth||6)/2-.35);if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
