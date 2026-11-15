@@ -190,3 +190,19 @@ export async function subscribeWorld(worldId, handlers = {}) {
     });
   });
 }
+
+export async function setDoorPin(structureId, pin) {
+  const { error } = await client.rpc("multiplayer_set_door_pin", {
+    p_structure_id: structureId, p_pin: String(pin)
+  });
+  if (error) throw error;
+  return true;
+}
+
+export async function verifyDoorPin(structureId, pin) {
+  const { data, error } = await client.rpc("multiplayer_verify_door_pin", {
+    p_structure_id: structureId, p_pin: String(pin)
+  });
+  if (error) throw error;
+  return data === true;
+}
