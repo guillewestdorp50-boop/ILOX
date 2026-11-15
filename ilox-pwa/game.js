@@ -823,7 +823,7 @@ function addEvents() {
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
     structure:[["pool","🏊","PILETA"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door","🚪","PUERTA"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
-    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"]]
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
   };
   function renderBuildTools(category="block"){
     buildToolsHost.innerHTML="";
@@ -916,7 +916,7 @@ function createBuildPiece(record) {
   if(kind==="bed"){box(1.4,.22,1.5,darkWood,0,.38,0);box(1.32,.2,1.32,mat(0xe4dfd0),0,.58,0);box(.55,.18,.35,mat(0xf4eee0),-.36,.76,-.45);box(1.4,.95,.12,wood,0,.55,-.7);}
   if(kind==="sofa"){box(1.5,.42,.72,mat(0x547a74),0,.45,0);box(1.5,.72,.16,mat(0x547a74),0,.83,-.28);for(const sx of [-.68,.68])box(.16,.62,.72,mat(0x42635d),sx,.67,0);}
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
-  if(["gate","fence","pen"].includes(kind)){for(const sx of [-.68,.68])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
+  if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
   if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind);
 
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);return group;
@@ -967,8 +967,36 @@ function placeBuildAtPointer(event){
     if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}
     if(buildRecords.some(item=>item.kind==="water"&&Math.abs(item.x-x)<.2&&Math.abs(item.z-z)<.2)){showToast("Ese sector de la pileta ya tiene agua.");return;}
   }
+  if(buildTool==="pen"||buildTool==="fence"){
+    const angle=buildRotation,half=.75,ux=Math.cos(angle),uz=-Math.sin(angle);
+    let best=null,bestDistance=.95;
+    for(const segment of buildRecords){
+      if(segment.kind!=="pen"&&segment.kind!=="fence")continue;
+      const a=segment.rotation||0,ex=Math.cos(a)*half,ez=-Math.sin(a)*half;
+      for(const sign of [-1,1]){
+        const endX=segment.x+ex*sign,endZ=segment.z+ez*sign;
+        for(const newSign of [-1,1]){
+          const candidateX=endX-ux*half*newSign,candidateZ=endZ-uz*half*newSign;
+          const distance=Math.hypot(candidateX-x,candidateZ-z);
+          if(distance<bestDistance){bestDistance=distance;best={x:candidateX,z:candidateZ};}
+        }
+      }
+    }
+    if(best){x=Math.round(best.x/1.5)*1.5;z=Math.round(best.z/1.5)*1.5;}
+  }
   const ground=terrainHeight(x,z);let baseY=buildTool==="water"?containingPool.y+.76:ground;
-  if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;baseY=top;}
+  if(onPiece&&buildTool!=="water"){
+    let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;
+    const supportRecord=root.userData.buildRecord;
+    if(supportRecord){
+      const normal=hit.face?hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize():new THREE.Vector3(0,1,0);
+      const sourceHeight=root.userData.buildHeight||1.5;
+      baseY=normal.y<.65?supportRecord.y:supportRecord.y+sourceHeight;
+      baseY=Math.round(baseY*1000)/1000;
+    }else{
+      const top=new THREE.Box3().setFromObject(root).max.y;baseY=Math.round(top*1000)/1000;
+    }
+  }
   const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en la pileta":"¡Pieza colocada y alineada!");
 }
