@@ -34,6 +34,7 @@ const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
 let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null;
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
+let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
@@ -1268,6 +1269,7 @@ function updateRemotePlayer(data){
     avatar.userData.remoteAvatarSelection=avatarKind;
     avatar.userData.netTarget=target.clone();
     avatar.userData.remoteWalkPhase=0;
+    avatar.userData.remoteMoving=!!data.moving;
     remotePlayers.set(userId,avatar);
   }else {
     const previousTarget=avatar.userData.netTarget;
@@ -1309,6 +1311,33 @@ async function loadMultiplayerChat(worldId){
   const rows=await Multiplayer.getChatMessages(worldId);
   if(!rows.length){const empty=document.createElement("p");empty.className="mp-chat-empty";empty.textContent="Todavía no hay mensajes. ¡Saludá a tu compañero!";list.appendChild(empty);return;}
   for(const row of rows)appendMultiplayerChatMessage(row);
+}
+function stopMultiplayerFallbackSync(){
+  if(multiplayerFallbackTimer){clearInterval(multiplayerFallbackTimer);multiplayerFallbackTimer=null;}
+  multiplayerFallbackBusy=false;
+}
+function startMultiplayerFallbackSync(worldId){
+  stopMultiplayerFallbackSync();
+  multiplayerLastChatPoll=Date.now();
+  // Respaldo por base de datos: si Broadcast/Postgres Changes no llega al móvil,
+  // la posición y el chat siguen sincronizándose desde el mismo mundo compartido.
+  multiplayerFallbackTimer=setInterval(async()=>{
+    if(!multiplayerSession||activeMultiplayerWorldId!==worldId||multiplayerFallbackBusy)return;
+    multiplayerFallbackBusy=true;
+    try{
+      const states=await Multiplayer.getWorldPlayerStates(worldId);
+      for(const state of states)updateRemotePlayer(state);
+      if(Date.now()-multiplayerLastChatPoll>=1200){
+        multiplayerLastChatPoll=Date.now();
+        const messages=await Multiplayer.getChatMessages(worldId);
+        for(const row of messages)appendMultiplayerChatMessage(row);
+      }
+    }catch(error){
+      console.warn("ILOX multiplayer: falló la sincronización de respaldo",error);
+    }finally{
+      multiplayerFallbackBusy=false;
+    }
+  },500);
 }
 function syncRemotePresence(state){
   const seen=new Set();
@@ -1370,11 +1399,13 @@ async function enterMultiplayerWorld(worldId){
     document.querySelector("#mp-chat-toggle")?.classList.remove("hidden");
     document.querySelector("#mp-chat-panel")?.classList.add("hidden");
     await loadMultiplayerChat(worldId);
+    startMultiplayerFallbackSync(worldId);
     const mpLeave=document.querySelector("#mp-leave-world");
     if(mpLeave)mpLeave.classList.remove("hidden");
     showToast("Mundo compartido conectado. Guardado automático activo.");
     return count;
   }catch(error){
+    stopMultiplayerFallbackSync();
     activeMultiplayerWorldId=null;multiplayerUserId=null;
     if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
     for(const avatar of remotePlayers.values())scene.remove(avatar);
@@ -1387,6 +1418,7 @@ async function enterMultiplayerWorld(worldId){
   }
 }
 async function leaveMultiplayerWorld(){
+  stopMultiplayerFallbackSync();
   if(activeMultiplayerWorldId){
     if(multiplayerSyncTimer){clearTimeout(multiplayerSyncTimer);multiplayerSyncTimer=null;}
     await syncMultiplayerStructures();
