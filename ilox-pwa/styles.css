@@ -127,3 +127,8 @@ h1 em{font-style:normal;color:#e8d29a}
 .hud-minimal .brand,.hud-minimal .world-label{display:none!important}
 .welcome.hidden,.avatar-select.hidden{display:none!important}
 .bottom-hint,.controls-help,.asset-credit{display:none!important}
+
+/* Selector: humanos 3D destacados y separados de los personajes fantásticos. */
+.avatar-section-title{grid-column:1/-1;padding:10px 4px 5px;margin-top:4px;border-bottom:1px solid #ffffff35;color:#e6d19b;font-size:10px;font-weight:900;letter-spacing:.13em;text-align:left}
+.avatar-option.human-avatar{border-color:#b7d8cf66;background:linear-gradient(145deg,#ffffff14,#78b6a31c)}
+.avatar-option.human-avatar.selected{border-color:#e6d19b;background:#e6d19b20}
