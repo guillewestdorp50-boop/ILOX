@@ -24,10 +24,8 @@ def patch_many(path, old, new, expected, label):
 
 # The ocean is a camera-following surface; without this dry-land depth guard it
 # renders over the prairie even when the generated heightfield is above sea level.
-patch("src/water/Ocean.ts",
-"      const y = max(seaY, mix(seaY, ground.add(sw.sheet), faceW));\n      return vec3(xz.x.add(d.x), y, xz.y.add(d.z));",
-"      const y = max(seaY, mix(seaY, ground.add(sw.sheet), faceW));\n      // ILOX mainland fix: keep waves and beach swash, but hide the ocean below dry land.\n      const dryLand = smoothstep(0.9, 1.6, ground);\n      const visibleY = mix(y, ground.sub(2.0), dryLand);\n      return vec3(xz.x.add(d.x), visibleY, xz.y.add(d.z));",
-"hide camera-following ocean beneath dry prairie terrain")
+# ILOX: keep the original ocean renderer and waves intact.
+# The ocean is not hidden; the actual coastline polygon below defines where land replaces sea.
 
 # Broad prairie world profile: preserve the original generator, but gently reshape its inputs.
 # Coastline expands by 14%, interior relief is reduced, and the volcanic escarpment becomes low rolling terrain.
@@ -37,18 +35,23 @@ patch("src/world/layout.ts",
 // Replace the closed island ring with a mainland-sized prairie that reaches
 // the north, south and west map edges. The only open-sea shoreline is on the east.
 COAST.splice(0, COAST.length,
-  { p: [-1200, -1200], kind: 0.15 },
-  { p: [620, -1200], kind: 0.15 },
-  { p: [760, -1080], kind: 0.15 },
-  { p: [850, -820], kind: 0.15 },
-  { p: [900, -500], kind: 0.15 },
-  { p: [880, -180], kind: 0.15 },
-  { p: [900, 160], kind: 0.15 },
-  { p: [870, 480], kind: 0.15 },
-  { p: [800, 800], kind: 0.15 },
-  { p: [680, 1080], kind: 0.15 },
-  { p: [560, 1200], kind: 0.15 },
-  { p: [-1200, 1200], kind: 0.15 },
+  // Mainland polygon: west, north and south reach the actual world limits.
+  // The east side is the ONLY open-ocean shoreline, roughly 1.46 km east of the west edge.
+  { p: [-1024, -1024], kind: 0.15 },
+  { p: [0, -1024], kind: 0.15 },
+  { p: [420, -1024], kind: 0.15 },
+  { p: [455, -900], kind: 0.15 },
+  { p: [475, -700], kind: 0.15 },
+  { p: [455, -480], kind: 0.15 },
+  { p: [470, -240], kind: 0.15 },
+  { p: [450, 0], kind: 0.15 },
+  { p: [470, 240], kind: 0.15 },
+  { p: [455, 480], kind: 0.15 },
+  { p: [475, 700], kind: 0.15 },
+  { p: [455, 900], kind: 0.15 },
+  { p: [420, 1024], kind: 0.15 },
+  { p: [0, 1024], kind: 0.15 },
+  { p: [-1024, 1024], kind: 0.15 },
 );
 
 /** small islands and sea stacks, each its own closed coast */""",
