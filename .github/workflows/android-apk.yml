@@ -57,7 +57,7 @@ jobs:
       - name: Descargar recursos 3D
         run: python3 scripts/fetch_polyhaven_assets.py
 
-      - name: Empaquetar la versión web ILOX v88 dentro del APK
+      - name: Empaquetar la versión web ILOX v95 dentro del APK
         run: |
           node --check ilox-pwa/game.js
           node --check ilox-pwa/multiplayer.js
@@ -72,8 +72,8 @@ jobs:
       - name: Publicar instalador APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ilox-v90-android
-          name: ILOX v90 — Instalador Android
-          body: APK de prueba de ILOX v90. Sincroniza construcciones compartidas por respaldo y agrega un kit modular de pileta seca con agua separada.
+          tag_name: ilox-v95-android
+          name: ILOX v95 — Instalador Android
+          body: Instalador Android de ILOX v95. Incluye la versión visible en la pantalla de inicio.
           files: app/build/outputs/apk/debug/app-debug.apk
           make_latest: true
