@@ -820,12 +820,11 @@ function animate() {
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     player.position.y = terrainHeight(player.position.x, player.position.z);
     const moving = inputLength > 0.08;
-    if (moving) {
-      // Auto-rotación suave hacia el vector real de desplazamiento (estilo Free Fire).
-      const targetHeading = Math.atan2(dx, -dz);
-      const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
-      playerHeading += angleDelta * Math.min(1, delta * 10);
-    }
+    // La espalda y la mochila quedan siempre orientadas hacia la cámara.
+    // El movimiento es independiente: caminar hacia atrás o de costado no da vuelta el avatar.
+    const targetHeading = yaw;
+    const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
+    playerHeading += angleDelta * Math.min(1, delta * 12);
     player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
     const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
