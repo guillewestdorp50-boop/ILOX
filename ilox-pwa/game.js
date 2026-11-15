@@ -1199,6 +1199,7 @@ function appendMultiplayerChatMessage(row){
   const id=String(row.id);if(multiplayerChatSeen.has(id))return;
   multiplayerChatSeen.add(id);
   const list=document.querySelector("#mp-chat-messages");if(!list)return;
+  list.querySelector(".mp-chat-empty")?.remove();
   const item=document.createElement("article");item.className="mp-chat-message";
   const head=document.createElement("div");head.className="mp-chat-message-head";
   const name=document.createElement("strong");name.textContent=String(row.display_name||"Jugador").slice(0,32);
@@ -1212,6 +1213,7 @@ async function loadMultiplayerChat(worldId){
   const list=document.querySelector("#mp-chat-messages");if(!list)return;
   list.replaceChildren();multiplayerChatSeen.clear();
   const rows=await Multiplayer.getChatMessages(worldId);
+  if(!rows.length){const empty=document.createElement("p");empty.className="mp-chat-empty";empty.textContent="Todavía no hay mensajes. ¡Saludá a tu compañero!";list.appendChild(empty);return;}
   for(const row of rows)appendMultiplayerChatMessage(row);
 }
 function syncRemotePresence(state){
