@@ -138,3 +138,17 @@ h1 em{font-style:normal;color:#e8d29a}
 .door-rotate-control{position:absolute;z-index:12;right:14px;top:calc(112px + env(safe-area-inset-top));padding:12px 16px;border:1px solid #b8e8b9;border-radius:12px;background:#123b2ddd;color:#fff;font-size:12px;font-weight:950;letter-spacing:.06em;box-shadow:0 5px 20px #0009;backdrop-filter:blur(10px)}
 .door-rotate-control.hidden{display:none}
 @media(max-width:600px){.door-rotate-control{right:10px;top:calc(108px + env(safe-area-inset-top));padding:11px 13px;font-size:11px}}
+
+/* ILOX v67: PIN local de puerta y paso más holgado del avatar */
+.door-pin-dialog{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:20px;background:#06130fdc;backdrop-filter:blur(9px)}
+.door-pin-dialog.hidden{display:none}
+.door-pin-card{width:min(360px,92vw);display:flex;flex-direction:column;gap:11px;padding:22px;border:1px solid #e6d19b88;border-radius:16px;background:#10251ff5;box-shadow:0 18px 55px #000b}
+.door-pin-eyebrow{font-size:9px;font-weight:900;letter-spacing:.15em;color:#e6d19b}
+.door-pin-card h2{margin:0;font-size:22px;letter-spacing:.04em}
+.door-pin-card p{margin:0 0 5px;color:#d5ded4;font-size:13px;line-height:1.45}
+.door-pin-input{width:100%;padding:14px;border:1px solid #ffffff55;border-radius:9px;background:#071710;color:#fff;font-size:20px;letter-spacing:.25em;text-align:center;outline:none}
+.door-pin-input:focus{border-color:#e6d19b}
+.door-pin-submit,.door-pin-secondary,.door-pin-cancel{width:100%;padding:13px;border-radius:9px;font-size:11px;font-weight:950;letter-spacing:.1em}
+.door-pin-submit{border:0;background:#e6d19b;color:#1b2d25}
+.door-pin-secondary{border:1px solid #e6d19b88;background:#ffffff0b;color:#f4f3e9}
+.door-pin-cancel{border:1px solid #ffffff35;background:#ffffff0b;color:#d5ded4}
