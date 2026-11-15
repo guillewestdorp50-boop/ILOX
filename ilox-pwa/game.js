@@ -21,6 +21,7 @@ const jumpButton = document.querySelector("#jump-button");
 const menuToggle = document.querySelector("#menu-toggle");
 const menuPanel = document.querySelector("#menu-panel");
 const buildPanel = document.querySelector("#build-panel");
+const quickSaveButton = document.querySelector("#quick-save");
 let moveStickPointer = null;
 let playerVerticalVelocity = 0, playerGrounded = true;
 let moveStick = { x: 0, y: 0 };
@@ -878,6 +879,14 @@ function addEvents() {
       showToast("Color seleccionado");
     });
   });
+  quickSaveButton?.addEventListener("click",()=>{
+    if(persistBuilds()){
+      quickSaveButton.classList.add("saved");
+      quickSaveButton.textContent="✓";
+      showToast("Guardado rápido: tu construcción quedó guardada en este dispositivo.");
+      window.setTimeout(()=>{quickSaveButton.classList.remove("saved");quickSaveButton.textContent="💾";},1100);
+    }
+  });
   document.querySelector("#fullscreen").addEventListener("click", async () => {
     try {
       if (!document.fullscreenElement) await game.requestFullscreen();
@@ -957,8 +966,8 @@ async function loadAnimalModel(group,kind,notify=false){
   }
 }
 function persistBuilds() {
-  try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); }
-  catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); }
+  try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); return true; }
+  catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); return false; }
 }
 function loadBuilds() {
   if(buildRecords.length) return;
