@@ -57,7 +57,12 @@
     <button id="materials-toggle" class="materials-toggle hidden">🧱 MATERIALES</button>
     <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
     <div class="touch-ui" id="touch-ui">
-      <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
+      <div class="move-pad" id="move-pad" aria-label="Controles de movimiento">
+        <button class="move-arrow arrow-up" data-move="up" aria-label="Adelante">▲</button>
+        <button class="move-arrow arrow-left" data-move="left" aria-label="Izquierda">◀</button>
+        <button class="move-arrow arrow-right" data-move="right" aria-label="Derecha">▶</button>
+        <button class="move-arrow arrow-down" data-move="down" aria-label="Atrás">▼</button>
+      </div>
       <div class="touch-note">MOVER</div>
       <div class="look-note">DESLIZÁ PARA MIRAR</div>
     </div>
@@ -66,6 +71,6 @@
     <div class="toast" id="toast" role="status"></div>
   </main>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-walkbuild-15"></script>
+  <script type="module" src="./game.js?v=ilox-arrows-16"></script>
 </body>
 </html>
