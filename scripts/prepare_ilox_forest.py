@@ -32,7 +32,7 @@ replace_once(engine_path,
       window.innerWidth / window.innerHeight,
       0.1,
       300
-    );")
+    );""")
 replace_once(engine_path, "import { createLandmarks } from '../world/Landmarks';\n", "")
 replace_once(engine_path, "import { Drone } from '../world/Drone';\n", "")
 replace_once(engine_path, "import { FirstPersonController } from '../player/FirstPersonController';",
