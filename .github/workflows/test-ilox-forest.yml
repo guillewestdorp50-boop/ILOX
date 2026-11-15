@@ -1,4 +1,4 @@
-name: Verificar integración ILOX + The Forest
+name: Verificar ILOX The Forest con avatar en tercera persona
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: vendor/theforest/package-lock.json
 
