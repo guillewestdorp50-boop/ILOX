@@ -27,12 +27,10 @@ export async function ensureIdentity(displayName, avatarKind) {
 export async function updateMyAvatar(avatarKind) {
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError || !user) throw userError || new Error("No hay una sesión activa.");
-  const { error } = await client.from("multiplayer_profiles").upsert({
-    user_id: user.id,
-    display_name: String(user.user_metadata?.display_name || "Jugador").trim().slice(0, 32) || "Jugador",
+  const { error } = await client.from("multiplayer_profiles").update({
     avatar_kind: String(avatarKind || "boy:0").slice(0, 40),
     updated_at: new Date().toISOString()
-  }, { onConflict: "user_id" });
+  }).eq("user_id", user.id);
   if (error) throw error;
 }
 
