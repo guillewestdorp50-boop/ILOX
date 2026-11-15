@@ -24,6 +24,18 @@ export async function ensureIdentity(displayName, avatarKind) {
   return user;
 }
 
+export async function updateMyAvatar(avatarKind) {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError || !user) throw userError || new Error("No hay una sesión activa.");
+  const { error } = await client.from("multiplayer_profiles").upsert({
+    user_id: user.id,
+    display_name: String(user.user_metadata?.display_name || "Jugador").trim().slice(0, 32) || "Jugador",
+    avatar_kind: String(avatarKind || "boy:0").slice(0, 40),
+    updated_at: new Date().toISOString()
+  }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 export async function listMyWorlds() {
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError || !user) return [];
@@ -219,7 +231,10 @@ export async function subscribeWorld(worldId, handlers = {}) {
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "multiplayer_chat_messages", filter: "world_id=eq." + worldId }, payload => handlers.onChatMessage?.(payload.new))
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_player_states", filter: "world_id=eq." + worldId }, payload => handlers.onPlayerStateChange?.(payload))
-    .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()));
+    .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()))
+    .on("presence", { event: "join" }, () => handlers.onPresence?.(channel.presenceState()))
+    .on("presence", { event: "leave" }, () => handlers.onPresence?.(channel.presenceState()));
+  let lastStatePersistAt = 0;
   return new Promise((resolve, reject) => {
     channel.subscribe(async status => {
       if (status === "SUBSCRIBED") {
@@ -228,7 +243,18 @@ export async function subscribeWorld(worldId, handlers = {}) {
           resolve({
           channel,
           userId: user.id,
-          sendPlayerState: payload => saveWorldPlayerState(worldId, payload),
+          sendPlayerState: async payload => {
+            const state = { ...payload, userId: user.id, user_id: user.id };
+            const broadcastStatus = await channel.send({
+              type: "broadcast", event: "player_state", payload: state
+            });
+            if (broadcastStatus !== "ok") throw new Error("No se pudo transmitir la posición en tiempo real.");
+            const now = Date.now();
+            if (now - lastStatePersistAt >= 2000) {
+              lastStatePersistAt = now;
+              await saveWorldPlayerState(worldId, state);
+            }
+          },
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
           sendChatMessage: (message, displayName) => sendWorldChatMessage(worldId, message, displayName),
           updatePresence: payload => channel.track({ ...payload, user_id: user.id }),
