@@ -13,7 +13,9 @@ const toast = document.querySelector("#toast");
 const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
 
-let scene, camera, renderer, player, clock;
+let scene, camera, renderer, player, clock, terrainMesh;
+let buildMode = false, buildTool = "floor", buildRotation = 0;
+const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.18;
 let moveX = 0, moveZ = 0;
@@ -107,7 +109,7 @@ function makeTerrain() {
   texture.anisotropy = 4;
   const material = new THREE.MeshStandardMaterial({ map: texture, color: 0xc4d2a2, roughness: 1 });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.receiveShadow = true; scene.add(mesh);
+  mesh.receiveShadow = true; scene.add(mesh); terrainMesh = mesh;
 }
 
 function makeTree(x, z, scale, random) {
@@ -340,11 +342,11 @@ function makePlayer(kind = "boy") {
   const isAdult = kind === "man" || kind === "woman";
   const isFemale = kind === "woman" || kind === "girl";
   const scale = isAdult ? 1.0 : 0.79;
-  const jacketColor = 0x151719;
+  const jacketColor = kind === "builder" ? 0xd18a32 : kind === "astronaut" ? 0xe4e9ee : kind === "robot" ? 0x657b8a : 0x315a8c;
   const jacket = new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.92 });
-  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x4a5360 : 0x555b50, roughness: 1 });
-  const skin = new THREE.MeshStandardMaterial({ color: kind === "woman" ? 0xc98d68 : kind === "girl" ? 0xd9a27d : 0xd49a76, roughness: 0.95 });
-  const hair = new THREE.MeshStandardMaterial({ color: kind === "woman" ? 0x33251e : kind === "girl" ? 0x493026 : 0x30251f, roughness: 1 });
+  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x744f86 : kind === "builder" ? 0x3d4850 : kind === "astronaut" ? 0x536779 : kind === "robot" ? 0x344653 : 0x394b5c, roughness: 1, metalness: kind === "robot" ? 0.65 : 0 });
+  const skin = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x9cc9d6 : kind === "woman" ? 0xc98d68 : kind === "girl" ? 0xd9a27d : 0xd49a76, roughness: 0.75, metalness: kind === "robot" ? 0.75 : 0 });
+  const hair = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x263b4b : kind === "woman" ? 0x33251e : kind === "girl" ? 0x493026 : 0x30251f, roughness: 1 });
   const canvas = new THREE.MeshStandardMaterial({ color: 0x887957, roughness: 1 });
   const canvasLight = new THREE.MeshStandardMaterial({ color: 0xa18d68, roughness: 1 });
   const leather = new THREE.MeshStandardMaterial({ color: 0x49382a, roughness: 1 });
@@ -368,6 +370,12 @@ function makePlayer(kind = "boy") {
   head.position.set(0, 2.02, -0.015);
   head.scale.set(0.9, 1.08, 0.94);
   group.add(head);
+  if (kind === "robot") {
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.39,0.13,0.12), new THREE.MeshStandardMaterial({color:0x35d8ef,emissive:0x126477,metalness:0.5,roughness:0.2}));
+    visor.position.set(0,2.04,-0.235); group.add(visor);
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.045,0.28,8), jacket); antenna.position.set(0,2.34,0); group.add(antenna);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8), new THREE.MeshStandardMaterial({color:0xffc85a,emissive:0x664000})); tip.position.set(0,2.5,0); group.add(tip);
+  }
   const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.265, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), hair);
   hairCap.position.set(0, 2.12, -0.025);
   group.add(hairCap);
@@ -470,7 +478,7 @@ function init() {
   makeDistantMountains();
   makeTerrain();
   makeMeadowDetails();
-  makeFantasyWorld();
+  // Las construcciones grandes ya no vienen hechas: el jugador crea su propio mundo.
   const random = seededRandom(20261114);
   for (let i = 0; i < 58; i++) {
     const x = (random() - 0.5) * 190;
@@ -485,10 +493,9 @@ function init() {
     if (Math.hypot(x, z) < 13) continue;
     makeRock(x, z, 0.35 + random() * 1.1, random);
   }
-  player = makePlayer();
   clock = new THREE.Clock();
-  camera.position.set(0, player.position.y + 4.1, 8.5);
-  camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+  camera.position.set(0, terrainHeight(0,0) + 4.1, 8.5);
+  camera.lookAt(0, terrainHeight(0,0) + 1.2, 0);
   addEvents();
   animate();
   requestAnimationFrame(() => loading.classList.add("done"));
@@ -508,6 +515,7 @@ function addEvents() {
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   game.addEventListener("pointerdown", e => {
     if (e.target.closest("button") || e.target.closest("#joystick")) return;
+    if (buildMode && started) { placeBuildAtPointer(e); return; }
     lookPointer = e.pointerId;
     lastLookX = e.clientX;
     lastLookY = e.clientY;
@@ -552,15 +560,93 @@ function addEvents() {
     player = makePlayer(selectedAvatar);
     started = true;
     avatarSelect.classList.add("hidden");
-    hint.textContent = "Encontrá tu propio camino";
-    showToast("¡Bienvenido a ILOX!");
+    document.querySelector("#build-toggle").classList.remove("hidden");
+    hint.textContent = "Explorá y construí tu propio mundo";
+    loadBuilds();
+    showToast("¡Tu mundo, tus reglas!");
   });
+  const buildToggle = document.querySelector("#build-toggle");
+  const buildPanel = document.querySelector("#build-panel");
+  buildToggle.addEventListener("click", () => {
+    buildMode = !buildMode;
+    buildPanel.classList.toggle("hidden", !buildMode);
+    buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
+    showToast(buildMode ? "Modo construcción: tocá el terreno" : "¡A explorar!");
+  });
+  document.querySelectorAll(".build-tool").forEach(button => {
+    if (!button.dataset.tool) return;
+    button.addEventListener("click", () => {
+      buildTool = button.dataset.tool;
+      document.querySelectorAll(".build-tool[data-tool]").forEach(item => item.classList.toggle("selected", item === button));
+      document.querySelector("#build-help").textContent = buildTool === "erase" ? "Tocá una construcción para borrarla." : "Tocá el terreno para colocar: " + button.querySelector("small").textContent.toLowerCase() + ".";
+    });
+  });
+  document.querySelector("#rotate-build").addEventListener("click", () => { buildRotation = (buildRotation + Math.PI/2) % (Math.PI*2); showToast("Pieza girada"); });
   document.querySelector("#fullscreen").addEventListener("click", async () => {
     try {
       if (!document.fullscreenElement) await game.requestFullscreen();
       else await document.exitFullscreen();
     } catch { showToast("La pantalla completa no está disponible en este navegador."); }
   });
+}
+
+
+function createBuildPiece(record) {
+  const group = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.88});
+  const wallMat = new THREE.MeshStandardMaterial({color:0xe7d9bb,roughness:0.95});
+  const roofMat = new THREE.MeshStandardMaterial({color:0x9a5545,roughness:0.9});
+  const glass = new THREE.MeshStandardMaterial({color:0x75cde0,transparent:true,opacity:0.62,roughness:0.2});
+  const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
+  const {kind,x,z,rotation=0}=record;
+  const baseY=terrainHeight(x,z);
+  if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
+  if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
+  if(kind==="door") {
+    addBox(1.15,3,0.2,wallMat,-1.42,1.5,0); addBox(1.15,3,0.2,wallMat,1.42,1.5,0);
+    addBox(1.7,0.8,0.2,wallMat,0,2.6,0); addBox(1.15,2.2,0.08,wood,0,1.1,-0.04);
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8),new THREE.MeshStandardMaterial({color:0xe8c56b,metalness:0.6}));knob.position.set(.42,1.1,-.11);group.add(knob);
+  }
+  if(kind==="window") {
+    addBox(1.1,3,0.2,wallMat,-1.45,1.5,0); addBox(1.1,3,0.2,wallMat,1.45,1.5,0);
+    addBox(1.8,0.75,0.2,wallMat,0,2.625,0); addBox(1.8,0.65,0.2,wallMat,0,0.325,0);
+    addBox(1.75,1.55,0.07,glass,0,1.5,-0.02);
+    addBox(1.9,0.12,0.28,wood,0,2.32,0); addBox(0.12,1.65,0.28,wood,0,1.5,0);
+  }
+  if(kind==="roof") { const slab=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.22,4.4),roofMat);slab.position.set(0,3.25,0);slab.rotation.z=-0.12;slab.castShadow=true;group.add(slab); }
+  group.position.set(x,baseY,z); group.rotation.y=rotation; group.userData.buildRecord=record;
+  scene.add(group); buildGroups.push(group); return group;
+}
+function persistBuilds() {
+  try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); }
+  catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); }
+}
+function loadBuilds() {
+  if(buildRecords.length) return;
+  try {
+    const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
+    if(Array.isArray(saved)) saved.slice(0,500).forEach(record=>{if(record&&["floor","wall","door","window","roof"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
+  } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
+}
+function placeBuildAtPointer(event) {
+  const rect=renderer.domElement.getBoundingClientRect();
+  const pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
+  const raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
+  if(buildTool==="erase") {
+    const hits=raycaster.intersectObjects(buildGroups,true);
+    if(!hits.length){showToast("Tocá una pieza construida para borrarla.");return;}
+    let group=hits[0].object;while(group.parent&&group.parent!==scene)group=group.parent;
+    const record=group.userData.buildRecord;const index=buildRecords.indexOf(record);
+    if(index>=0){buildRecords.splice(index,1);scene.remove(group);const gi=buildGroups.indexOf(group);if(gi>=0)buildGroups.splice(gi,1);persistBuilds();showToast("Pieza borrada");}
+    return;
+  }
+  if(!terrainMesh)return;
+  const hit=raycaster.intersectObject(terrainMesh,false)[0];
+  if(!hit){showToast("Tocá una zona de terreno libre.");return;}
+  const x=Math.round(hit.point.x/4)*4,z=Math.round(hit.point.z/4)*4;
+  if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
+  const record={kind:buildTool,x,z,rotation:buildRotation};
+  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
 function updateJoystick(e) {
@@ -580,7 +666,7 @@ function updateJoystick(e) {
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
-  if (started) {
+  if (started && player) {
     let forward = moveZ;
     let strafe = moveX;
     if (keys.has("w") || keys.has("arrowup")) forward -= 1;
@@ -597,12 +683,13 @@ function animate() {
     player.position.y = terrainHeight(player.position.x, player.position.z);
     if (length > 0.08) player.rotation.y = Math.atan2(dx, dz);
   }
+  const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const distance = 8.5;
-  const targetX = player.position.x + Math.sin(yaw) * distance;
-  const targetZ = player.position.z + Math.cos(yaw) * distance;
-  const targetY = player.position.y + 3.2 + pitch * 5;
+  const targetX = focus.position.x + Math.sin(yaw) * distance;
+  const targetZ = focus.position.z + Math.cos(yaw) * distance;
+  const targetY = focus.position.y + 3.2 + pitch * 5;
   camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
-  camera.lookAt(player.position.x, player.position.y + 1.35, player.position.z);
+  camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
   renderer.render(scene, camera);
 }
 
