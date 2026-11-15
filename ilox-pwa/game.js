@@ -11,8 +11,9 @@ const startButton = document.querySelector("#start");
 const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
-const pressedMoveButtons = new Set();
-const movePointers = new Map();
+const moveKnob = document.querySelector("#move-knob");
+let moveStickPointer = null;
+let moveStick = { x: 0, y: 0 };
 
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
@@ -20,6 +21,7 @@ let selectedBlockColor = 0xff3030;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0.48;
+// Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 let moveX = 0, moveZ = 0;
 
 const polyHavenLoader = new GLTFLoader();
@@ -566,8 +568,27 @@ function addEvents() {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+  movePad.addEventListener("pointerdown", e => {
+    if (!started || e.button !== 0 || moveStickPointer !== null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    moveStickPointer = e.pointerId;
+    movePad.setPointerCapture(e.pointerId);
+    updateMoveStick(e);
+  });
+  movePad.addEventListener("pointermove", e => {
+    if (e.pointerId !== moveStickPointer) return;
+    e.preventDefault();
+    updateMoveStick(e);
+  });
+  movePad.addEventListener("pointerup", e => {
+    if (e.pointerId === moveStickPointer) resetMoveStick();
+  });
+  movePad.addEventListener("pointercancel", e => {
+    if (e.pointerId === moveStickPointer) resetMoveStick();
+  });
   game.addEventListener("pointerdown", e => {
-    if (e.target.closest("button") || e.target.closest("#joystick") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
+    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -602,29 +623,7 @@ function addEvents() {
     e.preventDefault();
     cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, buildMode?3.2:4.2, 20);
   }, {passive:false});
-  movePad.querySelectorAll(".move-arrow").forEach(button => {
-    const direction = button.dataset.move;
-    button.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      // Registrar cada dedo permite mantener ▲ y ▶ simultáneamente.
-      movePointers.set(e.pointerId, { direction, button });
-      pressedMoveButtons.add(direction);
-      button.classList.add("pressed");
-      updateArrowMovement();
-    });
-  });
-  const releaseMovePointer = e => {
-    const active = movePointers.get(e.pointerId);
-    if (!active) return;
-    movePointers.delete(e.pointerId);
-    active.button.classList.remove("pressed");
-    if (![...movePointers.values()].some(item => item.direction === active.direction)) {
-      pressedMoveButtons.delete(active.direction);
-    }
-    updateArrowMovement();
-  };
-  addEventListener("pointerup", releaseMovePointer);
-  addEventListener("pointercancel", releaseMovePointer);
+
   startButton.addEventListener("click", () => {
     welcome.classList.add("hidden");
     avatarSelect.classList.remove("hidden");
@@ -759,30 +758,43 @@ function placeBuildAtPointer(event) {
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
-function updateArrowMovement() {
-  // Vertical = avanzar/retroceder; horizontal = girar el cuerpo.
-  moveZ = (pressedMoveButtons.has("down") ? 1 : 0) - (pressedMoveButtons.has("up") ? 1 : 0);
-  moveX = (pressedMoveButtons.has("right") ? 1 : 0) - (pressedMoveButtons.has("left") ? 1 : 0);
+function updateMoveStick(event) {
+  const rect = movePad.getBoundingClientRect();
+  const radius = Math.min(rect.width, rect.height) * 0.36;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  let x = (event.clientX - cx) / radius;
+  let y = (event.clientY - cy) / radius;
+  const magnitude = Math.hypot(x, y);
+  if (magnitude > 1) { x /= magnitude; y /= magnitude; }
+  moveStick.x = x;
+  moveStick.y = y;
+  moveKnob.style.transform = `translate(calc(-50% + ${x * radius}px), calc(-50% + ${y * radius}px))`;
+}
+function resetMoveStick() {
+  moveStickPointer = null;
+  moveStick.x = 0;
+  moveStick.y = 0;
+  moveKnob.style.transform = "translate(-50%, -50%)";
 }
 
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
-    let forward = -moveZ;
-    const keyboardForward = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
+    // Entrada nueva: el joystick da un vector 360°. La cámara define el frente;
+    // por eso, al mantener el joystick arriba y arrastrar la vista a la derecha,
+    // el personaje sigue avanzando y curva su trayectoria con la cámara.
+    let forward = -moveStick.y + (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
       + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0);
-    const keyboardTurn = (keys.has("d") || keys.has("arrowright") ? 1 : 0)
-      - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
-    forward += keyboardForward;
-    const turn = moveX + keyboardTurn;
-    // Giro continuo sin cancelar el avance, también con dos dedos en pantalla.
-    playerHeading += turn * 2.8 * delta;
-    const length = Math.abs(forward);
+    let strafe = moveStick.x + (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0)
+      + (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0);
+    const inputLength = Math.hypot(forward, strafe);
+    if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const speed = 7.2;
-    // El giro cambia el rumbo sin cancelar el avance mantenido.
-    const dx = Math.sin(playerHeading) * forward * speed * delta;
-    const dz = -Math.cos(playerHeading) * forward * speed * delta;
+    const cameraYaw = yaw + playerHeading;
+    const dx = (Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
+    const dz = (-Math.cos(cameraYaw) * forward + Math.sin(cameraYaw) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
     const collides = (x,z) => {
@@ -807,7 +819,13 @@ function animate() {
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     player.position.y = terrainHeight(player.position.x, player.position.z);
-    const moving = length > 0.08;
+    const moving = inputLength > 0.08;
+    if (moving) {
+      // Auto-rotación suave hacia el vector real de desplazamiento (estilo Free Fire).
+      const targetHeading = Math.atan2(dx, -dz);
+      const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
+      playerHeading += angleDelta * Math.min(1, delta * 10);
+    }
     player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
     const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
