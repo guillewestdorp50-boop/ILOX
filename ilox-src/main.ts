@@ -27,7 +27,17 @@ async function boot(): Promise<void> {
   let lastY = 0;
   let joyPointer: number | null = null;
 
-  playBtn.addEventListener('click', () => {
+  playBtn.addEventListener('click', async () => {
+    if (coarsePointer) {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch { /* El navegador puede reservar fullscreen para la PWA instalada. */ }
+      try {
+        await screen.orientation?.lock('landscape');
+      } catch { /* El aviso de giro cubre navegadores sin bloqueo de orientación. */ }
+    }
     engine.startAudio();
     engine.setPlaying(true);
     overlay.classList.add('hidden');
@@ -103,6 +113,25 @@ async function boot(): Promise<void> {
   joystick?.addEventListener('pointerup', endJoystick);
   joystick?.addEventListener('pointercancel', endJoystick);
   joystick?.addEventListener('lostpointercapture', endJoystick);
+
+  let sprintPointer: number | null = null;
+  const releaseSprint = (event: PointerEvent) => {
+    if (event.pointerId !== sprintPointer) return;
+    sprintPointer = null;
+    engine.setSprintInput(false);
+    sprintButton?.classList.remove('active');
+  };
+  sprintButton?.addEventListener('pointerdown', (event) => {
+    if (!document.body.classList.contains('playing')) return;
+    event.preventDefault();
+    sprintPointer = event.pointerId;
+    sprintButton.setPointerCapture(event.pointerId);
+    engine.setSprintInput(true);
+    sprintButton.classList.add('active');
+  });
+  sprintButton?.addEventListener('pointerup', releaseSprint);
+  sprintButton?.addEventListener('pointercancel', releaseSprint);
+  sprintButton?.addEventListener('lostpointercapture', releaseSprint);
 
   let sprintPointer: number | null = null;
   const releaseSprint = (event: PointerEvent) => {
