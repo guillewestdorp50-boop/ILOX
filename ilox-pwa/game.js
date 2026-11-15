@@ -1014,8 +1014,8 @@ function findDoorOpening(x,z){
   for(let i=0;i<supports.length;i++)for(let j=i+1;j<supports.length;j++){
     const a=supports[i],b=supports[j],dx=b.x-a.x,dz=b.z-a.z,dist=Math.hypot(dx,dz);
     if(dist<.1||Math.abs((a.y||0)-(b.y||0))>.38)continue;
-    const ax=dx/dist,az=dz/dist,perp=Math.abs(-az*(b.x-a.x)+ax*(b.z-a.z));
-    if(perp>.24)continue;
+    const ax=dx/dist,az=dz/dist;
+    if(Math.min(Math.abs(ax),Math.abs(az))>.18)continue;
     if(a.kind==="wall"&&Math.abs(Math.cos((a.rotation||0))*ax-Math.sin((a.rotation||0))*az)<.92)continue;
     if(b.kind==="wall"&&Math.abs(Math.cos((b.rotation||0))*ax-Math.sin((b.rotation||0))*az)<.92)continue;
     const gap=dist-halfAlong(a,ax,az)-halfAlong(b,ax,az);
