@@ -1004,23 +1004,26 @@ function animate() {
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
     const collides = (x,z) => {
-      const feet = terrainHeight(x,z), body = new THREE.Box3(
-        new THREE.Vector3(x-0.38, feet+0.12, z-0.38),
-        new THREE.Vector3(x+0.38, feet+2.55, z+0.38));
-      return buildGroups.some(g => {
-        const k=g.userData.buildRecord?.kind;
-        if(!["wall","door","window","block"].includes(k)) return false;
-        const bounds=new THREE.Box3().setFromObject(g);
-        // Los bloques elevados no deben aprisionar al jugador al construir o volver a explorar.
-        if (k === "block") {
-          const lowerBody = new THREE.Box3(
-            new THREE.Vector3(x-0.38, feet+0.12, z-0.38),
-            new THREE.Vector3(x+0.38, feet+1.42, z+0.38)
-          );
-          return lowerBody.intersectsBox(bounds);
+      const feet = terrainHeight(x,z);
+      const body = new THREE.Box3(
+        new THREE.Vector3(x-0.34, feet+0.08, z-0.34),
+        new THREE.Vector3(x+0.34, feet+2.05, z+0.34)
+      );
+      const solidKinds = new Set(["block","brick","wall","door","window","roof","stairs","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen"]);
+      for (const g of buildGroups) {
+        const kind=g.userData.buildRecord?.kind;
+        if (!solidKinds.has(kind) || !g.visible) continue;
+        g.updateMatrixWorld(true);
+        for (const mesh of g.children) {
+          if (!mesh.isMesh || !mesh.visible) continue;
+          const geometry=mesh.geometry;
+          if (!geometry.boundingBox) geometry.computeBoundingBox();
+          const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+          if (bounds.max.y <= feet+0.08 || bounds.min.y >= feet+2.05) continue;
+          if (body.intersectsBox(bounds)) return true;
         }
-        return body.intersectsBox(bounds);
-      });
+      }
+      return false;
     };
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
