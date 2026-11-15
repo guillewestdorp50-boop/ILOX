@@ -1162,7 +1162,10 @@ function addEvents() {
     if(!flushLocalBuildSave())return;
     quickSaveButton.disabled=true;
     try{
-      if(activeMultiplayerWorldId)await syncMultiplayerStructures();
+      if(activeMultiplayerWorldId){
+        const synced=await syncMultiplayerStructures();
+        if(!synced)throw new Error("La copia local está guardada, pero no se pudo confirmar la copia en línea.");
+      }
       quickSaveButton.classList.add("saved");
       quickSaveButton.textContent="✓";
       showToast(activeMultiplayerWorldId?"Guardado local y copia en línea confirmada.":"Guardado en este teléfono.");
@@ -1389,7 +1392,7 @@ function scheduleMultiplayerSync(){
   multiplayerSyncTimer=setTimeout(()=>{multiplayerSyncTimer=null;syncMultiplayerStructures();},280);
 }
 async function syncMultiplayerStructures(){
-  if(!activeMultiplayerWorldId||!multiplayerUserId)return;
+  if(!activeMultiplayerWorldId||!multiplayerUserId)return true;
   if(multiplayerSyncing){multiplayerSyncAgain=true;return;}
   multiplayerSyncing=true;
   let changed=false,failed=false;
@@ -1419,6 +1422,7 @@ async function syncMultiplayerStructures(){
     if(multiplayerSyncAgain){multiplayerSyncAgain=false;scheduleMultiplayerSync();}
     if(!failed)localStorage.setItem("ilox-mp-cache-"+activeMultiplayerWorldId,JSON.stringify(buildRecords.map(multiplayerPayload)));
   }
+  return !failed;
 }
 function removeRemotePlayer(userId){
   const avatar=remotePlayers.get(userId);
