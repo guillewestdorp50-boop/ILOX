@@ -846,7 +846,7 @@ function addEvents() {
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         clearBuildPlacementLock();buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
-        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="door"?"Apuntá al hueco entre dos bloques enfrentados; la puerta se mide y encaja sola.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="door"?"Puerta modular: 1 bloque de ancho por 2 de alto; el marco coincide con la segunda fila.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
       });buildToolsHost.appendChild(button);
     }
@@ -921,15 +921,16 @@ function createBuildPiece(record, options = {}) {
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
   if(kind==="door"){
-    const doorHeight=2.0,frameWidth=Math.max(.82,Math.min(1.62,record.doorWidth||1.1)),post=.09,leafWidth=frameWidth-post*2-.06;
-    box(post,doorHeight,.16,wall,-frameWidth/2+post/2,doorHeight/2,0);
-    box(post,doorHeight,.16,wall,frameWidth/2-post/2,doorHeight/2,0);
-    box(frameWidth,.1,.16,wall,0,doorHeight-.05,0);
-    const hinge=new THREE.Group();hinge.position.set(-frameWidth/2+post,.08,.015);group.add(hinge);
-    const leaf= new THREE.Mesh(new THREE.BoxGeometry(leafWidth,doorHeight-.16,.075),wood);
-    leaf.position.set(leafWidth/2,(doorHeight-.16)/2,0);leaf.castShadow=true;leaf.receiveShadow=true;hinge.add(leaf);
-    const rail=new THREE.Mesh(new THREE.BoxGeometry(leafWidth,.055,.09),darkWood);rail.position.set(leafWidth/2,.32,.005);hinge.add(rail);
-    const knob=new THREE.Mesh(new THREE.SphereGeometry(.055,14,12),metal);knob.position.set(leafWidth-.09,1.02,.075);hinge.add(knob);
+    const doorWidth=1.5,doorHeight=3.0,post=.10,frameDepth=.16,leafWidth=doorWidth-post*2-.08,leafHeight=doorHeight-.16;
+    // Marco modular: una celda exacta de ancho y dos alturas de bloque.
+    box(post,doorHeight,frameDepth,wall,-doorWidth/2+post/2,doorHeight/2,0);
+    box(post,doorHeight,frameDepth,wall,doorWidth/2-post/2,doorHeight/2,0);
+    box(doorWidth,.12,frameDepth,wall,0,doorHeight-.06,0);
+    const hinge=new THREE.Group();hinge.position.set(-doorWidth/2+post,.08,.015);group.add(hinge);
+    const leaf=new THREE.Mesh(new THREE.BoxGeometry(leafWidth,leafHeight,.055),wood);
+    leaf.position.set(leafWidth/2,leafHeight/2,0);leaf.castShadow=true;leaf.receiveShadow=true;hinge.add(leaf);
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(leafWidth,.055,.07),darkWood);rail.position.set(leafWidth/2,.32,.005);hinge.add(rail);
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(.055,14,12),metal);knob.position.set(leafWidth-.09,1.42,.055);hinge.add(knob);
     for(const yy of [.16,doorHeight-.24]){const h=new THREE.Mesh(new THREE.BoxGeometry(.045,.12,.19),metal);h.position.set(.015,yy,0);hinge.add(h);}
     group.userData.doorLeafPivot=hinge;group.userData.buildHeight=doorHeight;
     if(record.open)hinge.rotation.y=Math.PI/2;
@@ -997,7 +998,7 @@ function loadBuilds() {
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function buildFootprint(kind){
-  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[1.1,.16],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1]};
+  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[1.5,.16],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1]};
   return sizes[kind]||[1.5,1.5];
 }
 function foundationContainsFootprint(x,z,kind,rotation=0){
@@ -1011,7 +1012,7 @@ function foundationContainsFootprint(x,z,kind,rotation=0){
 }
 
 function autoSnapBuildPlacement(x,z,kind,rotation=0){
-  const snapKinds=new Set(["block","brick","wall","floor","roof","window","stairs"]);
+  const snapKinds=new Set(["block","brick","wall","floor","roof","window","stairs","door"]);
   if(!snapKinds.has(kind))return {x,z,rotation,snapped:false};
   const [nw,nd]=buildFootprint(kind),nc=Math.cos(rotation),ns=Math.sin(rotation);
   const newU={x:nc,z:ns},newV={x:-ns,z:nc};
@@ -1026,7 +1027,7 @@ function autoSnapBuildPlacement(x,z,kind,rotation=0){
         const otherHalfN=(ow/2)*Math.abs(normal.x*ou.x+normal.z*ou.z)+(od/2)*Math.abs(normal.x*ov.x+normal.z*ov.z);
         const otherHalfT=(ow/2)*Math.abs(tangent.x*ou.x+tangent.z*ou.z)+(od/2)*Math.abs(tangent.x*ov.x+tangent.z*ov.z);
         let candidateRotation=rotation;
-        if(kind==="wall"){
+        if(kind==="wall"||kind==="door"){
           const longAxis=other.kind==="wall"?ou:tangent;
           candidateRotation=Math.atan2(longAxis.z,longAxis.x);
         }
@@ -1123,12 +1124,10 @@ function updateBuildPlacementGuide(){
   const snap=autoSnapBuildPlacement(x,z,buildTool,buildRotation);
   x=snap.x;z=snap.z;
   const guideRotation=snap.rotation;
-  const doorOpening=buildTool==="door"?findDoorOpening(x,z):null;
-  if(buildTool==="door"&&!doorOpening){if(buildGuide)buildGuide.visible=false;return;}
-  if(doorOpening){x=doorOpening.x;z=doorOpening.z;buildRotation=doorOpening.rotation;}
-  const [w,d]=buildTool==="door"&&doorOpening?[doorOpening.width,.16]:buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
+  if(buildTool==="door"&&!snap.snapped){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
+  const [w,d]=buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
   if(snap.snapped)buildRotation=guideRotation;
-  const valid=buildTool==="door"?!!doorOpening:buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
+  const valid=buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
@@ -1149,11 +1148,15 @@ function placeBuildAtPointer(event){
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
   if(buildTool==="door"){
-    const opening=findDoorOpening(point.x,point.z);
-    if(!opening){showToast("La puerta necesita dos bloques enfrentados y un hueco libre de 0,82 a 1,68 m.");return;}
-    const record={kind:"door",x:opening.x,z:opening.z,y:opening.baseY,rotation:opening.rotation,color:selectedBlockColor,doorWidth:opening.width,supportA:opening.supportA,supportB:opening.supportB,open:false};
-    if(!foundationAt(record.x,record.z)){showToast("El hueco debe estar apoyado sobre una platea.");return;}
-    buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("Puerta encajada entre los dos bloques: 2,00 m de alto.");return;
+    const snap=autoSnapBuildPlacement(point.x,point.z,"door",buildRotation);
+    const x=snap.snapped?snap.x:Math.round(point.x/BLOCK_SIZE)*BLOCK_SIZE;
+    const z=snap.snapped?snap.z:Math.round(point.z/BLOCK_SIZE)*BLOCK_SIZE;
+    const rotation=snap.snapped?snap.rotation:buildRotation;
+    if(!foundationContainsFootprint(x,z,"door",rotation)){showToast("El marco de la puerta debe quedar completamente dentro de la platea.");return;}
+    if(buildRecords.some(item=>item.kind==="door"&&Math.hypot(item.x-x,item.z-z)<.2&&Math.abs((item.y||0)-supportHeightAt(x,z))<.2)){showToast("Ya hay una puerta en ese lugar.");return;}
+    const baseY=supportHeightAt(x,z);
+    const record={kind:"door",x,z,y:baseY,rotation,color:selectedBlockColor,doorWidth:1.5,open:false};
+    buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("Puerta modular: 1,50 m de ancho y 3,00 m de alto.");return;
   }
   let x=point.x,z=point.z;
   if(buildTool==="platea"||buildTool==="water"||["pool-small","pool-large","pool-municipal"].includes(buildTool)){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
