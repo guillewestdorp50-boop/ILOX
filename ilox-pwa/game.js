@@ -691,6 +691,7 @@ function addEvents() {
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
+    if(pendingBuildPlacement)return;
     if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
@@ -702,6 +703,7 @@ function addEvents() {
   });
   game.addEventListener("pointermove", e => {
     buildPointer={x:e.clientX,y:e.clientY};
+    if(pendingBuildPlacement)return;
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),1.2,40);return;}
     if (lookPointer !== e.pointerId || !started) return;
