@@ -1,0 +1,36 @@
+name: Validar PWA ILOX World Hub
+
+on:
+  push:
+    branches: [experiment/ilox-pwa-world-hub]
+    paths:
+      - 'ilox-pwa/**'
+      - '.github/workflows/test-ilox-pwa-hub.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código ILOX
+        uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validar JavaScript
+        run: |
+          node --check ilox-pwa/app.js
+          node --check ilox-pwa/sw.js
+      - name: Validar manifiesto y archivos PWA
+        run: |
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('ilox-pwa/manifest.webmanifest','utf8')); if(m.name!=='ILOX — Tu propio mundo') throw new Error('Manifest name mismatch'); for(const f of ['index.html','styles.css','app.js','manifest.webmanifest','sw.js','icon.svg']) if(!fs.statSync('ilox-pwa/'+f).size) throw new Error('Missing or empty '+f); console.log('PWA shell assets verified');"
+          grep -q '../forest/' ilox-pwa/index.html
+          grep -q 'serviceWorker.register' ilox-pwa/app.js
+      - name: Confirmar aislamiento del proyecto
+        run: |
+          test -d ilox-pwa
+          test ! -e PDA
+          echo "ILOX PWA preview is isolated in ilox-pwa/."
