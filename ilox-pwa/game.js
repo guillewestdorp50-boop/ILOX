@@ -36,7 +36,7 @@ let doorPinTarget = null, doorPinMode = "setup";
 let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null;
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
-let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0;
+let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
@@ -1379,19 +1379,42 @@ function stopMultiplayerFallbackSync(){
   if(multiplayerFallbackTimer){clearInterval(multiplayerFallbackTimer);multiplayerFallbackTimer=null;}
   multiplayerFallbackBusy=false;
 }
+async function refreshMultiplayerStructures(worldId) {
+  if (activeMultiplayerWorldId !== worldId || multiplayerSyncing || multiplayerSyncTimer) return;
+  const rows = await Multiplayer.getWorldStructures(worldId);
+  const serverSnapshot = new Map(rows.map(row => {
+    const record = { ...(row.payload || {}), kind: row.kind };
+    if (record.kind === "door") record.pin = null;
+    return [row.id, multiplayerFingerprint(record)];
+  }));
+  let changed = serverSnapshot.size !== multiplayerCloudSnapshot.size;
+  if (!changed) {
+    for (const [id, fingerprint] of serverSnapshot) {
+      if (multiplayerCloudSnapshot.get(id) !== fingerprint) { changed = true; break; }
+    }
+  }
+  if (changed && activeMultiplayerWorldId === worldId && !multiplayerSyncing && !multiplayerSyncTimer) {
+    await loadMultiplayerStructures(worldId);
+  }
+}
 function startMultiplayerFallbackSync(worldId){
   stopMultiplayerFallbackSync();
   multiplayerLastChatPoll=Date.now();
-  // Respaldo por base de datos: si Broadcast/Postgres Changes no llega al móvil,
-  // la posición y el chat siguen sincronizándose desde el mismo mundo compartido.
+  multiplayerLastStructurePoll=Date.now();
+  // Respaldo real de mundo: consulta posiciones, chat y construcciones persistidas.
   multiplayerFallbackTimer=setInterval(async()=>{
     if(!multiplayerSession||activeMultiplayerWorldId!==worldId||multiplayerFallbackBusy)return;
     multiplayerFallbackBusy=true;
     try{
       const states=await Multiplayer.getWorldPlayerStates(worldId);
       for(const state of states)updateRemotePlayer(state);
-      if(Date.now()-multiplayerLastChatPoll>=1200){
-        multiplayerLastChatPoll=Date.now();
+      const now=Date.now();
+      if(now-multiplayerLastStructurePoll>=1200){
+        multiplayerLastStructurePoll=now;
+        await refreshMultiplayerStructures(worldId);
+      }
+      if(now-multiplayerLastChatPoll>=1200){
+        multiplayerLastChatPoll=now;
         const messages=await Multiplayer.getChatMessages(worldId);
         for(const row of messages)appendMultiplayerChatMessage(row,true);
       }
@@ -1452,7 +1475,7 @@ async function enterMultiplayerWorld(worldId){
         if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
         else updateRemotePlayer(payload.new);
       },
-      onWorldRefresh:()=>loadMultiplayerStructures(worldId).catch(error=>showToast("No se pudo actualizar el mundo compartido.")),
+      onWorldRefresh:()=>refreshMultiplayerStructures(worldId).catch(error=>console.warn("ILOX multiplayer: no se pudo refrescar las construcciones",error)),
       onPresence:syncRemotePresence,
       onChatMessage:row=>appendMultiplayerChatMessage(row,true)
     });
