@@ -14,7 +14,7 @@ const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
 
 let scene, camera, renderer, player, clock, terrainMesh;
-let buildMode = false, buildTool = "floor", buildRotation = 0;
+let buildMode = false, buildTool = "block", buildRotation = 0;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.18;
