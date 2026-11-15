@@ -177,3 +177,23 @@ h1 em{font-style:normal;color:#e8d29a}
 .mp-world-row strong{display:block;font-size:12px}
 .mp-world-row small{display:block;margin-top:3px;color:#c7d2c9;font-size:9px}
 .mp-world-row span{font-size:10px;color:#e6d19b;font-weight:900}
+
+
+/* Menú principal desplazable: todos los accesos quedan disponibles en pantallas pequeñas. */
+.menu-panel{
+  max-height:calc(100dvh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:thin;
+  scrollbar-color:#ffffff66 transparent;
+}
+.menu-panel .menu-action{flex:0 0 auto}
+@media(max-width:600px){
+  .menu-panel{
+    max-height:calc(100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
