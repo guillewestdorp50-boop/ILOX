@@ -152,3 +152,15 @@ h1 em{font-style:normal;color:#e8d29a}
 .door-pin-submit{border:0;background:#e6d19b;color:#1b2d25}
 .door-pin-secondary{border:1px solid #e6d19b88;background:#ffffff0b;color:#f4f3e9}
 .door-pin-cancel{border:1px solid #ffffff35;background:#ffffff0b;color:#d5ded4}
+
+
+/* ILOX v68: sala multijugador */
+.multiplayer-card{max-height:min(88vh,760px);overflow:auto}
+.mp-label{color:#e6d19b;font-size:9px;font-weight:900;letter-spacing:.12em;margin-bottom:-7px}
+.mp-text-input{font-size:15px;letter-spacing:normal;text-align:left}
+.mp-separator{display:flex;align-items:center;gap:9px;color:#b8c8be;font-size:9px;font-weight:900;letter-spacing:.1em;margin:3px 0}
+.mp-created-code{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e6d19b88;border-radius:11px;background:#e6d19b12;text-align:center}
+.mp-created-code span{color:#e6d19b;font-size:9px;font-weight:900;letter-spacing:.13em}
+.mp-created-code strong{font-size:30px;letter-spacing:.22em;color:#fff}
+.mp-created-code.hidden{display:none}
+#multiplayer-dialog .door-pin-card{gap:10px}
