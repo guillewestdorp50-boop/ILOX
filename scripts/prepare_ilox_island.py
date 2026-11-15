@@ -969,11 +969,13 @@ patch("src/player/Player.ts",
 # This is additive: no ocean geometry, wave simulation or terrain systems are removed.
 patch("src/water/Ocean.ts",
 "    m.opacityNode = float(1);\n    return m;",
-"""    const inMainlandFrame = xz.x.greaterThan(-HALF_WORLD + 1)
-      .and(xz.x.lessThan(HALF_WORLD + 1))
-      .and(xz.y.greaterThan(-HALF_WORLD + 1))
-      .and(xz.y.lessThan(HALF_WORLD + 1));
-    const openWater = inMainlandFrame.and(ground.lessThan(0.35));
+"""    const clipXZ = positionWorld.xz;
+    const clipGround = heightAt(clipXZ);
+    const inMainlandFrame = clipXZ.x.greaterThan(-1023)
+      .and(clipXZ.x.lessThan(1025))
+      .and(clipXZ.y.greaterThan(-1023))
+      .and(clipXZ.y.lessThan(1025));
+    const openWater = inMainlandFrame.and(clipGround.lessThan(0.35));
     m.opacityNode = select(openWater, float(1), float(0));
     // Transparent clipped ocean must not write depth where its alpha is zero.
     m.depthWrite = false;
