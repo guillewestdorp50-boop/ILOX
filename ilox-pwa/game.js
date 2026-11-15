@@ -370,6 +370,20 @@ function makePlayer(kind = "boy") {
   head.position.set(0, 2.02, -0.015);
   head.scale.set(0.9, 1.08, 0.94);
   group.add(head);
+  if(kind !== "robot") {
+    const eyeMat=new THREE.MeshStandardMaterial({color:0x28231f,roughness:0.55});
+    const eyeWhite=new THREE.MeshStandardMaterial({color:0xf4eee2,roughness:0.5});
+    for(const side of [-1,1]) {
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(0.035,10,8),eyeWhite);
+      eye.position.set(side*0.083,2.045,-0.239); group.add(eye);
+      const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.018,8,6),eyeMat);
+      pupil.position.set(side*0.083,2.045,-0.269); group.add(pupil);
+    }
+    const nose=new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6),skin);
+    nose.position.set(0,1.985,-0.255); nose.scale.set(0.75,1,0.8); group.add(nose);
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.014,0.012),new THREE.MeshStandardMaterial({color:0x754b43}));
+    mouth.position.set(0,1.94,-0.246); group.add(mouth);
+  }
   if (kind === "robot") {
     const visor = new THREE.Mesh(new THREE.BoxGeometry(0.39,0.13,0.12), new THREE.MeshStandardMaterial({color:0x35d8ef,emissive:0x126477,metalness:0.5,roughness:0.2}));
     visor.position.set(0,2.04,-0.235); group.add(visor);
@@ -414,13 +428,16 @@ function makePlayer(kind = "boy") {
     hand.position.set(side * 0.47, 1.05, -0.005);
     group.add(hand);
 
+    const legPivot = new THREE.Group();
+    legPivot.position.set(side * 0.18, 0.91, 0);
+    group.add(legPivot);
     const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.53, 4, 10), pants);
-    leg.position.set(side * 0.18, 0.59, 0);
-    group.add(leg); legs.push(leg);
+    leg.position.set(0, -0.31, 0);
+    legPivot.add(leg);
     const boot = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.13, 3, 8), bootMat);
-    boot.position.set(side * 0.18, 0.13, -0.055);
+    boot.position.set(0, -0.78, -0.055);
     boot.scale.set(1.05, 0.72, 1.45);
-    group.add(boot);
+    legPivot.add(boot); legs.push(legPivot);
   }
 
   // Mochila pequeña de lona vintage, con tapa, correas y bolsillos laterales.
