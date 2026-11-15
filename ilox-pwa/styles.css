@@ -200,7 +200,7 @@ h1 em{font-style:normal;color:#e8d29a}
 
 
 /* ILOX v75: chat persistente del mundo compartido */
-.mp-chat-toggle{position:absolute;z-index:18;top:calc(54px + env(safe-area-inset-top));left:12px;width:42px;height:42px;border:1px solid #e6d19b99;border-radius:50%;background:#10251fee;color:#fff;font-size:21px;box-shadow:0 4px 16px #0008;pointer-events:auto}
+.mp-chat-toggle{position:absolute;z-index:18;top:calc(54px + env(safe-area-inset-top));left:12px;width:42px;height:42px;border:1px solid #e6d19b99;border-radius:50%;background:#10251fee;color:#fff;font-size:21px;box-shadow:0 4px 16px #0008;pointer-events:auto}.mp-chat-unread{position:absolute;top:-6px;right:-7px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;border:2px solid #10251f;border-radius:999px;background:#e34d42;color:#fff;font-size:10px;font-weight:950;line-height:1;box-shadow:0 2px 7px #0008}.mp-chat-unread.hidden{display:none!important}
 .mp-chat-toggle.hidden,.mp-chat-panel.hidden{display:none!important}
 .mp-chat-panel{position:absolute;z-index:25;top:calc(104px + env(safe-area-inset-top));left:12px;width:min(350px,calc(100% - 24px));max-height:min(56dvh,470px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #e6d19b99;border-radius:14px;background:#10251ff5;color:#f4f3e9;box-shadow:0 12px 36px #000b;backdrop-filter:blur(12px);pointer-events:auto}
 .mp-chat-header{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid #ffffff26;color:#e6d19b;font-size:10px;letter-spacing:.12em}
