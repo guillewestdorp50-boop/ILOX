@@ -814,6 +814,7 @@ function addEvents() {
     if (player) scene.remove(player);
     player = makePlayer(selectedAvatar);
     player.position.copy(oldPosition);player.rotation.y=oldHeading;
+    if(activeMultiplayerWorldId)spawnPlayerAtMultiplayerMeetingPoint();
     started = true;
     cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
@@ -1236,6 +1237,24 @@ function syncRemotePresence(state){
     }
   }
 }
+// Punto de encuentro compartido: todos los jugadores aparecen cerca del origen del mundo.
+const MULTIPLAYER_SPAWN_CENTER = Object.freeze({ x: 0, z: 0 });
+// Área de aparición de 20 m² (radio aproximado de 2,52 m).
+const MULTIPLAYER_SPAWN_RADIUS = Math.sqrt(20 / Math.PI);
+function spawnPlayerAtMultiplayerMeetingPoint(){
+  if(!player)return;
+  const angle=Math.random()*Math.PI*2;
+  const distance=Math.sqrt(Math.random())*MULTIPLAYER_SPAWN_RADIUS;
+  const x=MULTIPLAYER_SPAWN_CENTER.x+Math.cos(angle)*distance;
+  const z=MULTIPLAYER_SPAWN_CENTER.z+Math.sin(angle)*distance;
+  player.position.set(x,terrainHeight(x,z),z);
+  player.userData.vy=0;
+  player.userData.isSwimming=false;
+  playerVerticalVelocity=0;
+  playerGrounded=true;
+  yaw=Math.atan2(-x,-z);
+  player.rotation.y=yaw;
+}
 async function enterMultiplayerWorld(worldId){
   if(activeMultiplayerWorldId){
     if(multiplayerSyncTimer){clearTimeout(multiplayerSyncTimer);multiplayerSyncTimer=null;}
@@ -1246,6 +1265,8 @@ async function enterMultiplayerWorld(worldId){
   remotePlayers.clear();clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
   activeMultiplayerWorldId=worldId;
   localStorage.setItem("ilox-last-multiplayer-world",worldId);
+  // Cada integrante que entra aparece junto al punto común del mundo, sin superponerse.
+  spawnPlayerAtMultiplayerMeetingPoint();
   try{
     const count=await loadMultiplayerStructures(worldId);
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
