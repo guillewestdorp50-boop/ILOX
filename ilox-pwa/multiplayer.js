@@ -227,6 +227,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
+    .on("broadcast", { event: "chat_message" }, ({ payload }) => handlers.onChatMessage?.(payload?.message || payload))
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "multiplayer_chat_messages", filter: "world_id=eq." + worldId }, payload => handlers.onChatMessage?.(payload.new))
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_player_states", filter: "world_id=eq." + worldId }, payload => handlers.onPlayerStateChange?.(payload))
     .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()))
@@ -254,7 +255,14 @@ export async function subscribeWorld(worldId, handlers = {}) {
             }
           },
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
-          sendChatMessage: (message, displayName) => sendWorldChatMessage(worldId, message, displayName),
+          sendChatMessage: async (message, displayName) => {
+            const row = await sendWorldChatMessage(worldId, message, displayName);
+            const status = await channel.send({
+              type: "broadcast", event: "chat_message", payload: { message: row }
+            });
+            if (status !== "ok") console.warn("ILOX multiplayer: el mensaje quedó guardado, pero falló el aviso en tiempo real.", status);
+            return row;
+          },
           updatePresence: payload => channel.track({ ...payload, user_id: user.id }),
           close: async () => {
             try { await removeWorldPlayerState(worldId, user.id); } catch (error) { console.warn("ILOX multiplayer: no se pudo retirar el estado del jugador", error); }
