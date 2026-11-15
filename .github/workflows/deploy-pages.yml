@@ -2,13 +2,16 @@ name: Publicar ILOX Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/ilox-landscape-gameplay-v2]
     paths:
       - 'manifest.webmanifest'
       - 'scripts/prepare_ilox_forest.py'
       - 'ilox-forest-index.html'
       - 'ilox-forest.css'
       - 'LICENSE-TheForest.txt'
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -64,12 +67,14 @@ jobs:
         working-directory: vendor/theforest
         run: npm run build
 
-      - name: Preparar sitio PWA
+      - name: Preparar sitio PWA y vista previa del mundo nuevo
         run: |
           mkdir -p _site
           cp -R vendor/theforest/dist/. _site/
           cp LICENSE-TheForest.txt THIRD_PARTY_LICENSES.md _site/
-          touch _site/.nojekyll
+          mkdir -p _site/preview-v2
+          cp index.html app.js styles.css manifest.webmanifest _site/preview-v2/
+          touch _site/.nojekyll _site/preview-v2/.nojekyll
 
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v3
