@@ -24,7 +24,7 @@ const polyHavenLoader = new GLTFLoader();
 const proceduralTreeGroups = [];
 let importedNatureReady = false;
 let lookPointer = null;
-let lastLookX = 0, lastLookY = 0;
+let lastLookX = 0, lastLookY = 0, lookStartX = 0, lookStartY = 0, cameraDistance = 6.8, pointerDragged = false;
 const keys = new Set();
 const worldSize = 320;
 
@@ -551,24 +551,35 @@ function addEvents() {
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   game.addEventListener("pointerdown", e => {
-    if (e.target.closest("button") || e.target.closest("#joystick")) return;
-    if (buildMode && started) { placeBuildAtPointer(e); return; }
+    if (e.target.closest("button") || e.target.closest("#joystick") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
     lookPointer = e.pointerId;
-    lastLookX = e.clientX;
-    lastLookY = e.clientY;
+    lastLookX = lookStartX = e.clientX;
+    lastLookY = lookStartY = e.clientY;
+    pointerDragged = false;
     if (game.setPointerCapture) game.setPointerCapture(e.pointerId);
   });
   game.addEventListener("pointermove", e => {
     if (lookPointer !== e.pointerId || !started) return;
     const dx = e.clientX - lastLookX;
     const dy = e.clientY - lastLookY;
+    if (Math.hypot(e.clientX-lookStartX,e.clientY-lookStartY)>7) pointerDragged = true;
     lastLookX = e.clientX;
     lastLookY = e.clientY;
-    yaw -= dx * 0.004;
-    pitch = THREE.MathUtils.clamp(pitch + dy * 0.002, -0.05, 0.62);
+    // Cámara orbital libre: arrastrar gira alrededor del personaje incluso al construir.
+    yaw -= dx * 0.0048;
+    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -0.18, 1.05);
   });
-  game.addEventListener("pointerup", e => { if (lookPointer === e.pointerId) lookPointer = null; });
+  game.addEventListener("pointerup", e => {
+    if (lookPointer !== e.pointerId) return;
+    if (buildMode && started && !pointerDragged) placeBuildAtPointer(e);
+    lookPointer = null;
+  });
   game.addEventListener("pointercancel", e => { if (lookPointer === e.pointerId) lookPointer = null; });
+  game.addEventListener("wheel", e => {
+    if (!started) return;
+    e.preventDefault();
+    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*1.2, buildMode?2.4:4.5, 24);
+  }, {passive:false});
   joystick.addEventListener("pointerdown", e => {
     joyPointer = e.pointerId;
     joystick.setPointerCapture(e.pointerId);
@@ -609,7 +620,9 @@ function addEvents() {
     buildMode = !buildMode;
     buildPanel.classList.toggle("hidden", !buildMode);
     buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    showToast(buildMode ? "Modo construcción: tocá el terreno" : "¡A explorar!");
+    cameraDistance = buildMode ? 10 : 6.8;
+    document.querySelector("#build-help").textContent = buildMode ? "ARRASTRÁ para girar la cámara · Pellizcá o usá rueda para alejar/acercar · TOCÁ para colocar bloques." : "Elegí una herramienta y tocá el terreno.";
+    showToast(buildMode ? "Vista libre: arrastrá para mirar y tocá para construir" : "¡A explorar!");
   });
   document.querySelectorAll(".build-tool").forEach(button => {
     if (!button.dataset.tool) return;
@@ -750,10 +763,10 @@ function animate() {
     if (moving) player.rotation.y = Math.atan2(dx, -dz);
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
-  const distance = 6.8;
+  const distance = buildMode ? cameraDistance : Math.max(cameraDistance, 6.8);
   const targetX = focus.position.x + Math.sin(yaw) * distance;
   const targetZ = focus.position.z + Math.cos(yaw) * distance;
-  const targetY = focus.position.y + 2.7 + pitch * 4.5;
+  const targetY = focus.position.y + (buildMode ? 1.65 : 2.7) + pitch * (buildMode ? 5.2 : 4.5);
   camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
   camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
   renderer.render(scene, camera);
