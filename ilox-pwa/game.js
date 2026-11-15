@@ -1393,7 +1393,7 @@ function scheduleMultiplayerSync(){
 }
 async function syncMultiplayerStructures(){
   if(!activeMultiplayerWorldId||!multiplayerUserId)return true;
-  if(multiplayerSyncing){multiplayerSyncAgain=true;return;}
+  if(multiplayerSyncing){multiplayerSyncAgain=true;return false;}
   multiplayerSyncing=true;
   let changed=false,failed=false;
   const currentIds=new Set();
