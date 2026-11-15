@@ -966,6 +966,15 @@ function resetMoveStick() {
   moveKnob.style.transform = "translate(-50%, -50%)";
 }
 
+function updateBuildGravity(delta){
+  for(const group of buildGroups){
+    const record=group.userData.buildRecord;if(!record)continue;
+    let supportY=terrainHeight(group.position.x,group.position.z);
+    for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
+    if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}}
+    else if(group.position.y<supportY-.015){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}
+  }
+}
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
