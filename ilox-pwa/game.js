@@ -1361,10 +1361,36 @@ function buildFootprint(kind){
   return sizes[kind]||[1.5,1.5];
 }
 function snapDoorToPlateaGrid(x,z,rotation=0){
+  // La puerta se ancla al borde más cercano de la platea bajo el puntero.
+  // Su huella ocupa tres módulos de 1,50 m a lo largo del filo y uno hacia dentro.
+  const foundation=foundationAt(x,z);
+  if(foundation?.kind==="platea"){
+    const a=foundation.rotation||0,dx=x-foundation.x,dz=z-foundation.z;
+    const localX=dx*Math.cos(a)-dz*Math.sin(a);
+    const localZ=dx*Math.sin(a)+dz*Math.cos(a);
+    const half=FOUNDATION_SIZE/2,depth=BLOCK_SIZE/2;
+    const edgeX=Math.abs(localX)>=Math.abs(localZ);
+    let doorX=0,doorZ=0,edgeRotation=0;
+    if(edgeX){
+      const side=Math.sign(localX)||1;
+      doorX=side*(half-depth);
+      edgeRotation=a+Math.PI/2;
+    }else{
+      const side=Math.sign(localZ)||1;
+      doorZ=side*(half-depth);
+      edgeRotation=a;
+    }
+    const worldX=foundation.x+doorX*Math.cos(a)+doorZ*Math.sin(a);
+    const worldZ=foundation.z-doorX*Math.sin(a)+doorZ*Math.cos(a);
+    const quarter=Math.round(edgeRotation/(Math.PI/2));
+    const snappedRotation=((quarter%4)+4)%4*(Math.PI/2);
+    return {x:worldX,z:worldZ,rotation:snappedRotation,snapped:true};
+  }
+  // Sin una platea debajo, conservar la cuadrícula y el giro de 90° existente.
   const quarter=Math.round(rotation/(Math.PI/2));
   const snappedRotation=((quarter%4)+4)%4*(Math.PI/2);
   const cell=BLOCK_SIZE,offset=cell/2;
-  return {x:Math.round((x-offset)/cell)*cell+offset,z:Math.round((z-offset)/cell)*cell+offset,rotation:snappedRotation};
+  return {x:Math.round((x-offset)/cell)*cell+offset,z:Math.round((z-offset)/cell)*cell+offset,rotation:snappedRotation,snapped:false};
 }
 function foundationContainsFootprint(x,z,kind,rotation=0){
   const [w,d]=buildFootprint(kind),c=Math.cos(rotation),s=Math.sin(rotation);
