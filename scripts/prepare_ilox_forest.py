@@ -251,6 +251,59 @@ replace_once(audio_path,
 
 """)
 
+
+# Eliminar los trinos sintéticos de aves: no son grabaciones naturales y suenan artificiales.
+replace_once(audio_path, "  private birdCountdown = 3;\\n", "")
+replace_once(audio_path,
+             """    // Trinos de aves a intervalos irregulares.
+    this.birdCountdown -= dt;
+    if (this.birdCountdown <= 0) {
+      this.birdCountdown = 2.5 + Math.random() * 8;
+      this.playBird();
+    }
+""",
+             "")
+replace_once(audio_path,
+             """  private playBird(): void {
+    const ctx = this.ctx!;
+    let t = ctx.currentTime + 0.05;
+
+    // Distancia simulada: las lejanas suenan más suaves y apagadas.
+    const far = 0.25 + Math.random() * 0.75;
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = (Math.random() * 2 - 1) * 0.85;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 6500 - far * 3800;
+    const vol = ctx.createGain();
+    vol.gain.value = 0.16 * (1 - far * 0.72);
+    lp.connect(pan).connect(vol).connect(this.master);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0, t);
+    osc.connect(og).connect(lp);
+
+    const syllables = 2 + Math.floor(Math.random() * 5);
+    const baseF = 2100 + Math.random() * 1700;
+    for (let i = 0; i < syllables; i++) {
+      const dur = 0.05 + Math.random() * 0.09;
+      const f1 = baseF * (0.9 + Math.random() * 0.25);
+      const f2 = Math.max(500, f1 + (Math.random() * 2 - 1) * 900);
+      osc.frequency.setValueAtTime(f1, t);
+      osc.frequency.exponentialRampToValueAtTime(f2, t + dur * 0.85);
+      og.gain.linearRampToValueAtTime(1, t + 0.012);
+      og.gain.linearRampToValueAtTime(0.0001, t + dur);
+      t += dur + 0.03 + Math.random() * 0.09;
+    }
+    osc.start(ctx.currentTime + 0.05);
+    osc.stop(t + 0.05);
+  }
+
+""",
+             "")
+
 player_dir = root / "src/player"
 player_dir.mkdir(parents=True, exist_ok=True)
 shutil.copy2(source / "ILOXAvatar.ts", player_dir / "ILOXAvatar.ts")
