@@ -864,7 +864,7 @@ function addEvents() {
 }
 
 
-function createBuildPiece(record) {
+function createBuildPiece(record, options = {}) {
   const group=new THREE.Group(),mat=(c,r=.9,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
   const wood=mat(0x93633d),darkWood=mat(0x583a27),wall=mat(0xe7d9bb),glass=mat(0x75cde0,.2),metal=mat(0x737d80,.42,.62);
   const box=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
@@ -900,25 +900,44 @@ function createBuildPiece(record) {
   if(kind==="sofa"){box(1.5,.42,.72,mat(0x547a74),0,.45,0);box(1.5,.72,.16,mat(0x547a74),0,.83,-.28);for(const sx of [-.68,.68])box(.16,.62,.72,mat(0x42635d),sx,.67,0);}
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
-  if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind);
-
-  group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);return group;
+  group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);
+  if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
+  return group;
 }
-async function loadAnimalModel(group,kind){
+async function loadAnimalModel(group,kind,notify=false){
   const url=ANIMAL_MODELS[kind];if(!url)return;
   try{
-    if(!animalAssetPromises.has(url))animalAssetPromises.set(url,animalModelLoader.loadAsync(url));
-    const gltf=await animalAssetPromises.get(url);if(!group.parent)return;
+    let pending=animalAssetPromises.get(url);
+    if(!pending){pending=animalModelLoader.loadAsync(url);animalAssetPromises.set(url,pending);}
+    let gltf;
+    try{gltf=await pending;}catch(error){animalAssetPromises.delete(url);throw error;}
+    if(group.parent!==scene)return;
     const model=cloneSkeleton(gltf.scene);
+    model.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
-    const targetHeight={sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62}[kind]||.7;
-    const scale=targetHeight/Math.max(size.y,.001);model.scale.setScalar(scale);model.position.y=-bounds.min.y*scale;
-    model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});group.add(model);
+    let meshCount=0;model.traverse(o=>{if(o.isMesh)meshCount++;});
+    if(!meshCount||!Number.isFinite(size.y)||size.y<.01)throw new Error("El GLB no contiene una malla 3D visible.");
+    const targetHeight={sheep:.95,cow:1.55,horse:1.65,chicken:.55,pig:.9,goat:.95}[kind]||1;
+    const scale=targetHeight/size.y;
+    model.scale.setScalar(scale);
+    model.position.y=-bounds.min.y*scale;
+    model.visible=true;
+    model.traverse(o=>{if(o.isMesh){o.visible=true;o.castShadow=true;o.receiveShadow=true;if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){m.visible=true;m.needsUpdate=true;}}}});
+    group.add(model);group.updateMatrixWorld(true);
     const mixer=new THREE.AnimationMixer(model),actions={};
     for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(name.includes("idle"))actions.idle=mixer.clipAction(clip);else if(name.includes("walk"))actions.walk=mixer.clipAction(clip);else if(name.includes("run"))actions.run=mixer.clipAction(clip);}
     const idle=actions.idle||(gltf.animations[0]&&mixer.clipAction(gltf.animations[0]));if(idle){idle.play();actions.current=idle;}
     group.userData.animalMixer=mixer;group.userData.animalActions=actions;group.userData.buildHeight=targetHeight;group.userData.roamOrigin=group.position.clone();group.userData.roamTarget=group.position.clone().add(new THREE.Vector3((Math.random()-.5)*5,0,(Math.random()-.5)*5));group.userData.roamTimer=2+Math.random()*3;
-  }catch(error){console.warn("ILOX animal GLB failed",kind,error);showToast("No se pudo descargar este animal 3D.");}
+    if(notify)showToast("Animal 3D cargado y visible");
+  }catch(error){
+    console.error("ILOX: falló la carga del animal 3D",kind,url,error);
+    const record=group.userData.buildRecord,recordIndex=buildRecords.indexOf(record);
+    if(recordIndex>=0)buildRecords.splice(recordIndex,1);
+    scene.remove(group);
+    const groupIndex=buildGroups.indexOf(group);if(groupIndex>=0)buildGroups.splice(groupIndex,1);
+    persistBuilds();
+    if(notify)showToast("No se pudo cargar el animal 3D. No quedó colocado.");
+  }
 }
 function persistBuilds() {
   try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); }
@@ -981,7 +1000,11 @@ function placeBuildAtPointer(event){
     }
   }
   const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
-  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en la pileta":"¡Pieza colocada y alineada!");
+  buildRecords.push(record);
+  const isAnimal=["sheep","cow","horse","chicken","pig","goat"].includes(buildTool);
+  createBuildPiece(record,{notify:isAnimal});persistBuilds();
+  if(isAnimal)showToast("Descargando modelo 3D del animal...");
+  else showToast(buildTool==="water"?"Agua colocada en la pileta":"¡Pieza colocada y alineada!");
 }
 function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked)return;playerVerticalVelocity=7.2;playerGrounded=false;}
 function updateMoveStick(event) {
