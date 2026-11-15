@@ -2,10 +2,12 @@ name: Verificar integración ILOX + The Forest
 
 on:
   push:
-    branches: [integracion-the-forest]
+    branches: [experiment/the-forest-third-person]
     paths:
       - 'scripts/prepare_ilox_forest.py'
+      - 'ilox-src/**'
       - 'ilox-forest-index.html'
+      - 'ilox-forest.css'
       - 'ilox-forest.css'
       - 'manifest.webmanifest'
       - '.github/workflows/test-ilox-forest.yml'
