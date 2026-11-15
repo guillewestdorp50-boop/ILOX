@@ -1070,6 +1070,22 @@ function animate() {
     if (player.userData.isRiggedAvatar) {
       player.userData.mixer?.update(delta);
       setRiggedAvatarMotion(player, moving && !player.userData.isSwimming);
+      if(player.userData.isSwimming){
+        const t=clock.elapsedTime;
+        player.userData.swimmingPoseActive=true;
+        player.traverse(bone=>{
+          if(!bone.isBone)return;
+          const n=bone.name.toLowerCase();
+          if(!/(arm|hand|leg|foot)/.test(n))return;
+          if(!bone.userData.iloxSwimBase)bone.userData.iloxSwimBase=bone.rotation.clone();
+          const base=bone.userData.iloxSwimBase,side=n.includes("left")?-1:1;
+          if(n.includes("arm")||n.includes("hand")){bone.rotation.x=base.x+Math.sin(t*3.2+side)*.42;bone.rotation.z=base.z+side*.22;}
+          else{bone.rotation.x=base.x+Math.sin(t*3.2+side*Math.PI)*.22;}
+        });
+      }else if(player.userData.swimmingPoseActive){
+        player.traverse(bone=>{if(bone.isBone&&bone.userData.iloxSwimBase){bone.rotation.copy(bone.userData.iloxSwimBase);}});
+        player.userData.swimmingPoseActive=false;
+      }
     }
     // La espalda y la mochila quedan siempre orientadas hacia la cámara.
     // El movimiento es independiente: caminar hacia atrás o de costado no da vuelta el avatar.
