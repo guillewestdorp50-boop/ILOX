@@ -798,7 +798,7 @@ function animate() {
   const distance = buildMode ? cameraDistance : 5.4;
   const targetX = focus.position.x + Math.sin(yaw) * distance;
   const targetZ = focus.position.z + Math.cos(yaw) * distance;
-  const targetY = focus.position.y + (buildMode ? 1.65 : 2.7) + pitch * (buildMode ? 5.2 : 4.5);
+  const targetY = focus.position.y + (buildMode ? 1.8 : 2.7) + pitch * (buildMode ? 28 : 4.5);
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.lerp(eye,1-Math.pow(0.001,delta));
