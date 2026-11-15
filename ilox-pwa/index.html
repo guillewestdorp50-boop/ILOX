@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-door-pin-player-clearance-v67">
+  <link rel="stylesheet" href="./styles.css?v=ilox-multiplayer-v68">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -46,6 +46,7 @@
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
       <button id="build-toggle" class="menu-action" type="button">🧱 Construir</button>
+      <button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button>
       <button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
       <button id="erase-parts" class="menu-action" type="button">⌫ Eliminar por partes</button>
     </section>
@@ -67,6 +68,28 @@
       <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
     </div>
     <div class="toast" id="toast" role="status"></div>
+    <section id="multiplayer-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="multiplayer-title">
+      <div class="door-pin-card multiplayer-card">
+        <div class="door-pin-eyebrow">MUNDO COMPARTIDO · ILOX ONLINE</div>
+        <h2 id="multiplayer-title">MULTIJUGADOR</h2>
+        <p id="multiplayer-status">Creá un mundo nuevo o ingresá el código de un compañero.</p>
+        <label class="mp-label" for="mp-display-name">TU NOMBRE EN EL JUEGO</label>
+        <input id="mp-display-name" class="door-pin-input mp-text-input" maxlength="32" autocomplete="nickname" placeholder="Tu nombre">
+        <label class="mp-label" for="mp-world-name">NOMBRE DE LA PARTIDA</label>
+        <input id="mp-world-name" class="door-pin-input mp-text-input" maxlength="60" value="Nuestro mundo">
+        <button id="mp-create-world" class="door-pin-submit" type="button">CREAR MUNDO NUEVO</button>
+        <div class="mp-separator">O ENTRAR A UNA PARTIDA EXISTENTE</div>
+        <input id="mp-invite-code" class="door-pin-input" maxlength="8" autocapitalize="characters" placeholder="CÓDIGO DE INVITACIÓN">
+        <button id="mp-join-world" class="door-pin-secondary" type="button">UNIRME AL MUNDO</button>
+        <div id="mp-created-code" class="mp-created-code hidden">
+          <span>CÓDIGO PARA COMPARTIR</span>
+          <strong id="mp-code-value"></strong>
+          <button id="mp-copy-code" class="door-pin-secondary" type="button">COPIAR CÓDIGO</button>
+        </div>
+        <button id="mp-leave-world" class="door-pin-secondary hidden" type="button">VOLVER A MI MUNDO INDIVIDUAL</button>
+        <button id="mp-close" class="door-pin-cancel" type="button">CERRAR</button>
+      </div>
+    </section>
     <section id="door-pin-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="door-pin-title">
       <form id="door-pin-form" class="door-pin-card">
         <div class="door-pin-eyebrow">SEGURIDAD DE LA CONSTRUCCIÓN</div>
