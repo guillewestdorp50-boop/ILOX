@@ -36,6 +36,7 @@ let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserI
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0;
+let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -82,7 +83,7 @@ let lastLookX = 0, lastLookY = 0, lookStartX = 0, lookStartY = 0, cameraDistance
 const activePointers = new Map(); let pinchStartDistance = 0, pinchStartZoom = 10;
 const keys = new Set();
 const worldSize = 320;
-const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=1.85;
+const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.1;
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
@@ -1015,8 +1016,13 @@ function addEvents() {
   });
   document.querySelector("#mp-chat-toggle")?.addEventListener("click",()=>{
     const panel=document.querySelector("#mp-chat-panel");panel?.classList.toggle("hidden");
-    if(panel&&!panel.classList.contains("hidden")){const list=document.querySelector("#mp-chat-messages");if(list)list.scrollTop=list.scrollHeight;document.querySelector("#mp-chat-input")?.focus();}
+    if(panel&&!panel.classList.contains("hidden")){markMultiplayerChatRead();const list=document.querySelector("#mp-chat-messages");if(list)list.scrollTop=list.scrollHeight;document.querySelector("#mp-chat-input")?.focus();}
   });
+  const unlockChatAudio=()=>{
+    try{const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(AudioContextClass&&!multiplayerChatAudio)multiplayerChatAudio=new AudioContextClass();if(multiplayerChatAudio?.state==="suspended")multiplayerChatAudio.resume().catch(()=>{});}catch{}
+  };
+  addEventListener("pointerdown",unlockChatAudio,{once:true,passive:true});
+  addEventListener("keydown",unlockChatAudio,{once:true});
   document.querySelector("#mp-chat-close")?.addEventListener("click",()=>document.querySelector("#mp-chat-panel")?.classList.add("hidden"));
   document.querySelector("#mp-chat-form")?.addEventListener("submit",async event=>{
     event.preventDefault();
@@ -1290,10 +1296,40 @@ function updateRemotePlayer(data){
   avatar.userData.remoteSwimming=!!data.swimming;
   avatar.userData.remoteJumping=!!data.jumping;
 }
-function appendMultiplayerChatMessage(row){
+function playMultiplayerMessageSound(){
+  try{
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass)return;
+    if(!multiplayerChatAudio)multiplayerChatAudio=new AudioContextClass();
+    if(multiplayerChatAudio.state==="suspended")multiplayerChatAudio.resume().catch(()=>{});
+    const context=multiplayerChatAudio,oscillator=context.createOscillator(),gain=context.createGain();
+    oscillator.type="sine";oscillator.frequency.setValueAtTime(880,context.currentTime);
+    oscillator.frequency.setValueAtTime(1175,context.currentTime+0.09);
+    gain.gain.setValueAtTime(0.0001,context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12,context.currentTime+0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001,context.currentTime+0.22);
+    oscillator.connect(gain);gain.connect(context.destination);oscillator.start();oscillator.stop(context.currentTime+0.24);
+  }catch(error){console.warn("ILOX: no se pudo reproducir el aviso del chat",error);}
+}
+function updateMultiplayerUnreadBadge(){
+  const toggle=document.querySelector("#mp-chat-toggle");if(!toggle)return;
+  let badge=toggle.querySelector(".mp-chat-unread");
+  if(!badge){badge=document.createElement("span");badge.className="mp-chat-unread";badge.setAttribute("aria-live","polite");toggle.appendChild(badge);}
+  badge.textContent=multiplayerUnreadMessages>99?"99+":String(multiplayerUnreadMessages);
+  badge.classList.toggle("hidden",multiplayerUnreadMessages===0);
+  toggle.setAttribute("aria-label",multiplayerUnreadMessages?`Chat del mundo, ${multiplayerUnreadMessages} mensajes sin leer`:"Abrir chat del mundo");
+}
+function markMultiplayerChatRead(){multiplayerUnreadMessages=0;updateMultiplayerUnreadBadge();}
+function appendMultiplayerChatMessage(row,notify=false){
   if(!row||row.id===undefined)return;
   const id=String(row.id);if(multiplayerChatSeen.has(id))return;
   multiplayerChatSeen.add(id);
+  const incoming=!!notify&&!!row.user_id&&row.user_id!==multiplayerUserId;
+  const chatPanel=document.querySelector("#mp-chat-panel");
+  if(incoming){
+    playMultiplayerMessageSound();
+    if(chatPanel?.classList.contains("hidden")){multiplayerUnreadMessages++;updateMultiplayerUnreadBadge();}
+  }
   const list=document.querySelector("#mp-chat-messages");if(!list)return;
   list.querySelector(".mp-chat-empty")?.remove();
   const item=document.createElement("article");item.className="mp-chat-message";
@@ -1330,7 +1366,7 @@ function startMultiplayerFallbackSync(worldId){
       if(Date.now()-multiplayerLastChatPoll>=1200){
         multiplayerLastChatPoll=Date.now();
         const messages=await Multiplayer.getChatMessages(worldId);
-        for(const row of messages)appendMultiplayerChatMessage(row);
+        for(const row of messages)appendMultiplayerChatMessage(row,true);
       }
     }catch(error){
       console.warn("ILOX multiplayer: falló la sincronización de respaldo",error);
@@ -1391,7 +1427,7 @@ async function enterMultiplayerWorld(worldId){
       },
       onWorldRefresh:()=>loadMultiplayerStructures(worldId).catch(error=>showToast("No se pudo actualizar el mundo compartido.")),
       onPresence:syncRemotePresence,
-      onChatMessage:appendMultiplayerChatMessage
+      onChatMessage:row=>appendMultiplayerChatMessage(row,true)
     });
     multiplayerUserId=multiplayerSession.userId;
     const peerStates=await Multiplayer.getWorldPlayerStates(worldId);
@@ -1431,7 +1467,7 @@ async function leaveMultiplayerWorld(){
   document.querySelector("#mp-chat-toggle")?.classList.add("hidden");
   document.querySelector("#mp-chat-panel")?.classList.add("hidden");
   document.querySelector("#mp-chat-messages")?.replaceChildren();
-  multiplayerChatSeen.clear();
+  multiplayerChatSeen.clear();multiplayerUnreadMessages=0;updateMultiplayerUnreadBadge();
   showToast("Volviste a tu mundo individual. Tu construcción sigue intacta.");
 }
 
