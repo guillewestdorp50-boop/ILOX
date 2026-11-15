@@ -133,25 +133,6 @@ async function boot(): Promise<void> {
   sprintButton?.addEventListener('pointercancel', releaseSprint);
   sprintButton?.addEventListener('lostpointercapture', releaseSprint);
 
-  let sprintPointer: number | null = null;
-  const releaseSprint = (event: PointerEvent) => {
-    if (event.pointerId !== sprintPointer) return;
-    sprintPointer = null;
-    engine.setSprintInput(false);
-    sprintButton?.classList.remove('active');
-  };
-  sprintButton?.addEventListener('pointerdown', (event) => {
-    if (!document.body.classList.contains('playing')) return;
-    event.preventDefault();
-    sprintPointer = event.pointerId;
-    sprintButton.setPointerCapture(event.pointerId);
-    engine.setSprintInput(true);
-    sprintButton.classList.add('active');
-  });
-  sprintButton?.addEventListener('pointerup', releaseSprint);
-  sprintButton?.addEventListener('pointercancel', releaseSprint);
-  sprintButton?.addEventListener('lostpointercapture', releaseSprint);
-
   engine.start();
   (window as unknown as { __engine: Engine }).__engine = engine;
 }
