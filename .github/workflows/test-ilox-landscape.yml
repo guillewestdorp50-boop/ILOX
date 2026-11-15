@@ -71,6 +71,7 @@ jobs:
           test ! -e PDA
           echo "ILOX landscape PWA and touch controls verified; PDA folder is absent from this branch."
 
+  # Publica la PWA experimental en /ilox sin reemplazar el sitio estable.
   publish:
     needs: validate
     runs-on: ubuntu-latest
