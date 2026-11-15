@@ -325,3 +325,7 @@ body{background:#201747;color:#fff}
   .mp-chat-toggle{top:calc(112px + env(safe-area-inset-top));left:auto;right:10px;width:40px;height:40px}
   .mp-chat-panel{top:calc(158px + env(safe-area-inset-top));left:auto;right:10px;width:min(340px,calc(100% - 20px));max-height:52dvh}
 }
+
+
+/* ILOX v95: versión visible desde la pantalla de inicio. */
+.welcome-version{position:absolute;z-index:5;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));padding:7px 11px;border:1px solid #ffffff55;border-radius:999px;background:#17123fcc;color:#fff8e8;font:800 11px/1 system-ui,sans-serif;letter-spacing:.12em;text-shadow:0 1px 5px #0008;box-shadow:0 4px 18px #080d3c66;pointer-events:none}
