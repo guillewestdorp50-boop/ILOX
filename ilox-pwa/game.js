@@ -1100,7 +1100,7 @@ function addEvents() {
     try{await navigator.clipboard.writeText(code);showToast("Código copiado.");}
     catch{showToast("No se pudo copiar. Compartí el código: "+code);}
   });
-  addEventListener("online",()=>{if(activeMultiplayerWorldId)syncMultiplayerStructures();});
+  addEventListener("online",()=>{if(activeMultiplayerWorldId)showToast("Conexión recuperada. Tus cambios locales siguen disponibles; pulsá GUARDAR para sincronizarlos.");});
   document.querySelector("#mp-leave-world")?.addEventListener("click",async()=>{
     await leaveMultiplayerWorld();document.querySelector("#multiplayer-dialog").classList.add("hidden");
   });
@@ -1158,14 +1158,58 @@ function addEvents() {
       showToast("Color seleccionado");
     });
   });
-  quickSaveButton?.addEventListener("click",()=>{
-    if(persistBuilds()){
-      if(activeMultiplayerWorldId)syncMultiplayerStructures();
+  quickSaveButton?.addEventListener("click",async()=>{
+    if(!flushLocalBuildSave())return;
+    quickSaveButton.disabled=true;
+    try{
+      if(activeMultiplayerWorldId)await syncMultiplayerStructures();
       quickSaveButton.classList.add("saved");
       quickSaveButton.textContent="✓";
-      showToast(activeMultiplayerWorldId?"Guardado rápido: mundo sincronizado en línea.":"Guardado rápido: tu construcción quedó guardada en este dispositivo.");
+      showToast(activeMultiplayerWorldId?"Guardado local y copia en línea confirmada.":"Guardado en este teléfono.");
+    }catch(error){showToast(error.message||"No se pudo confirmar el guardado.");}
+    finally{
+      quickSaveButton.disabled=false;
       window.setTimeout(()=>{quickSaveButton.classList.remove("saved");quickSaveButton.textContent="💾";},1100);
     }
+  });
+  const worldJsonInput=document.querySelector("#world-json-input");
+  document.querySelector("#export-world-json")?.addEventListener("click",()=>{
+    try{
+      flushLocalBuildSave();
+      const structures=buildRecords.map(record=>{const copy={...record};delete copy.pin;return copy;});
+      const backup={format:"ILOX_WORLD",version:1,exportedAt:new Date().toISOString(),worldId:activeMultiplayerWorldId,worldName:activeMultiplayerWorldId?"Mundo compartido":"Mundo individual",structures};
+      const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob),anchor=document.createElement("a");
+      anchor.href=url;anchor.download="ILOX-mundo-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.append(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+      showToast("Copia JSON exportada. Guardala en un lugar seguro.");
+    }catch(error){showToast("No se pudo exportar el mundo.");console.warn(error);}
+  });
+  document.querySelector("#import-world-json")?.addEventListener("click",()=>worldJsonInput?.click());
+  worldJsonInput?.addEventListener("change",async()=>{
+    const file=worldJsonInput.files?.[0];if(!file)return;
+    try{
+      const parsed=JSON.parse(await file.text());
+      const structures=Array.isArray(parsed)?parsed:parsed?.structures;
+      if(!Array.isArray(structures)||structures.length>1200)throw new Error("El archivo no contiene un mundo ILOX válido (máximo 1200 piezas).");
+      if(parsed?.format&&parsed.format!=="ILOX_WORLD")throw new Error("Este archivo no es una copia JSON de ILOX.");
+      if(parsed?.worldId&&activeMultiplayerWorldId&&parsed.worldId!==activeMultiplayerWorldId)throw new Error("Esta copia pertenece a otra partida compartida.");
+      const allowed=new Set(["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]);
+      const clean=structures.filter(record=>record&&allowed.has(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)).map(record=>{
+        const copy={...record};
+        if(!activeMultiplayerWorldId){delete copy.cloudId;delete copy.cloudOwnerId;}
+        if(copy.kind==="door")copy.pin=null;
+        return copy;
+      });
+      if(clean.length!==structures.length)throw new Error("El archivo contiene piezas inválidas. No se modificó el mundo.");
+      if(!confirm("¿Reemplazar las construcciones actuales por las "+clean.length+" piezas de esta copia JSON?"))return;
+      clearCurrentBuildWorld();
+      for(const record of clean){buildRecords.push(record);createBuildPiece(record);}
+      refreshTerrainSurface();
+      flushLocalBuildSave();
+      showToast("Copia cargada en este teléfono. Pulsá GUARDAR para sincronizar el mundo compartido.");
+    }catch(error){showToast(error.message||"No se pudo importar el archivo JSON.");}
+    finally{worldJsonInput.value="";}
   });
   document.querySelector("#fullscreen").addEventListener("click", async () => {
     try {
@@ -1288,13 +1332,26 @@ async function loadAnimalModel(group,kind,notify=false){
     if(notify)showToast("No se pudo cargar el animal 3D. No quedó colocado.");
   }
 }
-function persistBuilds() {
-  try {
-    const key=activeMultiplayerWorldId?"ilox-mp-cache-"+activeMultiplayerWorldId:"ilox-builds-v1";
-    localStorage.setItem(key,JSON.stringify(buildRecords.map(record=>activeMultiplayerWorldId?multiplayerPayload(record):record)));
-    if(activeMultiplayerWorldId)scheduleMultiplayerSync();
-    return true;
-  } catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); return false; }
+let localBuildSaveTimer=null;
+function writeLocalBuildSave(){
+  const key=activeMultiplayerWorldId?"ilox-mp-cache-"+activeMultiplayerWorldId:"ilox-builds-v1";
+  const records=buildRecords.map(record=>activeMultiplayerWorldId?multiplayerPayload(record):record);
+  localStorage.setItem(key,JSON.stringify(records));
+  localBuildSaveTimer=null;
+}
+function flushLocalBuildSave(){
+  if(localBuildSaveTimer){clearTimeout(localBuildSaveTimer);localBuildSaveTimer=null;}
+  try{writeLocalBuildSave();return true;}
+  catch(error){showToast("No se pudo guardar el mundo en este dispositivo.");return false;}
+}
+function persistBuilds(){
+  // Guardado local agrupado: construir rápido no dispara escrituras bloqueantes en cada pieza.
+  if(localBuildSaveTimer)clearTimeout(localBuildSaveTimer);
+  localBuildSaveTimer=setTimeout(()=>{
+    try{writeLocalBuildSave();}
+    catch(error){localBuildSaveTimer=null;showToast("No se pudo guardar el mundo en este dispositivo.");}
+  },650);
+  return true;
 }
 function loadBuilds() {
   if(buildRecords.length) return;
@@ -1356,7 +1413,7 @@ async function syncMultiplayerStructures(){
     failed=true;
     console.warn("ILOX multiplayer: no se pudo guardar la estructura",error);
     showToast(error.message||"No se pudo guardar en línea. Revisá tu conexión.");
-    try{await loadMultiplayerStructures(activeMultiplayerWorldId);}catch(loadError){console.warn(loadError);}
+    // No recargar desde la nube ante un error: podría borrar cambios locales aún no guardados.
   }finally{
     multiplayerSyncing=false;
     if(multiplayerSyncAgain){multiplayerSyncAgain=false;scheduleMultiplayerSync();}
