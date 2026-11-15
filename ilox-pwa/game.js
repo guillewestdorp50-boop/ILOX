@@ -25,6 +25,7 @@ const proceduralTreeGroups = [];
 let importedNatureReady = false;
 let lookPointer = null;
 let lastLookX = 0, lastLookY = 0, lookStartX = 0, lookStartY = 0, cameraDistance = 6.8, pointerDragged = false;
+const activePointers = new Map(); let pinchStartDistance = 0, pinchStartZoom = 10;
 const keys = new Set();
 const worldSize = 320;
 
@@ -552,6 +553,8 @@ function addEvents() {
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   game.addEventListener("pointerdown", e => {
     if (e.target.closest("button") || e.target.closest("#joystick") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
+    activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
     lastLookX = lookStartX = e.clientX;
     lastLookY = lookStartY = e.clientY;
@@ -559,6 +562,8 @@ function addEvents() {
     if (game.setPointerCapture) game.setPointerCapture(e.pointerId);
   });
   game.addEventListener("pointermove", e => {
+    if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),2.4,24);return;}
     if (lookPointer !== e.pointerId || !started) return;
     const dx = e.clientX - lastLookX;
     const dy = e.clientY - lastLookY;
@@ -570,11 +575,13 @@ function addEvents() {
     pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -0.18, 1.05);
   });
   game.addEventListener("pointerup", e => {
+    activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
-    if (buildMode && started && !pointerDragged) placeBuildAtPointer(e);
-    lookPointer = null;
+    if (buildMode && started && !pointerDragged && activePointers.size===0) placeBuildAtPointer(e);
+    lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
+    if(lookPointer!==null){const p=activePointers.get(lookPointer);lastLookX=p.x;lastLookY=p.y;pointerDragged=true;}
   });
-  game.addEventListener("pointercancel", e => { if (lookPointer === e.pointerId) lookPointer = null; });
+  game.addEventListener("pointercancel", e => { activePointers.delete(e.pointerId); if (lookPointer === e.pointerId) lookPointer = activePointers.size ? [...activePointers.keys()][0] : null; });
   game.addEventListener("wheel", e => {
     if (!started) return;
     e.preventDefault();
