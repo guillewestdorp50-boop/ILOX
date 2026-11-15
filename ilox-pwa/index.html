@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#102d28">
+  <meta name="description" content="ILOX. Construí, explorá y jugá en tu propio mundo.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>ILOX — Tu mundo, tus reglas</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#inicio" aria-label="ILOX Inicio"><span class="brand-mark">I</span><span><b>ILOX</b><small>TU PROPIO MUNDO</small></span></a>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <button class="nav-item active" data-view="inicio"><span>⌂</span>Inicio</button>
+        <button class="nav-item" data-view="inventario"><span>▣</span>Inventario</button>
+        <button class="nav-item" data-view="amigos"><span>♧</span>Amigos</button>
+        <button class="nav-item" data-view="construir"><span>⌂</span>Construir</button>
+        <button class="nav-item" data-view="opciones"><span>⚙</span>Opciones</button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span><span>Un mundo en crecimiento</span><small>PREVIEW 0.2</small></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div><span class="overline" id="section-kicker">BIENVENIDO A ILOX</span><h1 id="section-title">Tu mundo te espera.</h1></div>
+        <div class="profile-chip"><span class="avatar-face">E</span><span><b>Explorador</b><small>Nivel 1 · Principiante</small></span><span class="chevron">⌄</span></div>
+      </header>
+
+      <section class="view active" id="view-inicio">
+        <div class="hero">
+          <div class="hero-copy">
+            <span class="pill"><i></i> UN MUNDO ABIERTO, SIN LÍMITES</span>
+            <h2>Construí.<br><em>Explorá.</em><br>Hacélo tuyo.</h2>
+            <p>Un lugar para descubrir, crear y compartir aventuras. Cada rincón puede convertirse en algo que imaginaste.</p>
+            <a class="primary-cta" href="../forest/?q=ilox" id="enter-world">ENTRAR AL MUNDO <span>↗</span></a>
+            <div class="hero-footnote">PRIMER DESTINO · VALLE DEL BOSQUE</div>
+          </div>
+          <div class="hero-art" aria-label="Paisaje de montañas y bosque"><div class="sun"></div><div class="mountain far"></div><div class="mountain near"></div><div class="waterfall"></div><div class="forest-line"></div><div class="hero-label"><b>01</b><span>EL COMIENZO<br>DE TODO</span></div></div>
+        </div>
+
+        <div class="section-heading"><div><span class="overline">TU AVENTURA</span><h3>¿Qué querés hacer hoy?</h3></div><span class="muted">El mundo crece con vos</span></div>
+        <div class="action-grid">
+          <button class="action-card explore" data-view="explorar"><span class="action-icon">✦</span><b>Explorar mundos</b><small>Descubrí nuevos lugares</small><span class="card-arrow">↗</span></button>
+          <button class="action-card build" data-view="construir"><span class="action-icon">⌁</span><b>Crear sin límites</b><small>Diseñá y construí</small><span class="card-arrow">↗</span></button>
+          <button class="action-card friends" data-view="amigos"><span class="action-icon">♧</span><b>Jugar con amigos</b><small>Compartí la aventura</small><span class="card-arrow">↗</span></button>
+        </div>
+        <div class="principle"><span class="principle-mark">✳</span><div><b>ILOX crece con la reparación, no con la destrucción.</b><small>Un mundo cuidado por quienes lo construyen.</small></div></div>
+      </section>
+
+      <section class="view" id="view-inventario">
+        <div class="feature-panel"><span class="feature-symbol">▣</span><span class="overline">TU MOCHILA</span><h2>Inventario</h2><p>Todo lo que recolectes y encuentres durante tus aventuras tendrá su lugar acá.</p><div class="empty-slots"><span>＋</span><span>＋</span><span>＋</span><span>＋</span><span>＋</span><span>＋</span></div><span class="coming">PREPARANDO EL SISTEMA DE RECOLECCIÓN</span></div>
+      </section>
+      <section class="view" id="view-amigos">
+        <div class="feature-panel"><span class="feature-symbol">♧</span><span class="overline">AVENTURAS COMPARTIDAS</span><h2>Amigos</h2><p>La idea es que puedas compartir tu mundo con personas invitadas por vos y con permisos claros.</p><div class="feature-note">El modo multijugador y las invitaciones todavía no están conectados. No vamos a mostrar amigos ficticios ni conexiones inventadas.</div><span class="coming">SISTEMA SOCIAL EN DESARROLLO</span></div>
+      </section>
+      <section class="view" id="view-construir">
+        <div class="feature-panel"><span class="feature-symbol">⌂</span><span class="overline">TU MUNDO, TUS REGLAS</span><h2>Construí a tu manera.</h2><p>Casas, refugios, puentes y caminos: las construcciones serán tuyas y estarán protegidas.</p><div class="build-preview"><span>REFUGIO</span><span>CAMINOS</span><span>PUENTES</span><span>DECORACIÓN</span></div><span class="coming">EDITOR DE CONSTRUCCIÓN EN DESARROLLO</span></div>
+      </section>
+      <section class="view" id="view-opciones">
+        <div class="feature-panel settings"><span class="feature-symbol">⚙</span><span class="overline">PREFERENCIAS</span><h2>Opciones</h2><p>Configurá cómo se ve y se siente ILOX en tu dispositivo.</p>
+          <label class="setting-row"><span><b>Movimiento reducido</b><small>Suaviza algunas transiciones de interfaz</small></span><input type="checkbox" id="reduced-motion"></label>
+          <label class="setting-row"><span><b>Pantalla completa</b><small>Usar todo el espacio disponible</small></span><button class="small-button" id="fullscreen">ACTIVAR</button></label>
+          <label class="setting-row"><span><b>Instalar ILOX</b><small>Agregar la PWA a tu pantalla de inicio</small></span><button class="small-button" id="install" disabled>NO DISPONIBLE</button></label>
+          <div class="feature-note">Esta versión guarda preferencias simples en este dispositivo. Las cuentas y los mundos compartidos todavía no están habilitados.</div>
+        </div>
+      </section>
+      <section class="view" id="view-explorar">
+        <div class="feature-panel"><span class="feature-symbol">✦</span><span class="overline">PRIMER DESTINO</span><h2>Valle del Bosque</h2><p>Un entorno natural para empezar a caminar, mirar alrededor y descubrir el terreno.</p><a class="primary-cta" href="../forest/?q=ilox">ABRIR EL MUNDO 3D <span>↗</span></a><div class="feature-note">La vista 3D abre en una sección independiente. Esta pantalla de inicio y el mundo se mantienen separados para poder evolucionar cada parte sin romper la otra.</div></div>
+      </section>
+      <footer class="footer"><span>ILOX · DONDE TUS IDEAS COBRAN VIDA</span><span>CRECE CON LA REPARACIÓN, NO CON LA DESTRUCCIÓN.</span></footer>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Navegación móvil">
+    <button class="active" data-view="inicio"><span>⌂</span>Inicio</button><button data-view="inventario"><span>▣</span>Bolsa</button><button data-view="construir"><span>⌂</span>Crear</button><button data-view="amigos"><span>♧</span>Amigos</button><button data-view="opciones"><span>⚙</span>Más</button>
+  </nav>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
