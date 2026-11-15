@@ -1298,14 +1298,11 @@ function createBuildPiece(record, options = {}) {
     if(record.poolDesign==="municipal"){
       // Carriles de natación y escalerillas en ambos extremos de la pileta municipal.
       for(let lane=-2;lane<=2;lane++)box(.035,.018,d-1.15,mat(0xf4fbff),lane*w/6,-.035,0);
-      for(let side of [-1,1]){
-        cyl(side*(w/2-.72),-.42,-d/2+.9,.055,.055,.84,mat(0xb8c5c8,.3,.7));
-        cyl(side*(w/2-.72),-.42,d/2-.9,.055,.055,.84,mat(0xb8c5c8,.3,.7));
-      }
+      // Se quitaron las barandas transversales que interferían con el paso del jugador.
     }else if(record.poolDesign==="large"){
       // Escalones sumergidos en una esquina para facilitar la entrada.
       for(let step=0;step<3;step++)box(1.05,.18,.62,inner,-w/2+.78+step*.42,-.34-step*.28,-d/2+.62+step*.42);
-      for(const sx of [-1,1])cyl(sx*.34,.55,-d/2+.5,.045,.045,1.0,mat(0xb8c5c8,.3,.7));
+      // Se eliminó el conjunto de tubos de acceso que generaba colisiones dentro de la pileta.
     }else{
       // Escalera compacta integrada en un lateral.
       for(let i=0;i<3;i++)box(.65,.12,.22,inner,-w/2+.48+i*.18,-.35-i*.30,-d/2+.55+i*.12);
