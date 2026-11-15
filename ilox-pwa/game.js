@@ -1596,31 +1596,50 @@ function openDoorPinDialog(record,mode="unlock"){
   doorPinCurrent.value="";doorPinNew.value="";doorPinInput.value="";
   doorPinCurrent.classList.toggle("hidden",mode!=="change");doorPinNew.classList.toggle("hidden",mode!=="change");
   doorPinInput.classList.toggle("hidden",mode==="change");
-  doorPinChangeButton.classList.toggle("hidden",mode!=="unlock"||!record.pin);
-  if(mode==="setup"){doorPinTitle.textContent="PROTEGER PUERTA";doorPinHelp.textContent="Creá un PIN de 4 a 8 números. Lo necesitarás para abrirla y cerrarla.";}
-  else if(mode==="change"){doorPinTitle.textContent="CAMBIAR PIN";doorPinHelp.textContent="Ingresá el PIN actual y elegí uno nuevo de 4 a 8 números.";}
-  else{doorPinTitle.textContent="PUERTA PROTEGIDA";doorPinHelp.textContent="Ingresá el PIN para abrir o cerrar esta puerta.";}
-  window.setTimeout(()=> (mode==="change"?doorPinCurrent:doorPinInput).focus(),80);
+  doorPinChangeButton?.classList.add("hidden");
+  if(mode==="setup"){doorPinTitle.textContent="PROTEGER PUERTA";doorPinHelp.textContent="Creá una contraseña numérica de 4 a 8 números. Solo se configura una vez.";}
+  else{doorPinTitle.textContent="PUERTA PROTEGIDA";doorPinHelp.textContent="Ingresá el PIN para abrir esta puerta.";}
+  window.setTimeout(()=>doorPinInput.focus(),80);
 }
 function closeDoorPinDialog(){doorPinDialog?.classList.add("hidden");doorPinTarget=null;doorPinMode="setup";}
-doorPinForm?.addEventListener("submit",event=>{
+function openDoorLeaf(group){
+  const pivot=group?.userData.doorLeafPivot;if(!pivot)return;
+  pivot.rotation.y=Math.PI/2;
+  group.userData.doorIsOpen=true;
+  group.userData.doorAutoCloseAt=Date.now()+3000;
+  group.userData.doorPreviousLocalZ=null;
+}
+doorPinForm?.addEventListener("submit",async event=>{
   event.preventDefault();const record=doorPinTarget;if(!record)return;
-  if(doorPinMode==="setup"){
-    const pin=doorPinInput.value.trim();if(!/^\d{4,8}$/.test(pin)){doorPinHelp.textContent="El PIN debe tener entre 4 y 8 números.";return;}
-    record.pin=pin;persistBuilds();closeDoorPinDialog();showToast("PIN configurado. La puerta quedó protegida.");return;
-  }
-  if(doorPinMode==="change"){
-    if(doorPinCurrent.value.trim()!==String(record.pin||"")){doorPinHelp.textContent="El PIN actual no es correcto.";return;}
-    const next=doorPinNew.value.trim();if(!/^\d{4,8}$/.test(next)){doorPinHelp.textContent="El nuevo PIN debe tener entre 4 y 8 números.";return;}
-    record.pin=next;persistBuilds();closeDoorPinDialog();showToast("PIN de la puerta actualizado.");return;
-  }
-  if(!record.pin){openDoorPinDialog(record,"setup");return;}
-  if(doorPinInput.value.trim()!==String(record.pin)){doorPinHelp.textContent="PIN incorrecto. La puerta sigue cerrada.";return;}
-  const group=buildGroups.find(item=>item.userData.buildRecord===record),pivot=group?.userData.doorLeafPivot;if(!pivot){closeDoorPinDialog();return;}
-  record.open=!record.open;pivot.rotation.y=record.open?Math.PI/2:0;persistBuilds();closeDoorPinDialog();
-  showToast(record.open?"PIN correcto: puerta abierta":"PIN correcto: puerta cerrada");
+  const pin=doorPinInput.value.trim();
+  if(!/^\d{4,8}$/.test(pin)){doorPinHelp.textContent="El PIN debe tener entre 4 y 8 números.";return;}
+  const group=buildGroups.find(item=>item.userData.buildRecord===record);
+  if(!group?.userData.doorLeafPivot){closeDoorPinDialog();return;}
+  const isMultiplayer=!!activeMultiplayerWorldId;
+  const isOwner=!isMultiplayer||record.cloudOwnerId===multiplayerUserId;
+  try{
+    if(doorPinMode==="setup"){
+      if(isMultiplayer){
+        if(!record.cloudId)throw new Error("La puerta todavía se está guardando. Esperá un instante y volvé a tocarla.");
+        await Multiplayer.setDoorPin(record.cloudId,pin);
+      }else{
+        record.pin=pin;
+        persistBuilds();
+      }
+      closeDoorPinDialog();showToast("PIN configurado una sola vez. Puerta protegida.");return;
+    }
+    if(isOwner){
+      openDoorLeaf(group);closeDoorPinDialog();return;
+    }
+    let valid=false;
+    if(isMultiplayer){
+      if(!record.cloudId)throw new Error("No se pudo identificar la puerta.");
+      valid=await Multiplayer.verifyDoorPin(record.cloudId,pin);
+    }else valid=pin===String(record.pin||"");
+    if(!valid){doorPinHelp.textContent="PIN incorrecto. La puerta sigue cerrada.";return;}
+    openDoorLeaf(group);closeDoorPinDialog();showToast("PIN correcto. Puerta abierta.");
+  }catch(error){doorPinHelp.textContent=error.message||"No se pudo verificar el PIN.";}
 });
-doorPinChangeButton?.addEventListener("click",()=>{if(doorPinTarget)openDoorPinDialog(doorPinTarget,"change");});
 document.querySelector("#door-pin-cancel")?.addEventListener("click",closeDoorPinDialog);
 function toggleDoorAtPointer(event){
   if(!renderer||!camera||doorPinTarget)return;
@@ -1629,13 +1648,17 @@ function toggleDoorAtPointer(event){
   const hit=raycaster.intersectObjects(doors,true)[0];if(!hit)return;
   let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;
   const record=root.userData.buildRecord;if(!root.userData.doorLeafPivot||!record)return;
-  if(activeMultiplayerWorldId){
-    record.open=!record.open;
-    const pivot=root.userData.doorLeafPivot;
-    if(pivot)pivot.rotation.y=record.open?Math.PI/2:0;
-    persistBuilds();return;
+  const isOwner=!activeMultiplayerWorldId||record.cloudOwnerId===multiplayerUserId;
+  if(isOwner){
+    if(activeMultiplayerWorldId&&!record.cloudId){showToast("La puerta se está guardando. Probá de nuevo en un instante.");return;}
+    if(activeMultiplayerWorldId&&!record.pinConfigured){
+      // El servidor no entrega el PIN; el propietario puede establecerlo solo una vez.
+      openDoorPinDialog(record,"setup");return;
+    }
+    if(!activeMultiplayerWorldId&&!record.pin){openDoorPinDialog(record,"setup");return;}
+    openDoorLeaf(root);return;
   }
-  openDoorPinDialog(record,record.pin?"unlock":"setup");
+  openDoorPinDialog(record,"unlock");
 }
 
 function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked||player.userData.isSwimming)return;playerVerticalVelocity=8.4;playerGrounded=false;}
