@@ -58,7 +58,7 @@ COAST.splice(0, COAST.length,
 "expand prairie land and soften coast")
 patch("tools/gen-island.ts",
 "log('rasterised island');",
-"log('rasterised island');\\nconst mainlandAreaM2 = inside.reduce((sum, value) => sum + value, 0) * CELL * CELL;\\nconsole.log(`ILOX verified dry-land footprint: \${Math.round(mainlandAreaM2).toLocaleString()} m²`);\\nif (mainlandAreaM2 < 3_000_000) throw new Error(`Mainland below 3,000,000 m²: \${mainlandAreaM2}`);",
+"log('rasterised island');\nconst mainlandAreaM2 = inside.reduce((sum, value) => sum + value, 0) * CELL * CELL;\nconsole.log(`ILOX verified dry-land footprint: ${Math.round(mainlandAreaM2).toLocaleString()} m²`);\nif (mainlandAreaM2 < 3_000_000) throw new Error(`Mainland below 3,000,000 m²: ${mainlandAreaM2}`);",
 "verify at least three million square metres of land")
 patch("src/world/layout.ts",
 "/** river from the spring under the peak to its mouth at the north end of the spawn beach */",
