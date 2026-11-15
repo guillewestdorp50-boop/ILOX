@@ -1094,7 +1094,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
@@ -1113,7 +1113,7 @@ async function loadMultiplayerStructures(worldId){
   clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
   for(const row of rows){
     const record={...(row.payload||{}),kind:row.kind,cloudId:row.id,cloudOwnerId:row.owner_id};
-    if(record.kind==="door")record.pin=null;
+    if(record.kind==="door"){record.pin=null;record.open=false;}
     buildRecords.push(record);createBuildPiece(record);
     multiplayerCloudSnapshot.set(row.id,multiplayerFingerprint(record));
   }
@@ -1592,7 +1592,7 @@ function placeBuildAtPointer(event){
 }
 function openDoorPinDialog(record,mode="unlock"){
   if(!doorPinDialog||!record)return;
-  doorPinTarget=record;doorPinMode=mode;doorPinDialog.classList.remove("hidden");
+  doorPinTarget=record;doorPinMode=mode;doorPinInput.autocomplete=mode==="setup"?"new-password":"current-password";doorPinDialog.classList.remove("hidden");
   doorPinCurrent.value="";doorPinNew.value="";doorPinInput.value="";
   doorPinCurrent.classList.toggle("hidden",mode!=="change");doorPinNew.classList.toggle("hidden",mode!=="change");
   doorPinInput.classList.toggle("hidden",mode==="change");
