@@ -2,7 +2,7 @@ name: Publicar ILOX — mundo natural y mapas experimentales
 
 on:
   push:
-    branches: [main, experiment/ilox-pwa-world-hub]
+    branches: [main]
     paths:
       - 'ilox-pwa/**'
       - 'manifest.webmanifest'
@@ -13,10 +13,12 @@ on:
     workflows:
       - "Validar ILOX urbano-rural"
       - "Verificar ILOX The Forest con avatar en tercera persona"
+      - "Validar PWA ILOX World Hub"
     types: [completed]
     branches:
       - experiment/urban-rural-map
       - experiment/the-forest-third-person
+      - experiment/ilox-pwa-world-hub
   workflow_dispatch:
 
 permissions:
@@ -58,7 +60,7 @@ jobs:
       - name: Obtener PWA ILOX World Hub aislada
         uses: actions/checkout@v4
         with:
-          ref: experiment/ilox-pwa-world-hub
+          ref: ${{ github.event.workflow_run.head_branch == 'experiment/ilox-pwa-world-hub' && github.event.workflow_run.head_sha || 'experiment/ilox-pwa-world-hub' }}
           path: ilox-pwa-source
           persist-credentials: false
 
