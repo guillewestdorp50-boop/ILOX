@@ -51,9 +51,9 @@ player_dir.mkdir(parents=True, exist_ok=True)
 shutil.copy2(source / "ILOXAvatar.ts", player_dir / "ILOXAvatar.ts")
 shutil.copy2(source / "ThirdPersonController.ts", player_dir / "ThirdPersonController.ts")
 shutil.copy2(source / "main.ts", root / "src/main.ts")
-shutil.copy2(source / "index.html", root / "index.html")
-shutil.copy2(source / "ilox.css", root / "ilox.css")
-shutil.copy2(source / "manifest.webmanifest", root / "public/manifest.webmanifest")
+shutil.copy2(root / "ilox-forest-index.html", root / "index.html")
+shutil.copy2(root / "ilox-forest.css", root / "ilox.css")
+shutil.copy2(root / "manifest.webmanifest", root / "public/manifest.webmanifest")
 
 for unused in ("efigie.bin", "crystal_a.bin", "crystal_b.bin"):
     asset = root / "public/models" / unused
