@@ -1407,7 +1407,18 @@ async function syncMultiplayerStructures(){
   let changed=false,failed=false;
   const currentIds=new Set();
   try{
-    for(const record of buildRecords){
+    // La pileta se sincroniza antes que el agua para que el agua guarde
+    // una referencia real a la estructura que la contiene.
+    const syncRecords=[...buildRecords].sort((a,b)=>(a.kind==="pool"?-1:0)-(b.kind==="pool"?-1:0));
+    for(const record of syncRecords){
+      if(record.kind==="water"){
+        const parentPool=buildRecords.find(item=>item.kind==="pool"&&
+          Math.abs(item.x-(record.poolX??record.x))<.05&&
+          Math.abs(item.z-(record.poolZ??record.z))<.05);
+        if(!parentPool)throw new Error("El agua no tiene una pileta asociada.");
+        if(!parentPool.cloudId)throw new Error("Primero se debe guardar la pileta para vincular su agua.");
+        record.poolStructureId=parentPool.cloudId;
+      }
       const fingerprint=multiplayerFingerprint(record);
       if(record.cloudId)currentIds.add(record.cloudId);
       if(record.cloudId&&multiplayerCloudSnapshot.get(record.cloudId)===fingerprint)continue;
