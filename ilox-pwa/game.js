@@ -25,6 +25,11 @@ let yaw = 0, playerHeading = 0, pitch = 0.48;
 
 
 const polyHavenLoader = new GLTFLoader();
+const avatarModelLoader = new GLTFLoader();
+// Modelo humanoide GLB con malla skinned, texturas PBR y clips Idle/Walk/Run.
+// Recurso de ejemplo oficial de Three.js (licencia MIT).
+const RIGGED_AVATAR_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb";
+let avatarLoadToken = 0;
 const proceduralTreeGroups = [];
 let importedNatureReady = false;
 let lookPointer = null;
@@ -219,6 +224,71 @@ function makeRock(x, z, scale, random) {
   scene.add(mesh);
 }
 
+
+async function loadRiggedAvatar(kind) {
+  if (!String(kind).startsWith("soldier:")) return;
+  const token = ++avatarLoadToken;
+  const previous = player;
+  const previousPosition = previous ? previous.position.clone() : new THREE.Vector3(0, terrainHeight(0,0), 0);
+  const previousHeading = previous ? previous.rotation.y : yaw;
+  try {
+    const gltf = await avatarModelLoader.loadAsync(RIGGED_AVATAR_URL);
+    if (token !== avatarLoadToken || !started) return;
+    const model = gltf.scene;
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    bounds.getSize(size);
+    const scale = 2.05 / Math.max(size.y, 0.001);
+    model.scale.setScalar(scale);
+    model.position.y = -bounds.min.y * scale;
+    model.traverse(object => {
+      if (!object.isMesh) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      if (object.material) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          if ("roughness" in material && material.roughness < 0.45) material.roughness = 0.62;
+          material.needsUpdate = true;
+        }
+      }
+    });
+    const imported = new THREE.Group();
+    imported.add(model);
+    imported.position.copy(previousPosition);
+    imported.rotation.y = previousHeading;
+    imported.userData.avatarKind = "soldier";
+    imported.userData.isRiggedAvatar = true;
+    imported.userData.mixer = new THREE.AnimationMixer(model);
+    imported.userData.actions = {};
+    for (const clip of gltf.animations) {
+      const name = clip.name.toLowerCase();
+      if (name.includes("idle")) imported.userData.actions.idle = imported.userData.mixer.clipAction(clip);
+      else if (name.includes("walk")) imported.userData.actions.walk = imported.userData.mixer.clipAction(clip);
+      else if (name.includes("run")) imported.userData.actions.run = imported.userData.mixer.clipAction(clip);
+    }
+    const idle = imported.userData.actions.idle || gltf.animations[0] && imported.userData.mixer.clipAction(gltf.animations[0]);
+    if (idle) { idle.play(); imported.userData.currentAction = idle; }
+    scene.add(imported);
+    if (previous) scene.remove(previous);
+    player = imported;
+    showToast("Personaje 3D con esqueleto y animaciones cargado");
+  } catch (error) {
+    console.warn("ILOX: no se pudo cargar el GLB humanoide; se mantiene el personaje de respaldo.", error);
+    if (token === avatarLoadToken) showToast("No se pudo descargar el modelo 3D; seguimos con el personaje de respaldo");
+  }
+}
+
+function setRiggedAvatarMotion(character, moving) {
+  const actions = character?.userData?.actions;
+  if (!actions) return;
+  const next = moving ? (actions.run || actions.walk || actions.idle) : (actions.idle || actions.walk || actions.run);
+  if (!next || next === character.userData.currentAction) return;
+  const previous = character.userData.currentAction;
+  next.reset().fadeIn(0.18).play();
+  if (previous) previous.fadeOut(0.18);
+  character.userData.currentAction = next;
+}
 
 function makeFantasyWorld() {
   const mat = (color, roughness=0.88, metalness=0) => new THREE.MeshStandardMaterial({color,roughness,metalness});
@@ -643,7 +713,7 @@ function addEvents() {
     avatarSelect.classList.remove("hidden");
   });
   const avatarCatalog = [
-    ["explorer","🧭","Explorador"],["girl","🧑‍🦰","Exploradora"],["builder","👷","Constructor"],
+    ["soldier","🧍","Humano 3D"],["girl","🧑‍🦰","Exploradora"],["builder","👷","Constructor"],
     ["woman","👩‍🔧","Constructora"],["astronaut","🧑‍🚀","Astronauta"],["robot","🤖","Robot"],
     ["elf","🧝","Elfo"],["knight","🛡️","Caballero"],["ninja","🥷","Ninja"],
     ["mage","🧙","Mago"],["orc","👹","Orco"],["fairy","🧚","Hada"]
@@ -661,7 +731,7 @@ function addEvents() {
       firstAvatar=false;
     }
   });
-  selectedAvatar = "explorer:0";
+  selectedAvatar = "soldier:0";
   document.querySelectorAll(".avatar-option").forEach(option => {
     option.addEventListener("click", () => {
       selectedAvatar = option.dataset.avatar;
@@ -673,6 +743,7 @@ function addEvents() {
     if (player) scene.remove(player);
     player = makePlayer(selectedAvatar);
     started = true;
+    loadRiggedAvatar(selectedAvatar);
     avatarSelect.classList.add("hidden");
     document.querySelector("#build-toggle").classList.remove("hidden");
     hint.textContent = "Explorá y construí tu propio mundo";
@@ -854,6 +925,10 @@ function animate() {
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     player.position.y = terrainHeight(player.position.x, player.position.z);
     const moving = inputLength > 0.08;
+    if (player.userData.isRiggedAvatar) {
+      player.userData.mixer?.update(delta);
+      setRiggedAvatarMotion(player, moving);
+    }
     // La espalda y la mochila quedan siempre orientadas hacia la cámara.
     // El movimiento es independiente: caminar hacia atrás o de costado no da vuelta el avatar.
     const targetHeading = yaw;
