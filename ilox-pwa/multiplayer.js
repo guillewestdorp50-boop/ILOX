@@ -249,7 +249,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
             });
             if (broadcastStatus !== "ok") throw new Error("No se pudo transmitir la posición en tiempo real.");
             const now = Date.now();
-            if (now - lastStatePersistAt >= 2000) {
+            if (now - lastStatePersistAt >= 500) {
               lastStatePersistAt = now;
               await saveWorldPlayerState(worldId, state);
             }
