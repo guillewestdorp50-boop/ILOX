@@ -772,7 +772,7 @@ function animate() {
       - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
     forward += keyboardForward;
     const turn = moveX + keyboardTurn;
-    playerHeading -= turn * 2.25 * delta;
+    playerHeading += turn * 2.25 * delta;
     const length = Math.abs(forward);
     const speed = 7.2;
     // El giro cambia el rumbo sin cancelar el avance mantenido.
