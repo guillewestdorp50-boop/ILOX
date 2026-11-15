@@ -391,6 +391,7 @@ async function loadRemoteAvatarModel(character, kind) {
     });
     while (character.children.length) character.remove(character.children[0]);
     character.add(model);
+    model.userData.remoteBaseY=model.position.y;
     character.userData.riggedMixer = new THREE.AnimationMixer(model);
     character.userData.actions = {};
     for (const clip of gltf.animations) {
@@ -1272,7 +1273,7 @@ function updateRemotePlayer(data){
     const previousTarget=avatar.userData.netTarget;
     const displacement=previousTarget ? previousTarget.distanceTo(target) : 0;
     avatar.userData.netTarget.copy(target);
-    if(displacement>0.025) avatar.userData.remoteMoving=true;
+    avatar.userData.remoteMoving=!!data.moving || displacement>0.025;
   }
   avatar.userData.remoteLastSeen=Date.now();
   const remoteType = avatarKind.split(":")[0];
@@ -1990,7 +1991,17 @@ function animate() {
     const moving=!!avatar.userData.remoteMoving,swimming=!!avatar.userData.remoteSwimming;
     if(avatar.userData.riggedMixer){
       avatar.userData.riggedMixer.update(delta);
-      setRiggedAvatarMotion(avatar,moving);
+      const hasWalkClip=!!(avatar.userData.actions?.walk||avatar.userData.actions?.run);
+      if(hasWalkClip) setRiggedAvatarMotion(avatar,moving);
+      else {
+        const importedModel=avatar.children[0];
+        if(importedModel){
+          const phase=(avatar.userData.remoteWalkPhase||0)+(moving?delta*10.5:0);
+          avatar.userData.remoteWalkPhase=phase;
+          importedModel.position.y=(importedModel.userData.remoteBaseY||0)+(moving?Math.abs(Math.sin(phase*2))*.045:0);
+          importedModel.rotation.z=moving?Math.sin(phase)*.025:0;
+        }
+      }
       continue;
     }
     avatar.userData.remoteWalkPhase=(avatar.userData.remoteWalkPhase||0)+(moving?delta*10.5:0);
