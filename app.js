@@ -24,7 +24,7 @@ let importedNatureReady = false;
 let lookPointer = null;
 let lastLookX = 0, lastLookY = 0;
 const keys = new Set();
-const urbanRuralMode = new URLSearchParams(location.search).has("urban");
+const urbanRuralMode = true; // This experimental branch boots directly into the new map.
 const worldSize = urbanRuralMode ? 1732.05 : 220;
 
 function terrainHeight(x, z) {
@@ -674,7 +674,7 @@ function animate() {
 
 try {
   init();
-  loadFreeNatureAssets();
+  if (!urbanRuralMode) loadFreeNatureAssets();
 } catch (error) {
   console.error(error);
   loading.innerHTML = '<div class="loading-mark">ILOX</div><p>No se pudo iniciar el mundo 3D. Revisá la conexión y volvé a intentar.</p>';
