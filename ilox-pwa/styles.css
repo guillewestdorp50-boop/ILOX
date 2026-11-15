@@ -110,12 +110,13 @@ h1 em{font-style:normal;color:#e8d29a}
 @media(max-width:600px){.menu-toggle{left:10px;top:calc(68px + env(safe-area-inset-top));padding:10px 13px}.menu-panel{left:10px;top:calc(112px + env(safe-area-inset-top));width:min(270px,calc(100vw - 20px))}.build-panel{bottom:calc(10px + env(safe-area-inset-bottom));max-height:52vh}}
 
 /* Cámara discreta en esquina superior y salto táctil */
-.camera-controls{position:absolute;z-index:12;top:calc(12px + env(safe-area-inset-top));right:12px;left:auto;transform:none;display:flex;align-items:flex-start;gap:6px;padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none}
-.camera-menu-toggle{width:42px;height:42px;border-radius:12px;border:1px solid #ffffff55;background:#10251feF;color:white;font-size:20px;box-shadow:0 4px 16px #0007}
-.camera-mode-panel{display:flex;gap:4px;padding:5px;background:#10251ff2;border:1px solid #ffffff45;border-radius:11px;box-shadow:0 5px 18px #0007}
+.camera-controls{position:absolute;z-index:12;top:calc(68px + env(safe-area-inset-top));right:12px;left:auto;transform:none;display:flex;align-items:flex-start;gap:6px;padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none}
+.camera-menu-toggle{width:38px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid #ffffff55;background:#10251feF;color:white;box-shadow:0 4px 16px #0007}
+.camera-menu-toggle svg{width:29px;height:23px;display:block}
+.camera-mode-panel{position:absolute;top:42px;right:0;display:flex;gap:4px;padding:5px;background:#10251ff2;border:1px solid #ffffff45;border-radius:11px;box-shadow:0 5px 18px #0007}
 .camera-mode-panel.hidden{display:none}
 .camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:34px;height:32px;padding:0;font-size:16px;letter-spacing:0}
 .camera-mode-panel .camera-mode.selected{background:#e6d19b;color:#1b2d25}
 .jump-button{pointer-events:auto;position:absolute;right:25px;bottom:calc(38px + env(safe-area-inset-bottom));z-index:6;width:68px;height:68px;border-radius:50%;border:2px solid #ffffff85;background:#173d31eF;color:#fff;font-size:25px;font-weight:950;box-shadow:0 5px 18px #0008;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
 .jump-button small{font-size:8px;letter-spacing:.12em}
-@media(max-width:600px){.camera-controls{top:calc(8px + env(safe-area-inset-top));right:9px}.camera-menu-toggle{width:38px;height:38px}.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:31px;height:30px}.jump-button{right:18px;bottom:calc(34px + env(safe-area-inset-bottom));width:62px;height:62px}}
+@media(max-width:600px){.camera-controls{top:calc(66px + env(safe-area-inset-top));right:10px}.camera-menu-toggle{width:36px;height:34px}.camera-menu-toggle svg{width:27px;height:21px}.camera-mode-panel{top:40px}.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:31px;height:30px}.jump-button{right:18px;bottom:calc(34px + env(safe-area-inset-bottom));width:62px;height:62px}}
