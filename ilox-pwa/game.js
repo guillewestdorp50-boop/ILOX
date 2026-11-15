@@ -32,6 +32,9 @@ let cameraMode = "third", cameraLocked = false;
 
 const polyHavenLoader = new GLTFLoader();
 const avatarModelLoader = new GLTFLoader();
+const animalModelLoader = new GLTFLoader();
+const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb"};
+const animalAssetPromises = new Map();
 // Modelo humanoide GLB con malla skinned, texturas PBR y clips Idle/Walk/Run.
 // Recurso de ejemplo oficial de Three.js (licencia MIT).
 const RIGGED_AVATAR_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb";
@@ -896,19 +899,25 @@ function createBuildPiece(record) {
   if(kind==="sofa"){box(1.5,.42,.72,mat(0x547a74),0,.45,0);box(1.5,.72,.16,mat(0x547a74),0,.83,-.28);for(const sx of [-.68,.68])box(.16,.62,.72,mat(0x42635d),sx,.67,0);}
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.68,.68])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
-  if(["sheep","cow","horse","chicken"].includes(kind)){
-    const coat=mat(kind==="sheep"?0xe6e0d2:kind==="cow"?0xe8e5dc:kind==="horse"?0x805239:0xc98b35),dark=mat(0x302820),skin=mat(0xe5b8a0);
-    ball(0,kind==="chicken"?.62:.76,0,kind==="chicken"?.38:kind==="horse"?.58:.58,kind==="chicken"?.42:.42,kind==="horse"?.82:.48,coat);
-    if(kind==="sheep")for(let i=0;i<14;i++){const ang=i*2.399;ball(Math.cos(ang)*.37,.82+(i%3)*.12,Math.sin(ang)*.32,.22,.23,.22,coat);}
-    if(kind==="cow")for(const [x0,y0,z0] of [[-.25,.9,-.2],[.3,.82,.12],[-.12,.65,.32]])ball(x0,y0,z0,.17,.2,.08,dark);
-    const hx=kind==="horse"?.48:.42,hy=kind==="chicken"?.9:1.05,hz=kind==="horse"?-.56:-.38;
-    ball(hx,hy,hz,.22,.24,.24,coat);ball(hx-.09,hy+.04,hz-.2,.045,.04,.04,dark);ball(hx+.09,hy+.04,hz-.2,.045,.04,.04,dark);
-    if(kind==="cow"||kind==="sheep")ball(hx,hy-.12,hz-.2,.16,.11,.18,skin);
-    if(kind==="horse"){ball(.38,1.0,-.18,.12,.42,.13,dark);ball(.62,1.31,-.58,.16,.12,.12,dark);}
-    if(kind==="chicken"){ball(hx,1.18,hz,.12,.12,.1,mat(0xc63e32));ball(hx,hy-.1,hz-.2,.13,.08,.12,mat(0xd89a22));}
-    for(const sx of [-.34,.34])for(const sz of [-.24,.24])cyl(sx,.24,sz,.07,.08,.48,coat);
-  }
-  group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;scene.add(group);buildGroups.push(group);return group;
+  if(["sheep","cow","horse","chicken"].includes(kind)) loadAnimalModel(group,kind);
+
+  group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);return group;
+}
+async function loadAnimalModel(group,kind){
+  const url=ANIMAL_MODELS[kind];if(!url)return;
+  try{
+    if(!animalAssetPromises.has(url))animalAssetPromises.set(url,animalModelLoader.loadAsync(url));
+    const gltf=await animalAssetPromises.get(url);if(!group.parent)return;
+    const model=gltf.scene.clone(true);
+    const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
+    const targetHeight={sheep:.78,cow:1.42,horse:1.62,chicken:.58}[kind]||1;
+    const scale=targetHeight/Math.max(size.y,.001);model.scale.setScalar(scale);model.position.y=-bounds.min.y*scale;
+    model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});group.add(model);
+    const mixer=new THREE.AnimationMixer(model),actions={};
+    for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(name.includes("idle"))actions.idle=mixer.clipAction(clip);else if(name.includes("walk"))actions.walk=mixer.clipAction(clip);else if(name.includes("run"))actions.run=mixer.clipAction(clip);}
+    const idle=actions.idle||(gltf.animations[0]&&mixer.clipAction(gltf.animations[0]));if(idle){idle.play();actions.current=idle;}
+    group.userData.animalMixer=mixer;group.userData.animalActions=actions;group.userData.buildHeight=targetHeight;
+  }catch(error){console.warn("ILOX animal GLB failed",kind,error);showToast("No se pudo descargar este animal 3D.");}
 }
 function persistBuilds() {
   try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); }
@@ -931,7 +940,7 @@ function placeBuildAtPointer(event){
   if(onPiece&&buildTool!=="water"&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=Math.round((point.x+normal.x*.76)/1.5)*1.5;z=Math.round((point.z+normal.z*.76)/1.5)*1.5;}}
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
   if(buildTool==="water"&&(Math.abs(x)>42||Math.abs(z)>42)){showToast("El agua solo se puede colocar en los sectores habilitados del valle central.");return;}
-  const ground=terrainHeight(x,z);let baseY=Math.ceil((ground-1e-4)/1.5)*1.5;
+  const ground=terrainHeight(x,z);let baseY=ground;
   if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;baseY=Math.round(top/1.5)*1.5;}
   const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en sector habilitado":"¡Pieza colocada y alineada!");
@@ -1023,7 +1032,7 @@ function animate() {
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
-  for(const group of buildGroups){if(group.userData.water){const water=group.children.find(child=>child.userData.water);if(water){const pos=water.geometry.attributes.position,base=water.userData.basePositions,t=clock.elapsedTime;for(let i=0;i<pos.count;i++){const x=base[i*3],z=base[i*3+1];pos.setZ(i,Math.sin(x*4+t*1.8)*.012+Math.cos(z*4+t*1.4)*.012);}pos.needsUpdate=true;water.geometry.computeVertexNormals();}}}
+  for(const group of buildGroups){if(group.userData.animalMixer)group.userData.animalMixer.update(delta);if(group.userData.water){const water=group.children.find(child=>child.userData.water);if(water){const pos=water.geometry.attributes.position,base=water.userData.basePositions,t=clock.elapsedTime;for(let i=0;i<pos.count;i++){const x=base[i*3],z=base[i*3+1];pos.setZ(i,Math.sin(x*4+t*1.8)*.012+Math.cos(z*4+t*1.4)*.012);}pos.needsUpdate=true;water.geometry.computeVertexNormals();}}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
