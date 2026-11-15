@@ -22,7 +22,7 @@ const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0.48;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
-let moveX = 0, moveZ = 0;
+
 
 const polyHavenLoader = new GLTFLoader();
 const proceduralTreeGroups = [];
@@ -792,7 +792,7 @@ function animate() {
     const inputLength = Math.hypot(forward, strafe);
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const speed = 7.2;
-    const cameraYaw = yaw + playerHeading;
+    const cameraYaw = yaw;
     const dx = (Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
     const dz = (-Math.cos(cameraYaw) * forward + Math.sin(cameraYaw) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
@@ -840,14 +840,14 @@ function animate() {
   const distance = buildMode ? cameraDistance : 5.4;
   const orbitDistance = Math.cos(pitch) * distance;
   // La cámara conserva su ángulo relativo y acompaña el rumbo del personaje.
-  const cameraYaw = yaw + (player ? playerHeading : 0);
+  const cameraYaw = yaw;
   const targetX = focus.position.x + Math.sin(cameraYaw) * orbitDistance;
   const targetZ = focus.position.z + Math.cos(cameraYaw) * orbitDistance;
   const targetY = focus.position.y + 1.8 + Math.sin(pitch) * distance;
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.lerp(eye,1-Math.pow(0.001,delta));
-    const cameraYaw = yaw + playerHeading;
+    const cameraYaw = yaw;
     camera.lookAt(eye.x-Math.sin(cameraYaw)*10,eye.y+pitch*8,eye.z-Math.cos(cameraYaw)*10);
   } else {
     camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
