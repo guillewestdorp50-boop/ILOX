@@ -387,18 +387,19 @@ function makePlayer(kind = "boy") {
   }
 
   // Brazos naturales y mangas de la camperita.
+  const arms = [], legs = [];
   for (const side of [-1, 1]) {
     const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 0.48, 4, 10), jacket);
     arm.position.set(side * 0.43, 1.38, 0);
     arm.rotation.z = side * -0.12;
-    group.add(arm);
+    group.add(arm); arms.push(arm);
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), skin);
     hand.position.set(side * 0.47, 1.05, -0.005);
     group.add(hand);
 
     const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.53, 4, 10), pants);
     leg.position.set(side * 0.18, 0.59, 0);
-    group.add(leg);
+    group.add(leg); legs.push(leg);
     const boot = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.13, 3, 8), bootMat);
     boot.position.set(side * 0.18, 0.13, -0.055);
     boot.scale.set(1.05, 0.72, 1.45);
@@ -449,6 +450,8 @@ function makePlayer(kind = "boy") {
   group.scale.setScalar(scale);
   group.position.set(0, terrainHeight(0, 0), 0);
   group.userData.avatarKind = kind;
+  group.userData.legs = legs;
+  group.userData.arms = arms;
   scene.add(group);
   return group;
 }
@@ -660,7 +663,7 @@ function updateJoystick(e) {
   if (length > max) { dx = dx / length * max; dy = dy / length * max; }
   stick.style.transform = `translate(${dx}px,${dy}px)`;
   moveX = dx / max;
-  moveZ = dy / max;
+  moveZ = -dy / max;
 }
 
 function animate() {
@@ -678,10 +681,28 @@ function animate() {
     const speed = 7.2;
     const dx = (Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * speed * delta;
     const dz = (-Math.cos(yaw) * forward + Math.sin(yaw) * strafe) * speed * delta;
-    player.position.x = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
-    player.position.z = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
+    const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
+    const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
+    const collides = (x,z) => {
+      const feet = terrainHeight(x,z), body = new THREE.Box3(
+        new THREE.Vector3(x-0.38, feet+0.12, z-0.38),
+        new THREE.Vector3(x+0.38, feet+2.55, z+0.38));
+      return buildGroups.some(g => {
+        const k=g.userData.buildRecord?.kind;
+        if(!["wall","door","window","block"].includes(k)) return false;
+        const bounds=new THREE.Box3().setFromObject(g);
+        return body.intersectsBox(bounds);
+      });
+    };
+    if (!collides(nextX, player.position.z)) player.position.x = nextX;
+    if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     player.position.y = terrainHeight(player.position.x, player.position.z);
-    if (length > 0.08) player.rotation.y = Math.atan2(dx, dz);
+    const moving = length > 0.08;
+    player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
+    const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
+    player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
+    player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.62 : swing*0.62; });
+    if (moving) player.rotation.y = Math.atan2(dx, -dz);
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const distance = 8.5;
