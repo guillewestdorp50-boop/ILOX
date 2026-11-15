@@ -59,14 +59,14 @@ jobs:
           cp manifest.webmanifest island-source/public/manifest.webmanifest
           cp LICENSE-Island.txt island-source/public/LICENSE-Island.txt
 
-      - name: Regenerar terreno, río y cascada para el mapa de 2 millones de m²
+      - name: Regenerar terreno, río y cascada para el continente de 3 millones de m²
         working-directory: island-source
         run: pnpm gen:island
 
       - name: Verificar límites del mapa y anclaje de la cascada
         working-directory: island-source
         run: |
-          node -e "const m=require('./public/world/meta.json'); const target=Math.sqrt(2000000); if(Math.abs(m.worldSize-target)>0.01) throw new Error('Unexpected world size: '+m.worldSize); if(!(m.falls.top < m.falls.lipGround && m.falls.top > m.falls.bottom)) throw new Error('Waterfall lip is not anchored to the cliff: '+JSON.stringify(m.falls)); console.log('World:',m.worldSize,'m square; waterfall:',(m.falls.lipGround-m.falls.top).toFixed(2),'m below lip,',(m.falls.top-m.falls.bottom).toFixed(2),'m drop');"
+          node -e "const m=require('./public/world/meta.json'); const target=2048; if(Math.abs(m.worldSize-target)>0.01) throw new Error('Unexpected world side length: '+m.worldSize); if(!(m.falls.top < m.falls.lipGround && m.falls.top > m.falls.bottom)) throw new Error('Waterfall lip is not anchored to the cliff: '+JSON.stringify(m.falls)); console.log('World side:',m.worldSize,'m; target land area: 3,000,000 m²; waterfall:',(m.falls.lipGround-m.falls.top).toFixed(2),'m below lip,',(m.falls.top-m.falls.bottom).toFixed(2),'m drop');"
 
       - name: Compilar y verificar
         working-directory: island-source
