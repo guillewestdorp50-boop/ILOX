@@ -35,7 +35,7 @@ async function boot(): Promise<void> {
         }
       } catch { /* El navegador puede reservar fullscreen para la PWA instalada. */ }
       try {
-        await screen.orientation?.lock('landscape');
+        const orientation = screen.orientation as ScreenOrientation & { lock?: (value: string) => Promise<void> };\n        await orientation.lock?.('landscape');
       } catch { /* El aviso de giro cubre navegadores sin bloqueo de orientación. */ }
     }
     engine.startAudio();
