@@ -766,7 +766,7 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
-    let forward = moveZ;
+    let forward = -moveZ;
     let strafe = 0;
     if (keys.has("w") || keys.has("arrowup")) forward -= 1;
     if (keys.has("s") || keys.has("arrowdown")) forward += 1;
@@ -787,6 +787,14 @@ function animate() {
         const k=g.userData.buildRecord?.kind;
         if(!["wall","door","window","block"].includes(k)) return false;
         const bounds=new THREE.Box3().setFromObject(g);
+        // Los bloques elevados no deben aprisionar al jugador al construir o volver a explorar.
+        if (k === "block") {
+          const lowerBody = new THREE.Box3(
+            new THREE.Vector3(x-0.38, feet+0.12, z-0.38),
+            new THREE.Vector3(x+0.38, feet+1.42, z+0.38)
+          );
+          return lowerBody.intersectsBox(bounds);
+        }
         return body.intersectsBox(bounds);
       });
     };
