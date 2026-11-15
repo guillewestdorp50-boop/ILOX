@@ -983,11 +983,12 @@ function placeBuildAtPointer(event){
   if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
-  let x=Math.round(point.x/BLOCK_SIZE)*BLOCK_SIZE,z=Math.round(point.z/BLOCK_SIZE)*BLOCK_SIZE;
+  let x=point.x,z=point.z;
+  if(buildTool==="platea"||buildTool==="water"||["pool-small","pool-large","pool-municipal"].includes(buildTool)){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
   const isPoolTool=["pool-small","pool-large","pool-municipal"].includes(buildTool),poolWidth=buildTool==="pool-large"?12:buildTool==="pool-municipal"?24:6,poolDepth=buildTool==="pool-municipal"?12:poolWidth;
   if(buildTool==="platea"){x=Math.round(x/6)*6;z=Math.round(z/6)*6;}
   if(isPoolTool){x=Math.round(x/(poolWidth/2))*(poolWidth/2);z=Math.round(z/(poolDepth/2))*(poolDepth/2);}
-  if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=Math.round((point.x+normal.x*.76)/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round((point.z+normal.z*.76)/BLOCK_SIZE)*BLOCK_SIZE;}}
+  if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}}
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
   let containingPool=null;
   if(buildTool==="water"){containingPool=buildRecords.find(item=>item.kind==="pool"&&Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&Math.abs(z-item.z)<(item.poolDepth||6)/2-.35);if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
