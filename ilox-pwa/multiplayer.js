@@ -24,6 +24,23 @@ export async function ensureIdentity(displayName, avatarKind) {
   return user;
 }
 
+export async function listMyWorlds() {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError || !user) return [];
+  const { data: memberships, error: memberError } = await client.from("multiplayer_world_members")
+    .select("world_id,role").eq("user_id", user.id);
+  if (memberError) throw memberError;
+  const ids = (memberships || []).map(item => item.world_id);
+  if (!ids.length) return [];
+  const { data: worlds, error } = await client.from("multiplayer_worlds")
+    .select("id,name,owner_id,created_at").in("id", ids).order("created_at", { ascending: false });
+  if (error) throw error;
+  return (worlds || []).map(world => ({
+    ...world,
+    role: memberships.find(item => item.world_id === world.id)?.role || "member"
+  }));
+}
+
 export async function createWorld(name) {
   const { data, error } = await client.rpc("multiplayer_create_world", { p_name: name });
   if (error) throw error;
