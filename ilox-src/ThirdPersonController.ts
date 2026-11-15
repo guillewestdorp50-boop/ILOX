@@ -8,7 +8,9 @@ const RUN_SPEED = 7.2;
 
 /** Movimiento real del avatar con cámara de seguimiento en tercera persona. */
 export class ThirdPersonController {
-  private readonly position = new THREE.Vector3();
+  readonly position = new THREE.Vector3();
+  landingSpeed = 0;
+  get isGrounded(): boolean { return true; }
   private readonly velocity = new THREE.Vector3();
   private readonly keys = new Set<string>();
   private enabled = false;
