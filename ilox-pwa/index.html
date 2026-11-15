@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-complete-door-first-v64">
+  <link rel="stylesheet" href="./styles.css?v=ilox-door-grid-rotation-v65">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -41,6 +41,7 @@
       <button id="view-toggle" class="view-toggle hidden">⬆ VISTA AÉREA</button>
       <div class="build-help" id="build-help">Elegí una pieza y tocá el terreno para colocarla.</div>
     </section>
+    <button id="door-rotate-control" class="door-rotate-control hidden" type="button" aria-label="Girar la puerta 90 grados">↻ GIRAR 90°</button>
     <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-expanded="false">☰ MENÚ</button>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
@@ -73,6 +74,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-complete-door-first-v64"></script>
+  <script type="module" src="./game.js?v=ilox-door-grid-rotation-v65"></script>
 </body>
 </html>
