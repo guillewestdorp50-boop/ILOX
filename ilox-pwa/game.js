@@ -1,6 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
+import * as Multiplayer from "./multiplayer.js";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -31,6 +32,10 @@ const doorPinTitle = document.querySelector("#door-pin-title");
 const doorPinHelp = document.querySelector("#door-pin-help");
 const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
+let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null;
+let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
+let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0;
+const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 let moveStickPointer = null;
 let playerVerticalVelocity = 0, playerGrounded = true;
 let moveStick = { x: 0, y: 0 };
@@ -814,8 +819,8 @@ function addEvents() {
     avatarSelect.classList.add("hidden");
     menuToggle.classList.remove("hidden");
     hint.textContent = "";
-    loadBuilds();
-    showToast("¡Tu mundo, tus reglas!");
+    if(!activeMultiplayerWorldId)loadBuilds();
+    showToast(activeMultiplayerWorldId?"¡Estás en el mundo compartido!":"¡Tu mundo, tus reglas!");
   });
   const applyCameraMode = mode => {
     if (cameraLocked && mode === "first") mode = "second";
@@ -880,12 +885,52 @@ function addEvents() {
   renderBuildTools();
   categorySelect.addEventListener("change",()=>renderBuildTools(categorySelect.value));
   menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));});
+  document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
+  document.querySelector("#mp-close")?.addEventListener("click",()=>document.querySelector("#multiplayer-dialog").classList.add("hidden"));
+  document.querySelector("#mp-create-world")?.addEventListener("click",async()=>{
+    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),worldName=document.querySelector("#mp-world-name").value.trim();
+    if(!name||!worldName){status.textContent="Completá tu nombre y el nombre de la partida.";return;}
+    const button=document.querySelector("#mp-create-world");button.disabled=true;status.textContent="Conectando con ILOX…";
+    try{
+      localStorage.setItem("ilox-player-name",name);
+      const user=await Multiplayer.ensureIdentity(name,selectedAvatar);multiplayerUserId=user.id;
+      const created=await Multiplayer.createWorld(worldName);
+      await enterMultiplayerWorld(created.world_id);
+      document.querySelector("#mp-code-value").textContent=created.invite_code;
+      document.querySelector("#mp-created-code").classList.remove("hidden");
+      status.textContent="¡Partida creada! Compartí este código con tu compañero. El mundo ya queda guardado en línea.";
+    }catch(error){showMultiplayerError(error);}
+    finally{button.disabled=false;}
+  });
+  document.querySelector("#mp-join-world")?.addEventListener("click",async()=>{
+    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.trim().toUpperCase();
+    if(!name||code.length!==8){status.textContent="Ingresá tu nombre y el código de 8 caracteres.";return;}
+    const button=document.querySelector("#mp-join-world");button.disabled=true;status.textContent="Buscando la partida…";
+    try{
+      localStorage.setItem("ilox-player-name",name);
+      const user=await Multiplayer.ensureIdentity(name,selectedAvatar);multiplayerUserId=user.id;
+      const worldId=await Multiplayer.joinWorld(code);
+      await enterMultiplayerWorld(worldId);
+      document.querySelector("#mp-created-code").classList.add("hidden");
+      status.textContent="¡Te uniste al mundo! Las construcciones se guardan automáticamente.";
+    }catch(error){showMultiplayerError(error);}
+    finally{button.disabled=false;}
+  });
+  document.querySelector("#mp-copy-code")?.addEventListener("click",async()=>{
+    const code=document.querySelector("#mp-code-value").textContent;
+    try{await navigator.clipboard.writeText(code);showToast("Código copiado.");}
+    catch{showToast("No se pudo copiar. Compartí el código: "+code);}
+  });
+  document.querySelector("#mp-leave-world")?.addEventListener("click",async()=>{
+    await leaveMultiplayerWorld();document.querySelector("#multiplayer-dialog").classList.add("hidden");
+  });
   document.querySelector("#change-avatar").addEventListener("click",()=>{
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.classList.add("hidden");avatarSelect.classList.remove("hidden");
     enterWorldButton.innerHTML="APLICAR PERSONAJE <span>→</span>";
     document.querySelectorAll(".avatar-option").forEach(option=>option.classList.toggle("selected",option.dataset.avatar===selectedAvatar));
   });
   document.querySelector("#erase-all").addEventListener("click",()=>{
+    if(activeMultiplayerWorldId){showToast("En el multijugador no se puede borrar todo el mundo de una vez.");return;}
     if(!buildRecords.length){showToast("Todavía no hay construcciones para eliminar.");return;}
     if(!confirm("¿Eliminar definitivamente todo lo construido en este mundo?"))return;
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
@@ -914,9 +959,10 @@ function addEvents() {
   });
   quickSaveButton?.addEventListener("click",()=>{
     if(persistBuilds()){
+      if(activeMultiplayerWorldId)syncMultiplayerStructures();
       quickSaveButton.classList.add("saved");
       quickSaveButton.textContent="✓";
-      showToast("Guardado rápido: tu construcción quedó guardada en este dispositivo.");
+      showToast(activeMultiplayerWorldId?"Guardado rápido: mundo sincronizado en línea.":"Guardado rápido: tu construcción quedó guardada en este dispositivo.");
       window.setTimeout(()=>{quickSaveButton.classList.remove("saved");quickSaveButton.textContent="💾";},1100);
     }
   });
@@ -1022,8 +1068,12 @@ async function loadAnimalModel(group,kind,notify=false){
   }
 }
 function persistBuilds() {
-  try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); return true; }
-  catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); return false; }
+  try {
+    const key=activeMultiplayerWorldId?"ilox-mp-cache-"+activeMultiplayerWorldId:"ilox-builds-v1";
+    localStorage.setItem(key,JSON.stringify(buildRecords.map(activeMultiplayerWorldId?multiplayerPayload:r=>r)));
+    if(activeMultiplayerWorldId)scheduleMultiplayerSync();
+    return true;
+  } catch(error){ showToast("No se pudo guardar el mundo en este dispositivo."); return false; }
 }
 function loadBuilds() {
   if(buildRecords.length) return;
@@ -1032,6 +1082,134 @@ function loadBuilds() {
     if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
+
+function multiplayerPayload(record){
+  const payload={...record};
+  delete payload.cloudId;delete payload.cloudOwnerId;delete payload.pin;
+  return payload;
+}
+function multiplayerFingerprint(record){return JSON.stringify(multiplayerPayload(record));}
+function clearCurrentBuildWorld(){
+  for(const group of buildGroups)scene.remove(group);
+  buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();
+}
+async function loadMultiplayerStructures(worldId){
+  const rows=await Multiplayer.getWorldStructures(worldId);
+  clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
+  for(const row of rows){
+    const record={...(row.payload||{}),kind:row.kind,cloudId:row.id,cloudOwnerId:row.owner_id};
+    if(record.kind==="door")record.pin=null;
+    buildRecords.push(record);createBuildPiece(record);
+    multiplayerCloudSnapshot.set(row.id,multiplayerFingerprint(record));
+  }
+  refreshTerrainSurface();
+  return rows.length;
+}
+function scheduleMultiplayerSync(){
+  if(!activeMultiplayerWorldId)return;
+  if(multiplayerSyncTimer)clearTimeout(multiplayerSyncTimer);
+  multiplayerSyncTimer=setTimeout(()=>{multiplayerSyncTimer=null;syncMultiplayerStructures();},280);
+}
+async function syncMultiplayerStructures(){
+  if(!activeMultiplayerWorldId||!multiplayerUserId)return;
+  if(multiplayerSyncing){multiplayerSyncAgain=true;return;}
+  multiplayerSyncing=true;
+  let changed=false,failed=false;
+  const currentIds=new Set();
+  try{
+    for(const record of buildRecords){
+      const fingerprint=multiplayerFingerprint(record);
+      if(record.cloudId)currentIds.add(record.cloudId);
+      if(record.cloudId&&multiplayerCloudSnapshot.get(record.cloudId)===fingerprint)continue;
+      const saved=await Multiplayer.saveStructure(activeMultiplayerWorldId,multiplayerUserId,record);
+      record.cloudId=saved.id;record.cloudOwnerId=saved.owner_id;
+      currentIds.add(saved.id);multiplayerCloudSnapshot.set(saved.id,fingerprint);changed=true;
+    }
+    for(const [id] of [...multiplayerCloudSnapshot]){
+      if(currentIds.has(id))continue;
+      await Multiplayer.deleteStructure(activeMultiplayerWorldId,id);
+      multiplayerCloudSnapshot.delete(id);changed=true;
+    }
+    if(changed&&multiplayerSession)await multiplayerSession.sendWorldRefresh();
+  }catch(error){
+    failed=true;
+    console.warn("ILOX multiplayer: no se pudo guardar la estructura",error);
+    showToast(error.message||"No se pudo guardar en línea. Revisá tu conexión.");
+    try{await loadMultiplayerStructures(activeMultiplayerWorldId);}catch(loadError){console.warn(loadError);}
+  }finally{
+    multiplayerSyncing=false;
+    if(multiplayerSyncAgain){multiplayerSyncAgain=false;scheduleMultiplayerSync();}
+    if(!failed)localStorage.setItem("ilox-mp-cache-"+activeMultiplayerWorldId,JSON.stringify(buildRecords.map(multiplayerPayload)));
+  }
+}
+function updateRemotePlayer(data){
+  if(!data||!data.userId||data.userId===multiplayerUserId)return;
+  let avatar=remotePlayers.get(data.userId);
+  if(!avatar){avatar=makePlayer(data.avatar||"boy:0");avatar.userData.remoteUserId=data.userId;remotePlayers.set(data.userId,avatar);}
+  const target=new THREE.Vector3(Number(data.x)||0,Number(data.y)||0,Number(data.z)||0);
+  avatar.position.lerp(target,.42);avatar.rotation.y=Number(data.rotation)||0;
+}
+function syncRemotePresence(state){
+  const seen=new Set();
+  for(const entries of Object.values(state||{})){
+    for(const entry of entries||[]){
+      if(!entry.user_id||entry.user_id===multiplayerUserId)continue;
+      seen.add(entry.user_id);
+      updateRemotePlayer({userId:entry.user_id,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0"});
+    }
+  }
+  for(const [id,avatar] of remotePlayers){
+    if(!seen.has(id)){scene.remove(avatar);remotePlayers.delete(id);}
+  }
+}
+async function enterMultiplayerWorld(worldId){
+  if(multiplayerSession){await multiplayerSession.close();multiplayerSession=null;}
+  for(const avatar of remotePlayers.values())scene.remove(avatar);
+  remotePlayers.clear();clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
+  activeMultiplayerWorldId=worldId;
+  localStorage.setItem("ilox-last-multiplayer-world",worldId);
+  try{
+    const count=await loadMultiplayerStructures(worldId);
+    multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
+      onPlayerState:updateRemotePlayer,
+      onWorldRefresh:()=>loadMultiplayerStructures(worldId).catch(error=>showToast("No se pudo actualizar el mundo compartido.")),
+      onPresence:syncRemotePresence
+    });
+    multiplayerUserId=multiplayerSession.userId;
+    const mpLeave=document.querySelector("#mp-leave-world");
+    if(mpLeave)mpLeave.classList.remove("hidden");
+    showToast("Mundo compartido conectado. Guardado automático activo.");
+    return count;
+  }catch(error){
+    activeMultiplayerWorldId=null;multiplayerUserId=null;
+    showToast(error.message||"No se pudo entrar al mundo compartido.");
+    throw error;
+  }
+}
+async function leaveMultiplayerWorld(){
+  if(multiplayerSession){try{await multiplayerSession.close();}catch(error){console.warn(error);}multiplayerSession=null;}
+  for(const avatar of remotePlayers.values())scene.remove(avatar);
+  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerCloudSnapshot.clear();
+  clearCurrentBuildWorld();loadBuilds();
+  document.querySelector("#mp-leave-world")?.classList.add("hidden");
+  showToast("Volviste a tu mundo individual. Tu construcción sigue intacta.");
+}
+function openMultiplayerDialog(){
+  const dialog=document.querySelector("#multiplayer-dialog");
+  const nameInput=document.querySelector("#mp-display-name");
+  if(nameInput&&!nameInput.value)nameInput.value=localStorage.getItem("ilox-player-name")||"Jugador";
+  document.querySelector("#mp-leave-world")?.classList.toggle("hidden",!activeMultiplayerWorldId);
+  document.querySelector("#multiplayer-status").textContent=activeMultiplayerWorldId?"Estás conectado a un mundo compartido. Podés copiar el código o volver a tu mundo individual.":"Creá un mundo nuevo o ingresá el código de un compañero.";
+  dialog.classList.remove("hidden");
+}
+function showMultiplayerError(error){
+  const message=String(error?.message||error||"Error desconocido");
+  const authHint=/anonymous|anonymous sign|disabled|not enabled/i.test(message)
+    ?" Activá los inicios de sesión anónimos en Authentication → Sign In / Providers → Anonymous y volvé a intentar: https://supabase.com/dashboard/project/wihbxfebobfmohmqqhkt/auth/providers"
+    :"";
+  document.querySelector("#multiplayer-status").textContent=message+authHint;
+}
+
 function buildFootprint(kind){
   const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1]};
   return sizes[kind]||[1.5,1.5];
@@ -1275,6 +1453,12 @@ function toggleDoorAtPointer(event){
   const hit=raycaster.intersectObjects(doors,true)[0];if(!hit)return;
   let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;
   const record=root.userData.buildRecord;if(!root.userData.doorLeafPivot||!record)return;
+  if(activeMultiplayerWorldId){
+    record.open=!record.open;
+    const pivot=root.userData.doorLeafPivot;
+    if(pivot)pivot.rotation.y=record.open?Math.PI/2:0;
+    persistBuilds();return;
+  }
   openDoorPinDialog(record,record.pin?"unlock":"setup");
 }
 
@@ -1427,6 +1611,15 @@ function animate() {
     );
   }
   updateBuildPlacementGuide();
+  if(multiplayerSession&&player){
+    const now=performance.now();
+    if(now-multiplayerLastBroadcast>120){
+      multiplayerLastBroadcast=now;
+      const state={userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar};
+      multiplayerSession.sendPlayerState(state).catch(error=>console.warn("ILOX multiplayer: envío de posición falló",error));
+      if(now-multiplayerLastPresence>1000){multiplayerLastPresence=now;multiplayerSession.updatePresence(state).catch(error=>console.warn(error));}
+    }
+  }
   renderer.render(scene, camera);
 }
 
