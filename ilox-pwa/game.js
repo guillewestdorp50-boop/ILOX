@@ -832,11 +832,11 @@ function addEvents() {
   });
   document.querySelector("#erase-parts").addEventListener("click",()=>{
     buildMode=true;buildTool="erase";buildPanel.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
-    renderBuildTools(categorySelect.value);showToast("Tocá cada pieza que quieras eliminar.");
+    buildToggle.textContent="✓ TERMINAR";renderBuildTools(categorySelect.value);showToast("Tocá cada pieza que quieras eliminar.");
   });
   viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
   buildToggle.addEventListener("click",()=>{
-    buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");buildToggle.textContent=buildMode?"✓ TERMINAR":"🧱 Construir";
     cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(buildMode?9.5:5.4));
     if(buildMode&&!firstPersonBuild)pitch=.48;viewToggle.classList.toggle("hidden",!buildMode);
     viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
