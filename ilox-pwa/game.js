@@ -67,6 +67,24 @@ const keys = new Set();
 const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.05;
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
+function plateasAreAdjacent(a,b){
+  if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
+  const dx=Math.abs(a.x-b.x),dz=Math.abs(a.z-b.z);
+  return (Math.abs(dx-FOUNDATION_SIZE)<.03&&dz<.03)||(Math.abs(dz-FOUNDATION_SIZE)<.03&&dx<.03);
+}
+function foundationHasDoor(foundation){
+  if(!foundation||foundation.kind!=="platea")return false;
+  const connected=new Set([foundation]),queue=[foundation];
+  while(queue.length){
+    const current=queue.shift();
+    for(const candidate of buildRecords){
+      if(!connected.has(candidate)&&plateasAreAdjacent(current,candidate)){
+        connected.add(candidate);queue.push(candidate);
+      }
+    }
+  }
+  return buildRecords.some(record=>record.kind==="door"&&connected.has(foundationAt(record.x,record.z)));
+}
 function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-2:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!kind||kind==="water")continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
 function refreshTerrainSurface(){if(!terrainMesh)return;const a=terrainMesh.geometry.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i),f=foundationAt(x,z);a.setY(i,f?Math.min(terrainHeight(x,z),f.y-.36):terrainHeight(x,z));}a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();}
 
@@ -1122,15 +1140,26 @@ function updateBuildPlacementGuide(){
   if(snap.snapped&&placementKind!=="door")buildRotation=guideRotation;
   const activeFoundation=foundationAt(x,z);
   const needsDoor=["block","brick","wall"].includes(buildTool);
-  const doorReady=!!activeFoundation&&buildRecords.some(r=>r.kind==="door"&&foundationAt(r.x,r.z)===activeFoundation);
+  const doorReady=foundationHasDoor(activeFoundation);
   const valid=buildTool==="platea"||poolTool||buildTool==="water"||(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation));
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
-    buildGuide=new THREE.LineLoop(geometry,material);buildGuide.renderOrder=999;buildGuide.frustumCulled=false;scene.add(buildGuide);
+    buildGuide=new THREE.LineSegments(geometry,material);buildGuide.renderOrder=999;buildGuide.frustumCulled=false;scene.add(buildGuide);
   }
   const c=Math.cos(guideRotation),sn=Math.sin(guideRotation),pts=[];
-  for(const [dx,dz] of [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]])pts.push(new THREE.Vector3(dx*c-dz*sn,0.035,dx*sn+dz*c));
+  const addSegment=(ax,az,bx,bz)=>{
+    pts.push(new THREE.Vector3(ax*c-az*sn,0.035,ax*sn+az*c));
+    pts.push(new THREE.Vector3(bx*c-bz*sn,0.035,bx*sn+bz*c));
+  };
+  const corners=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]];
+  for(let i=0;i<4;i++)addSegment(...corners[i],...corners[(i+1)%4]);
+  if(placementKind==="door"){
+    // La vista previa separa visualmente los tres módulos estructurales:
+    // columna de marco, abertura central y columna de marco.
+    addSegment(-BLOCK_SIZE/2,-d/2,-BLOCK_SIZE/2,d/2);
+    addSegment(BLOCK_SIZE/2,-d/2,BLOCK_SIZE/2,d/2);
+  }
   buildGuide.geometry.dispose();buildGuide.geometry=new THREE.BufferGeometry().setFromPoints(pts);
   buildGuide.position.set(x,buildTool==="platea"?terrainHeight(x,z)+.05:supportHeightAt(x,z)+.035,z);
   buildGuide.material.color.setHex(valid?0x22ee66:0xff3333);
@@ -1166,7 +1195,7 @@ function placeBuildAtPointer(event){
   if(isPoolTool&&buildRecords.some(item=>item.kind==="pool"&&Math.abs(item.x-x)<poolWidth/2+(item.poolWidth||6)/2&&Math.abs(item.z-z)<poolDepth/2+(item.poolDepth||6)/2)){showToast("Ese espacio ya tiene una pileta.");return;}
   if(buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"){
     const currentFoundation=foundationAt(x,z);
-    if(["block","brick","wall"].includes(buildTool)&&!buildRecords.some(r=>r.kind==="door"&&foundationAt(r.x,r.z)===currentFoundation)){showToast("Primero colocá la puerta completa de esta construcción.");return;}
+    if(["block","brick","wall"].includes(buildTool)&&!foundationHasDoor(currentFoundation)){showToast("Primero colocá la puerta completa de esta construcción.");return;}
     if(!currentFoundation){showToast("Primero colocá una PLATEA. El terreno se nivela dentro de ella.");return;}
     if(!foundationContainsFootprint(x,z,buildTool,buildRotation)){showToast("La pieza debe quedar completamente dentro de la platea.");return;}
   }
