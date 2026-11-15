@@ -1374,10 +1374,14 @@ function snapDoorToPlateaGrid(x,z,rotation=0){
     if(edgeX){
       const side=Math.sign(localX)||1;
       doorX=side*(half-depth);
+      // El ancho de 4,50 m ocupa tres módulos alineados; queda un módulo libre
+      // en uno de los extremos, según el lado hacia el que se arrastra.
+      doorZ=(Math.sign(localZ)||1)*depth;
       edgeRotation=a+Math.PI/2;
     }else{
       const side=Math.sign(localZ)||1;
       doorZ=side*(half-depth);
+      doorX=(Math.sign(localX)||1)*depth;
       edgeRotation=a;
     }
     const worldX=foundation.x+doorX*Math.cos(a)+doorZ*Math.sin(a);
