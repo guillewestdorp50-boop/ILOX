@@ -805,8 +805,8 @@ function animate() {
     const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.62 : swing*0.62; });
-    // El personaje conserva su rumbo: el pulgar derecho solo mueve la cámara.
-    player.rotation.y = moveHeading;
+    // El pulgar derecho orienta visualmente al personaje; el movimiento mantiene su eje independiente.
+    player.rotation.y = yaw;
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = buildMode && firstPersonBuild && player;
