@@ -8,6 +8,10 @@ on:
       - 'scripts/prepare_ilox_island.py'
       - 'LICENSE-Island.txt'
       - '.github/workflows/deploy-pages.yml'
+  workflow_run:
+    workflows: ["Validar ILOX urbano-rural"]
+    types: [completed]
+    branches: [experiment/urban-rural-map]
   workflow_dispatch:
 
 permissions:
@@ -21,13 +25,23 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Obtener ILOX
+      - name: Obtener ILOX estable
         uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Obtener prueba urbano-rural aislada
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'experiment/urban-rural-map' }}
+          path: urban-rural-source
+          persist-credentials: false
 
       - name: Obtener mundo Island (MIT, commit fijado)
         uses: actions/checkout@v4
@@ -68,7 +82,7 @@ jobs:
         run: |
           node -e "const m=require('./public/world/meta.json'); const target=Math.sqrt(2000000); if(Math.abs(m.worldSize-target)>0.01) throw new Error('Unexpected world size: '+m.worldSize); if(!(m.falls.top < m.falls.lipGround && m.falls.top > m.falls.bottom)) throw new Error('Waterfall lip is not anchored to the cliff: '+JSON.stringify(m.falls)); console.log('World:',m.worldSize,'m square; waterfall:',(m.falls.lipGround-m.falls.top).toFixed(2),'m below lip,',(m.falls.top-m.falls.bottom).toFixed(2),'m drop');"
 
-      - name: Compilar y verificar
+      - name: Compilar y verificar mundo estable
         working-directory: island-source
         run: |
           pnpm build
@@ -79,11 +93,23 @@ jobs:
           test -s dist/assets/rocks/boulders.glb
           grep -q 'ILOX' dist/index.html
 
-      - name: Preparar sitio PWA
+      - name: Validar escenario urbano-rural
+        run: |
+          node --check urban-rural-source/app.js
+          test -s urban-rural-source/index.html
+          test -s urban-rural-source/styles.css
+          test -s urban-rural-source/manifest.webmanifest
+
+      - name: Preparar sitio PWA estable y vista experimental
         run: |
           mkdir -p _site
           cp -R island-source/dist/. _site/
-          touch _site/.nojekyll
+          mkdir -p _site/urban-rural
+          cp urban-rural-source/index.html urban-rural-source/styles.css urban-rural-source/app.js urban-rural-source/manifest.webmanifest _site/urban-rural/
+          touch _site/.nojekyll _site/urban-rural/.nojekyll
+          test -s _site/index.html
+          test -s _site/urban-rural/index.html
+          test -s _site/urban-rural/app.js
 
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v3
