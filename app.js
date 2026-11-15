@@ -24,7 +24,7 @@ let importedNatureReady = false;
 let lookPointer = null;
 let lastLookX = 0, lastLookY = 0;
 const keys = new Set();
-const worldSize = 220;
+const worldSize = 320;
 
 function terrainHeight(x, z) {
   const rolling = Math.sin(x * 0.035) * 2.3 + Math.cos(z * 0.029) * 2.1
@@ -212,6 +212,81 @@ function makeRock(x, z, scale, random) {
   scene.add(mesh);
 }
 
+
+function makeFantasyWorld() {
+  const mat = (color, roughness=0.88, metalness=0) => new THREE.MeshStandardMaterial({color,roughness,metalness});
+  const stone=mat(0x8d9690), stoneDark=mat(0x58645e), roof=mat(0x394b64), wood=mat(0x80563a), plaster=mat(0xe3d2ad), glass=mat(0x78c9d8,.28,.12), warm=mat(0xffd58a,.4,0), grassMat=mat(0x557b45);
+  const box=(parent,w,h,d,material,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
+  const cylinder=(parent,rt,rb,h,material,x,y,z,segments=12)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
+  const ground=(x,z)=>terrainHeight(x,z);
+  function cottage(x,z,s=1) {
+    const g=new THREE.Group();g.position.set(x,ground(x,z),z);g.scale.setScalar(s);
+    box(g,7,4.1,6,plaster,0,2.05,0);
+    const r=new THREE.Mesh(new THREE.ConeGeometry(5.25,3.8,4),roof);r.rotation.y=Math.PI/4;r.position.set(0,5.7,0);r.castShadow=true;g.add(r);
+    box(g,1.25,2.35,.18,wood,0,1.18,3.08);
+    for(const side of [-1,1]) {box(g,.95,1.15,.16,glass,side*2,2.45,3.09);box(g,1.12,.12,.24,wood,side*2,2.45,3.18);box(g,.12,1.25,.24,wood,side*2,2.45,3.18);}
+    box(g,7.6,.22,6.5,wood,0,.18,0);
+    scene.add(g);
+  }
+  function castle(x,z) {
+    const g=new THREE.Group();g.position.set(x,ground(x,z),z);
+    box(g,27,10,18,stone,0,5,0);
+    box(g,30,.9,21,stoneDark,0,10.2,0);
+    const towerSpots=[[-12,-8],[12,-8],[-12,8],[12,8]];
+    for(const [tx,tz] of towerSpots){
+      cylinder(g,3.2,3.6,17,stone,tx,8.5,tz,12);
+      const cap=new THREE.Mesh(new THREE.ConeGeometry(3.8,5,12),roof);cap.position.set(tx,19.2,tz);cap.castShadow=true;g.add(cap);
+      for(let i=0;i<8;i++){const ang=i*Math.PI/4;box(g,.65,1.25,.75,stoneDark,tx+Math.cos(ang)*3.0,16.2,tz+Math.sin(ang)*3.0);}
+      box(g,1.0,3.2,.22,glass,tx,8.5,tz+(tz>0?3.12:-3.12));
+    }
+    box(g,8,8,.8,wood,0,4,9.45);
+    box(g,3.2,5,.25,stoneDark,0,2.5,9.9);
+    for(let i=-2;i<=2;i++) box(g,.48,1.1,.3,warm,i*1.35,6.5,9.95);
+    scene.add(g);
+  }
+  function modernHome(x,z) {
+    const g=new THREE.Group();g.position.set(x,ground(x,z),z);
+    box(g,15,5.2,12,mat(0xe9e9df),0,2.6,0);
+    box(g,15,.35,12,mat(0x343d43),0,5.3,0);
+    box(g,15,.3,12,mat(0x343d43),0,7.7,0);
+    box(g,15,.25,12,mat(0x343d43),0,10.1,0);
+    box(g,10,4.3,9,mat(0xf3eee1),0,7.8,0);
+    for(const zf of [-6.08,6.08]) box(g,12,3.1,.12,glass,0,3.1,zf);
+    box(g,3.4,3.8,.2,wood,-3,2,6.1);
+    const terrace=box(g,17,.3,14,wood,0,.18,0);terrace.position.y=.18;
+    scene.add(g);
+  }
+  function portal(x,z) {
+    const g=new THREE.Group();g.position.set(x,ground(x,z)+.15,z);
+    const frame=new THREE.Mesh(new THREE.TorusGeometry(3.2,.42,12,48),mat(0x25c8e9,.22,.3));frame.position.y=3.7;frame.castShadow=true;g.add(frame);
+    const inner=new THREE.Mesh(new THREE.CircleGeometry(2.78,40),new THREE.MeshBasicMaterial({color:0x174c9a,transparent:true,opacity:.7,side:THREE.DoubleSide}));inner.position.set(0,3.7,0);inner.rotation.y=0;g.add(inner);
+    for(const side of [-1,1]) box(g,.65,5.5,.7,stoneDark,side*3.3,2.75,0);
+    box(g,8,.45,2.2,stone,0,.22,0);
+    scene.add(g);
+  }
+  function floatingIsland(x,y,z,s=1) {
+    const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s);
+    const top=new THREE.Mesh(new THREE.CylinderGeometry(5.5,2.1,2.1,7),grassMat);top.position.y=0;top.castShadow=true;g.add(top);
+    const rock=new THREE.Mesh(new THREE.ConeGeometry(3.9,9,7),stoneDark);rock.position.y=-5.1;rock.rotation.y=.3;rock.castShadow=true;g.add(rock);
+    const treeTrunk=cylinder(g,.22,.3,2.5,wood,0,1.9,0,7);
+    const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.8,1),mat(0x4d854e));crown.position.set(0,3.5,0);g.add(crown);
+    scene.add(g);
+  }
+  // Camino principal de tierra: conecta la plaza, el castillo y las aldeas.
+  const points=[new THREE.Vector3(-5,ground(-5,15)+.12,15),new THREE.Vector3(-12,ground(-12,-4)+.12,-4),new THREE.Vector3(-25,ground(-25,-28)+.12,-28),new THREE.Vector3(-4,ground(-4,-50)+.12,-50)];
+  const path=new THREE.CatmullRomCurve3(points);
+  const road=new THREE.Mesh(new THREE.TubeGeometry(path,70,2.1,7,false),mat(0xb79a70));road.receiveShadow=true;scene.add(road);
+  castle(-5,-58);
+  cottage(-31,-34,1.05); cottage(-43,-23,.82); cottage(27,-43,.9); cottage(39,-31,.78);
+  modernHome(54,34);
+  portal(30,18);
+  floatingIsland(-48,24,-42,1.0);
+  floatingIsland(57,31,-58,.72);
+  // Plaza central, bancos y faroles.
+  const plaza=new THREE.Mesh(new THREE.CylinderGeometry(10,10,.32,32),mat(0xb8aa8e));plaza.position.set(0,ground(0,8)+.12,8);plaza.receiveShadow=true;scene.add(plaza);
+  for(let i=0;i<6;i++){const ang=i*Math.PI/3;const x=Math.cos(ang)*8,z=8+Math.sin(ang)*8;cylinder(scene,.16,.2,3,wood,x,ground(x,z)+1.5,z,8);const lamp=new THREE.Mesh(new THREE.SphereGeometry(.42,10,8),warm);lamp.position.set(x,ground(x,z)+3.2,z);scene.add(lamp);}
+}
+
 function makeRiver() {
   const positions = [], uvs = [], indices = [], steps = 180;
   for (let i = 0; i <= steps; i++) {
@@ -249,7 +324,7 @@ function makeMeadowDetails() {
   const random=seededRandom(44119);
   const bladeGeometry=new THREE.ConeGeometry(.075,.55,3);
   const bladeMaterial=new THREE.MeshStandardMaterial({color:0x718b4d,roughness:1});
-  const grass=new THREE.InstancedMesh(bladeGeometry,bladeMaterial,1900);
+  const grass=new THREE.InstancedMesh(bladeGeometry,bladeMaterial,520);
   const dummy=new THREE.Object3D();
   for(let i=0;i<1900;i++){
     const x=(random()-.5)*190,z=(random()-.5)*190;
@@ -395,16 +470,16 @@ function init() {
   makeDistantMountains();
   makeTerrain();
   makeMeadowDetails();
-  makeRiver();
+  makeFantasyWorld();
   const random = seededRandom(20261114);
-  for (let i = 0; i < 230; i++) {
+  for (let i = 0; i < 58; i++) {
     const x = (random() - 0.5) * 190;
     const z = (random() - 0.5) * 190;
     if (Math.hypot(x, z) < 21) continue;
     if (Math.abs(x - (Math.sin(z * 0.025) * 17 - 15)) < 5) continue;
     makeTree(x, z, 0.72 + random() * 0.65, random);
   }
-  for (let i = 0; i < 95; i++) {
+  for (let i = 0; i < 42; i++) {
     const x = (random() - 0.5) * 195;
     const z = (random() - 0.5) * 195;
     if (Math.hypot(x, z) < 13) continue;
