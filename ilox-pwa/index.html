@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#241b50">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
-  <link rel="manifest" href="./manifest.webmanifest?v=ilox-multiplayer-pools-v90">
-  <link rel="icon" href="./icon.svg?v=ilox-multiplayer-pools-v90" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-multiplayer-pools-v90">
-  <link rel="stylesheet" href="./styles.css?v=ilox-multiplayer-pools-v90">
+  <link rel="manifest" href="./manifest.webmanifest?v=ilox-local-json-v91">
+  <link rel="icon" href="./icon.svg?v=ilox-local-json-v91" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-local-json-v91">
+  <link rel="stylesheet" href="./styles.css?v=ilox-local-json-v91">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -81,6 +81,9 @@
       <button id="build-toggle" class="menu-action" type="button">🧱 Construir</button>
       <button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button>
       <button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button>
+      <button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button>
+      <button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button>
+      <input id="world-json-input" type="file" accept="application/json,.json" hidden>
       <button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
       <button id="erase-parts" class="menu-action" type="button">⌫ Eliminar por partes</button>
     </section>
@@ -177,6 +180,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-multiplayer-pools-v90"></script>
+  <script type="module" src="./game.js?v=ilox-local-json-v91"></script>
 </body>
 </html>
