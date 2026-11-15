@@ -65,7 +65,7 @@ const keys = new Set();
 const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.05;
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
-function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-2:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!["block","brick","floor","wall","roof","stairs","table","chair"].includes(kind))continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
+function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-2:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!kind||kind==="water")continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
 function refreshTerrainSurface(){if(!terrainMesh)return;const a=terrainMesh.geometry.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i),f=foundationAt(x,z);a.setY(i,f?Math.min(terrainHeight(x,z),f.y-.36):terrainHeight(x,z));}a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();}
 
 function terrainHeight(x, z) {
@@ -901,7 +901,7 @@ function createBuildPiece(record, options = {}) {
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
-  if(kind==="door"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.12,1.28,.07,wood,0,.66,-.04);ball(.42,.68,-.09,.045,.045,.045,metal);}
+  if(kind==="door"){const doorHeight=1.94,frameWidth=1.1,post=.1;box(post,doorHeight,.16,wall,-(frameWidth-post)/2,doorHeight/2,0);box(post,doorHeight,.16,wall,(frameWidth-post)/2,doorHeight/2,0);box(frameWidth,.1,.16,wall,0,doorHeight-.05,0);box(frameWidth-post-.08,.06,.07,wood,0,doorHeight-.13,-.04);box(frameWidth-post-.12,doorHeight-.18,.07,wood,0,(doorHeight-.18)/2,-.04);ball((frameWidth-post-.12)/2-.08,.98,-.09,.045,.045,.045,metal);group.userData.buildHeight=doorHeight;}
   if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
   if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
@@ -961,8 +961,21 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:1.94,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
+}
+function buildFootprint(kind){
+  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[1.1,.16],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1]};
+  return sizes[kind]||[1.5,1.5];
+}
+function foundationContainsFootprint(x,z,kind,rotation=0){
+  const f=foundationAt(x,z);if(!f||f.kind!=="platea")return false;
+  const [w,d]=buildFootprint(kind),c=Math.cos(rotation),s=Math.sin(rotation);
+  for(const [dx,dz] of [[-w/2,-d/2],[-w/2,d/2],[w/2,-d/2],[w/2,d/2]]){
+    const px=x+dx*c-dz*s,pz=z+dx*s+dz*c;
+    const same=foundationAt(px,pz);if(same!==f)return false;
+  }
+  return true;
 }
 function placeBuildAtPointer(event){
   const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
@@ -979,7 +992,10 @@ function placeBuildAtPointer(event){
   let containingPool=null;
   if(buildTool==="water"){containingPool=buildRecords.find(item=>item.kind==="pool"&&Math.abs(x-item.x)<(item.poolWidth||6)/2-.35&&Math.abs(z-item.z)<(item.poolDepth||6)/2-.35);if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
   if(isPoolTool&&buildRecords.some(item=>item.kind==="pool"&&Math.abs(item.x-x)<poolWidth/2+(item.poolWidth||6)/2&&Math.abs(item.z-z)<poolDepth/2+(item.poolDepth||6)/2)){showToast("Ese espacio ya tiene una pileta.");return;}
-  if(buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"&&!foundationAt(x,z)){showToast("Primero colocá una PLATEA. El terreno se nivela dentro de ella.");return;}
+  if(buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"){
+    if(!foundationAt(x,z)){showToast("Primero colocá una PLATEA. El terreno se nivela dentro de ella.");return;}
+    if(!foundationContainsFootprint(x,z,buildTool,buildRotation)){showToast("La pieza debe quedar completamente dentro de la platea.");return;}
+  }
   if(buildTool==="pen"||buildTool==="fence"){
     const angle=buildRotation,half=.75,ux=Math.cos(angle),uz=-Math.sin(angle);
     let best=null,bestDistance=.95;
@@ -1001,7 +1017,7 @@ function placeBuildAtPointer(event){
   if(buildTool==="platea"){const n=buildRecords.find(r=>r.kind==="platea"&&((Math.abs(Math.abs(r.x-x)-6)<.2&&Math.abs(r.z-z)<.2)||(Math.abs(Math.abs(r.z-z)-6)<.2&&Math.abs(r.x-x)<.2)));if(n)baseY=n.y;else{let top=-Infinity;for(let ix=-2;ix<=2;ix++)for(let iz=-2;iz<=2;iz++)top=Math.max(top,terrainHeight(x+ix*1.5,z+iz*1.5));baseY=top+.04;}}
   if(isPoolTool){let top=-Infinity;for(let ix=-poolWidth/2;ix<=poolWidth/2;ix+=1.5)for(let iz=-poolDepth/2;iz<=poolDepth/2;iz+=1.5)top=Math.max(top,terrainHeight(x+ix,z+iz));baseY=top+.04;}
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const sr=root.userData.buildRecord;if(sr){const normal=hit.face?hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize():new THREE.Vector3(0,1,0);baseY=normal.y<.65?sr.y:sr.y+(root.userData.buildHeight||1.5);}else baseY=new THREE.Box3().setFromObject(root).max.y;}
-  const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};if(isPoolTool){record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
+  const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:2.4),rotation:buildRotation,color:selectedBlockColor};if(isPoolTool){record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
   const isAnimal=["sheep","cow","horse","chicken","pig","goat"].includes(buildTool);
   createBuildPiece(record,{notify:isAnimal});persistBuilds();
@@ -1035,7 +1051,7 @@ function updateBuildGravity(delta){
     if(record.kind==="platea"||record.kind==="pool")continue;
     let supportY=supportHeightAt(group.position.x,group.position.z,group.position.y,group);
     for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
-    if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}}
+    if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;persistBuilds();}}
     else if(group.position.y<supportY-.015){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}
   }
 }
