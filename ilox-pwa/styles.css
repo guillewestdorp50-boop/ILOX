@@ -272,3 +272,47 @@ body{background:#201747;color:#fff}
  .welcome-tags{margin-bottom:11px}
  .start-button{min-height:46px;padding:10px 16px}
 }
+
+
+/* ILOX v88 — pantalla de inicio animada; controles solo dentro de la partida */
+.welcome-scene{position:absolute;z-index:1;inset:0;overflow:hidden;background:#201b64;opacity:1;transition:opacity .9s ease,visibility .9s ease}
+.welcome-scene.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.welcome-art{width:100%;height:100%;display:block}
+.welcome-vignette{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,48,.2),transparent 42%,rgba(13,15,57,.2)),radial-gradient(ellipse at center,transparent 42%,rgba(12,15,55,.28) 100%);pointer-events:none}
+.welcome-stars circle{animation:welcome-twinkle 3.4s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+.welcome-stars circle:nth-child(3n){animation-delay:-1.4s}
+.welcome-stars circle:nth-child(2n){animation-delay:-2.3s}
+.welcome-cloud{animation:welcome-cloud-drift 34s ease-in-out infinite alternate;transform-box:fill-box}
+.cloud-b{animation-duration:42s;animation-direction:alternate-reverse}
+.welcome-orbit{transform-origin:600px 410px;animation:welcome-orbit-spin 42s linear infinite}
+.welcome-island{transform-origin:600px 520px;animation:welcome-island-float 6s ease-in-out infinite}
+.welcome-fireflies circle{animation:welcome-firefly 4s ease-in-out infinite alternate}
+.welcome-fireflies circle:nth-child(2n){animation-delay:-2s}
+.welcome{z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);width:min(90vw,560px);max-width:none;display:flex;flex-direction:column;align-items:center;gap:clamp(28px,7vh,58px);text-align:center}
+.welcome.hidden{transform:translate(-50%,-46%)}
+.welcome-brand{font-size:clamp(48px,10vw,86px);font-weight:1000;letter-spacing:.12em;color:#fff8e8;text-shadow:0 5px 35px #15154f,0 0 32px #70e7ff66}
+.welcome-brand span{color:#ffe18b;font-size:.48em;vertical-align:top;margin-left:5px}
+.start-button{min-width:min(280px,78vw);min-height:68px;justify-content:center;gap:22px;padding:18px 32px;border:2px solid rgba(255,255,255,.75);border-radius:999px;background:linear-gradient(115deg,#ffbd69,#ffe58d 52%,#ff9a70);color:#35215d;font-size:17px;letter-spacing:.16em;box-shadow:0 0 0 7px #ffffff12,0 12px 36px #0c164d99,0 0 36px #ffcb7770;animation:welcome-button-pulse 2.8s ease-in-out infinite}
+.start-button b{font-size:24px;line-height:1}
+.avatar-select{z-index:4}
+#game:not(.playing) .hud-minimal,
+#game:not(.playing) #touch-ui,
+#game:not(.playing) #camera-controls,
+#game:not(.playing) #menu-toggle,
+#game:not(.playing) #menu-panel,
+#game:not(.playing) #build-panel,
+#game:not(.playing) #door-rotate-control,
+#game:not(.playing) #mp-chat-toggle,
+#game:not(.playing) #mp-chat-panel,
+#game:not(.playing) .toast{display:none!important}
+#game:not(.playing) canvas{visibility:hidden}
+#game.playing canvas{visibility:visible}
+#game.playing .welcome-scene{opacity:0;visibility:hidden;pointer-events:none}
+@keyframes welcome-twinkle{from{opacity:.25;transform:scale(.65)}to{opacity:1;transform:scale(1.3)}}
+@keyframes welcome-cloud-drift{from{transform:translate3d(-28px,5px,0)}to{transform:translate3d(48px,-10px,0)}}
+@keyframes welcome-orbit-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes welcome-island-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+@keyframes welcome-firefly{from{opacity:.15;transform:translateY(8px) scale(.65)}to{opacity:1;transform:translateY(-14px) scale(1.35)}}
+@keyframes welcome-button-pulse{0%,100%{box-shadow:0 0 0 7px #ffffff12,0 12px 36px #0c164d99,0 0 36px #ffcb7770}50%{box-shadow:0 0 0 13px #ffffff0a,0 15px 42px #0c164dbb,0 0 48px #ffcb7799}}
+@media(max-width:600px){.welcome{gap:clamp(34px,9vh,76px)}.welcome-brand{font-size:clamp(48px,15vw,72px)}.start-button{min-width:min(270px,82vw);min-height:72px;font-size:16px}}
+@media(prefers-reduced-motion:reduce){.welcome-stars circle,.welcome-cloud,.welcome-orbit,.welcome-island,.welcome-fireflies circle,.start-button{animation:none!important}}
