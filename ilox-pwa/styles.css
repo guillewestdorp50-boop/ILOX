@@ -229,3 +229,46 @@ h1 em{font-style:normal;color:#e8d29a}
 .mp-back-branches{align-self:flex-start;border:0;background:transparent;color:#d9e8dc;font-size:12px;font-weight:800;padding:5px 0}
 .mp-world-list{max-height:min(32vh,240px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 @media(min-width:520px){.mp-branches{grid-template-columns:1fr 1fr}}
+
+/* ILOX · identidad visual de bienvenida: fantasía luminosa, sin estética de bloques */
+:root{color-scheme:dark;--ink:#fff;--muted:#e6e1ff;--gold:#ffe36e;--forest:#241b50}
+body{background:#201747;color:#fff}
+#game:after{background:linear-gradient(112deg,rgba(22,14,61,.66),rgba(33,23,91,.16) 58%,rgba(7,35,70,.18)),linear-gradient(180deg,rgba(20,13,55,.12),transparent 45%,rgba(13,16,50,.26)}
+.welcome{left:clamp(20px,7vw,104px);top:50%;width:min(540px,82vw);max-width:540px;padding:clamp(23px,3.4vw,38px);border:1px solid rgba(255,255,255,.32);border-radius:30px;background:linear-gradient(135deg,rgba(39,28,91,.88),rgba(25,45,104,.78) 58%,rgba(48,31,103,.82));box-shadow:0 24px 70px rgba(8,8,38,.38),inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
+.welcome:before{content:"";position:absolute;inset:-2px auto auto -2px;width:210px;height:7px;border-radius:0 0 12px 0;background:linear-gradient(90deg,#ff7b78,#ffce63,#7ce8ff,#b68cff);box-shadow:0 0 25px #8b7cff88}
+.welcome:after{content:"✦";position:absolute;right:24px;top:20px;color:#ffe36e;font-size:clamp(30px,4vw,48px);text-shadow:0 0 22px #ffb84f;opacity:.9;pointer-events:none}
+.welcome-brand{display:inline-flex;align-items:center;gap:5px;margin:0 0 13px;font-size:clamp(27px,4.4vw,43px);font-weight:1000;line-height:1;letter-spacing:.08em;color:#fff;text-shadow:0 3px 0 #40308e,0 7px 22px #070b3c}
+.welcome-brand span{font-size:.48em;color:#ffe36e;align-self:flex-start;margin-top:0}
+.welcome .eyebrow{display:block;color:#9defff;font-size:10px;letter-spacing:.2em}
+.welcome h1{margin:13px 0 16px;font-size:clamp(38px,6.3vw,68px);line-height:.98;letter-spacing:-.055em;color:#fff;text-shadow:0 4px 22px rgba(7,8,43,.42)}
+.welcome h1 em{color:#ffe36e;text-shadow:0 2px 20px rgba(255,174,69,.25)}
+.welcome p{max-width:390px;margin:0 0 19px;color:#f0edff;font-size:clamp(14px,1.8vw,17px);line-height:1.55;text-shadow:none}
+.welcome-tags{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 23px}
+.welcome-tags span{padding:7px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-size:9px;font-weight:900;letter-spacing:.09em}
+.welcome-tags span:nth-child(1){color:#9defff}
+.welcome-tags span:nth-child(2){color:#ffe36e}
+.welcome-tags span:nth-child(3){color:#ff9fce}
+.start-button{position:relative;min-height:56px;padding:15px 21px;border:1px solid rgba(255,255,255,.55);border-radius:17px;background:linear-gradient(110deg,#ff8a55,#ffbf4e 55%,#ffe36e);color:#39205f;font-size:12px;font-weight:1000;letter-spacing:.08em;gap:26px;box-shadow:0 9px 28px rgba(255,126,78,.3),inset 0 2px 0 rgba(255,255,255,.6);transition:transform .18s,filter .18s}
+.start-button:active{transform:translateY(2px) scale(.99);filter:brightness(.96)}
+.start-button span{font-size:23px;line-height:1}
+.loading{background:radial-gradient(circle at 75% 20%,#4c3a9b 0,#241b50 48%,#101a49 100%)}
+.loading-mark{color:#fff;text-shadow:0 4px 0 #6d4ad1,0 10px 32px #080c38;letter-spacing:.16em}
+.loading p{color:#c9f5ff}
+@media(max-width:700px){
+ .welcome{left:5vw;top:48%;width:90vw;max-width:560px;padding:22px 20px;border-radius:24px}
+ .welcome:after{right:17px;top:13px}
+ .welcome-brand{font-size:31px;margin-bottom:10px}
+ .welcome h1{font-size:clamp(35px,9vw,51px);margin:11px 0 12px}
+ .welcome p{max-width:100%;font-size:14px;margin-bottom:15px}
+ .welcome-tags{gap:6px;margin-bottom:17px}
+ .welcome-tags span{font-size:8px;padding:6px 8px}
+ .start-button{width:100%;justify-content:space-between;min-height:54px;font-size:11px}
+}
+@media(max-height:650px) and (orientation:landscape){
+ .welcome{top:50%;padding:16px 22px;width:min(500px,70vw)}
+ .welcome-brand{font-size:25px;margin-bottom:7px}
+ .welcome h1{font-size:clamp(30px,5vw,46px);margin:8px 0}
+ .welcome p{font-size:13px;margin-bottom:10px}
+ .welcome-tags{margin-bottom:11px}
+ .start-button{min-height:46px;padding:10px 16px}
+}
