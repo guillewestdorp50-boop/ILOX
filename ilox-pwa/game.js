@@ -755,6 +755,7 @@ function addEvents() {
     showToast("¡Tu mundo, tus reglas!");
   });
   const applyCameraMode = mode => {
+    if (cameraLocked && mode === "first") mode = "second";
     cameraMode = mode;
     firstPersonBuild = mode === "first";
     cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
