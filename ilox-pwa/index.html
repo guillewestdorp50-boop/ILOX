@@ -6,16 +6,13 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-camera-collision-v43">
+  <link rel="stylesheet" href="./styles.css?v=ilox-clean-game-screen-v44">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
   <main id="game" aria-label="Mundo 3D de ILOX">
     <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p></div>
-    <section class="hud" aria-live="polite">
-      <div class="brand"><span class="brand-name">ILOX</span><span class="brand-line">TU MUNDO EMPIEZA ACÁ</span></div>
-      <div class="hud-right"><span class="world-label">MUNDO ABIERTO · 01</span><button id="fullscreen" class="icon-button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button></div>
-    </section>
+    <div class="hud hud-minimal"><button id="fullscreen" class="icon-button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button></div>
     <div class="welcome" id="welcome">
       <span class="eyebrow">EL COMIENZO DE UNA AVENTURA</span>
       <h1>Un mundo nuevo<br><em>te espera.</em></h1>
@@ -60,7 +57,6 @@
         <button id="camera-lock" class="camera-lock" type="button" aria-label="Bloquear movimiento y girar cámara" aria-pressed="false">🔓</button>
       </div>
     </div>
-    <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
     <div class="touch-ui" id="touch-ui">
       <div class="move-pad" id="move-pad" aria-label="Joystick de movimiento">
         <div class="move-ring"></div>
@@ -68,9 +64,7 @@
       </div>
       <div class="touch-note">MOVER</div>
       <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
-remove right joystick markup    </div>
-    <div class="controls-help" id="controls-help">JOYSTICK · MOVER Y GIRAR &nbsp; | &nbsp; ARRASTRAR · MIRAR</div>
-    <div class="asset-credit">RECURSOS 3D · POLY HAVEN / THREE.JS (MIT)</div>
+    </div>
     <div class="toast" id="toast" role="status"></div>
   </main>
   <script>
@@ -79,6 +73,6 @@ remove right joystick markup    </div>
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-camera-collision-v43"></script>
+  <script type="module" src="./game.js?v=ilox-clean-game-screen-v44"></script>
 </body>
 </html>
