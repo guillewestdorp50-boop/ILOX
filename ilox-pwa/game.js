@@ -22,6 +22,15 @@ const menuToggle = document.querySelector("#menu-toggle");
 const menuPanel = document.querySelector("#menu-panel");
 const buildPanel = document.querySelector("#build-panel");
 const quickSaveButton = document.querySelector("#quick-save");
+const doorPinDialog = document.querySelector("#door-pin-dialog");
+const doorPinForm = document.querySelector("#door-pin-form");
+const doorPinInput = document.querySelector("#door-pin-input");
+const doorPinCurrent = document.querySelector("#door-pin-current");
+const doorPinNew = document.querySelector("#door-pin-new");
+const doorPinTitle = document.querySelector("#door-pin-title");
+const doorPinHelp = document.querySelector("#door-pin-help");
+const doorPinChangeButton = document.querySelector("#door-pin-change");
+let doorPinTarget = null, doorPinMode = "setup";
 let moveStickPointer = null;
 let playerVerticalVelocity = 0, playerGrounded = true;
 let moveStick = { x: 0, y: 0 };
@@ -65,7 +74,7 @@ let lastLookX = 0, lastLookY = 0, lookStartX = 0, lookStartY = 0, cameraDistance
 const activePointers = new Map(); let pinchStartDistance = 0, pinchStartZoom = 10;
 const keys = new Set();
 const worldSize = 320;
-const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.05;
+const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=1.85;
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
@@ -288,7 +297,7 @@ async function loadRiggedAvatar(kind) {
     const bounds = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     bounds.getSize(size);
-    const scale = 2.05 / Math.max(size.y, 0.001);
+    const scale = PLAYER_HEIGHT / Math.max(size.y, 0.001);
     model.scale.setScalar(scale);
     model.position.y = -bounds.min.y * scale;
     model.traverse(object => {
@@ -1178,8 +1187,8 @@ function placeBuildAtPointer(event){
     if(!foundationContainsFootprint(x,z,"door",rotation)){showToast("La puerta debe ocupar espacios completos de 1,50 m dentro de las plateas. Movela a otro espacio de la cuadrícula.");return;}
     if(buildRecords.some(item=>item.kind==="door"&&Math.hypot(item.x-x,item.z-z)<.2&&Math.abs((item.y||0)-supportHeightAt(x,z))<.2)){showToast("Ya hay una puerta en ese lugar.");return;}
     const baseY=supportHeightAt(x,z);
-    const record={kind:"door",x,z,y:baseY,rotation,color:selectedBlockColor,doorStyle:buildTool==="door-brick"?"brick":"solid",doorWidth:1.5,open:false};
-    buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("Puerta colocada y alineada a la cuadrícula de 1,50 m.");return;
+    const record={kind:"door",x,z,y:baseY,rotation,color:selectedBlockColor,doorStyle:buildTool==="door-brick"?"brick":"solid",doorWidth:1.5,open:false,pin:null};
+    buildRecords.push(record);createBuildPiece(record);persistBuilds();openDoorPinDialog(record,"setup");showToast("Puerta colocada. Configurá su PIN para protegerla.");return;
   }
   let x=point.x,z=point.z;
   if(buildTool==="platea"||buildTool==="water"||["pool-small","pool-large","pool-municipal"].includes(buildTool)){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
@@ -1227,16 +1236,46 @@ function placeBuildAtPointer(event){
   if(isAnimal)showToast("Descargando modelo 3D del animal...");
   else showToast(buildTool==="water"?"Pileta llena: ¡a nadar!":isPoolTool?"Pileta instalada con dos metros de profundidad.":"¡Pieza colocada y alineada!");
 }
+function openDoorPinDialog(record,mode="unlock"){
+  if(!doorPinDialog||!record)return;
+  doorPinTarget=record;doorPinMode=mode;doorPinDialog.classList.remove("hidden");
+  doorPinCurrent.value="";doorPinNew.value="";doorPinInput.value="";
+  doorPinCurrent.classList.toggle("hidden",mode!=="change");doorPinNew.classList.toggle("hidden",mode!=="change");
+  doorPinInput.classList.toggle("hidden",mode==="change");
+  doorPinChangeButton.classList.toggle("hidden",mode!=="unlock"||!record.pin);
+  if(mode==="setup"){doorPinTitle.textContent="PROTEGER PUERTA";doorPinHelp.textContent="Creá un PIN de 4 a 8 números. Lo necesitarás para abrirla y cerrarla.";}
+  else if(mode==="change"){doorPinTitle.textContent="CAMBIAR PIN";doorPinHelp.textContent="Ingresá el PIN actual y elegí uno nuevo de 4 a 8 números.";}
+  else{doorPinTitle.textContent="PUERTA PROTEGIDA";doorPinHelp.textContent="Ingresá el PIN para abrir o cerrar esta puerta.";}
+  window.setTimeout(()=> (mode==="change"?doorPinCurrent:doorPinInput).focus(),80);
+}
+function closeDoorPinDialog(){doorPinDialog?.classList.add("hidden");doorPinTarget=null;doorPinMode="setup";}
+doorPinForm?.addEventListener("submit",event=>{
+  event.preventDefault();const record=doorPinTarget;if(!record)return;
+  if(doorPinMode==="setup"){
+    const pin=doorPinInput.value.trim();if(!/^\d{4,8}$/.test(pin)){doorPinHelp.textContent="El PIN debe tener entre 4 y 8 números.";return;}
+    record.pin=pin;persistBuilds();closeDoorPinDialog();showToast("PIN configurado. La puerta quedó protegida.");return;
+  }
+  if(doorPinMode==="change"){
+    if(doorPinCurrent.value.trim()!==String(record.pin||"")){doorPinHelp.textContent="El PIN actual no es correcto.";return;}
+    const next=doorPinNew.value.trim();if(!/^\d{4,8}$/.test(next)){doorPinHelp.textContent="El nuevo PIN debe tener entre 4 y 8 números.";return;}
+    record.pin=next;persistBuilds();closeDoorPinDialog();showToast("PIN de la puerta actualizado.");return;
+  }
+  if(!record.pin){openDoorPinDialog(record,"setup");return;}
+  if(doorPinInput.value.trim()!==String(record.pin)){doorPinHelp.textContent="PIN incorrecto. La puerta sigue cerrada.";return;}
+  const group=buildGroups.find(item=>item.userData.buildRecord===record),pivot=group?.userData.doorLeafPivot;if(!pivot){closeDoorPinDialog();return;}
+  record.open=!record.open;pivot.rotation.y=record.open?Math.PI/2:0;persistBuilds();closeDoorPinDialog();
+  showToast(record.open?"PIN correcto: puerta abierta":"PIN correcto: puerta cerrada");
+});
+doorPinChangeButton?.addEventListener("click",()=>{if(doorPinTarget)openDoorPinDialog(doorPinTarget,"change");});
+document.querySelector("#door-pin-cancel")?.addEventListener("click",closeDoorPinDialog);
 function toggleDoorAtPointer(event){
-  if(!renderer||!camera)return;
+  if(!renderer||!camera||doorPinTarget)return;
   const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();
-  raycaster.setFromCamera(pointer,camera);
-  const doors=buildGroups.filter(g=>g.userData.buildRecord?.kind==="door");
+  raycaster.setFromCamera(pointer,camera);const doors=buildGroups.filter(g=>g.userData.buildRecord?.kind==="door");
   const hit=raycaster.intersectObjects(doors,true)[0];if(!hit)return;
   let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;
-  const pivot=root.userData.doorLeafPivot,record=root.userData.buildRecord;if(!pivot||!record)return;
-  record.open=!record.open;pivot.rotation.y=record.open?Math.PI/2:0;persistBuilds();
-  showToast(record.open?"Puerta abierta":"Puerta cerrada");
+  const record=root.userData.buildRecord;if(!root.userData.doorLeafPivot||!record)return;
+  openDoorPinDialog(record,record.pin?"unlock":"setup");
 }
 
 function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked||player.userData.isSwimming)return;playerVerticalVelocity=8.4;playerGrounded=false;}
@@ -1292,8 +1331,8 @@ function animate() {
     const collides = (x,z) => {
       const feet = player.position.y;
       const body = new THREE.Box3(
-        new THREE.Vector3(x-0.34, feet+0.08, z-0.34),
-        new THREE.Vector3(x+0.34, feet+2.05, z+0.34)
+        new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
+        new THREE.Vector3(x+0.28, feet+PLAYER_HEIGHT, z+0.28)
       );
       const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","stairs","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]);
       const playerSwimming=!!player.userData.isSwimming;
