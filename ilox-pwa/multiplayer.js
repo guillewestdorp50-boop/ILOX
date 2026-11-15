@@ -61,7 +61,16 @@ export async function getChatMessages(worldId) {
   return (data || []).reverse();
 }
 
-async function sendWorldChatMessage(channel, worldId, message, displayName) {
+export async function getWorldPlayerStates(worldId) {
+  const cutoff = new Date(Date.now() - 12000).toISOString();
+  const { data, error } = await client.from("multiplayer_player_states")
+    .select("world_id,user_id,x,y,z,rotation,avatar,moving,swimming,jumping,updated_at")
+    .eq("world_id", worldId).gt("updated_at", cutoff);
+  if (error) throw error;
+  return data || [];
+}
+
+async function sendWorldChatMessage(worldId, message, displayName) {
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError || !user) throw userError || new Error("No hay una sesión activa.");
   const safeMessage = String(message || "").trim().slice(0, 500);
@@ -71,9 +80,27 @@ async function sendWorldChatMessage(channel, worldId, message, displayName) {
     world_id: worldId, user_id: user.id, display_name: safeName, message: safeMessage
   }).select("id,world_id,user_id,display_name,message,created_at").single();
   if (error) throw error;
-  const status = await channel.send({ type: "broadcast", event: "chat_message", payload: { message: data } });
-  if (status !== "ok") console.warn("ILOX multiplayer: el mensaje quedó guardado, pero no se pudo avisar en vivo:", status);
   return data;
+}
+
+async function saveWorldPlayerState(worldId, payload) {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError || !user) throw userError || new Error("No hay una sesión activa.");
+  const { error } = await client.from("multiplayer_player_states").upsert({
+    world_id: worldId, user_id: user.id,
+    x: Number(payload.x) || 0, y: Number(payload.y) || 0, z: Number(payload.z) || 0,
+    rotation: Number(payload.rotation) || 0,
+    avatar: String(payload.avatar || "boy:0").slice(0, 40),
+    moving: !!payload.moving, swimming: !!payload.swimming, jumping: !!payload.jumping,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "world_id,user_id" });
+  if (error) throw error;
+}
+
+async function removeWorldPlayerState(worldId, userId) {
+  const { error } = await client.from("multiplayer_player_states")
+    .delete().eq("world_id", worldId).eq("user_id", userId);
+  if (error) throw error;
 }
 
 export async function getWorldStructures(worldId) {
@@ -189,7 +216,8 @@ export async function subscribeWorld(worldId, handlers = {}) {
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
-    .on("broadcast", { event: "chat_message" }, ({ payload }) => handlers.onChatMessage?.(payload?.message))
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "multiplayer_chat_messages", filter: "world_id=eq." + worldId }, payload => handlers.onChatMessage?.(payload.new))
+    .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_player_states", filter: "world_id=eq." + worldId }, payload => handlers.onPlayerStateChange?.(payload))
     .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()));
   return new Promise((resolve, reject) => {
     channel.subscribe(async status => {
@@ -199,11 +227,14 @@ export async function subscribeWorld(worldId, handlers = {}) {
           resolve({
           channel,
           userId: user.id,
-          sendPlayerState: payload => channel.send({ type: "broadcast", event: "player_state", payload }),
+          sendPlayerState: payload => saveWorldPlayerState(worldId, payload),
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
-          sendChatMessage: (message, displayName) => sendWorldChatMessage(channel, worldId, message, displayName),
+          sendChatMessage: (message, displayName) => sendWorldChatMessage(worldId, message, displayName),
           updatePresence: payload => channel.track({ ...payload, user_id: user.id }),
-          close: () => client.removeChannel(channel)
+          close: async () => {
+            try { await removeWorldPlayerState(worldId, user.id); } catch (error) { console.warn("ILOX multiplayer: no se pudo retirar el estado del jugador", error); }
+            return client.removeChannel(channel);
+          }
           });
         } catch (error) {
           await client.removeChannel(channel);
