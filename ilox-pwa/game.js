@@ -850,7 +850,6 @@ function addEvents() {
       showToast("Color seleccionado");
     });
   });
-  document.querySelector("#rotate-build").addEventListener("click", () => { buildRotation = (buildRotation + Math.PI/2) % (Math.PI*2); showToast("Pieza girada"); });
   document.querySelector("#fullscreen").addEventListener("click", async () => {
     try {
       if (!document.fullscreenElement) await game.requestFullscreen();
@@ -873,6 +872,7 @@ function createBuildPiece(record) {
     box(1.5,1.5,1.5,material,0,.75,0);
   }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
+  if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
   if(kind==="door"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.12,1.28,.07,wood,0,.66,-.04);ball(.42,.68,-.09,.045,.045,.045,metal);}
   if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
@@ -908,7 +908,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function placeBuildAtPointer(event){
@@ -921,9 +921,9 @@ function placeBuildAtPointer(event){
   if(onPiece&&buildTool!=="water"&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=Math.round((point.x+normal.x*.76)/1.5)*1.5;z=Math.round((point.z+normal.z*.76)/1.5)*1.5;}}
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
   if(buildTool==="water"&&(Math.abs(x)>42||Math.abs(z)>42)){showToast("El agua solo se puede colocar en los sectores habilitados del valle central.");return;}
-  const ground=terrainHeight(x,z);let layer=0;
-  if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;layer=Math.max(0,Math.round((top-ground)/1.5));}
-  const record={kind:buildTool,x,z,y:ground+layer*1.5,rotation:buildRotation,color:selectedBlockColor};
+  const ground=terrainHeight(x,z);let baseY=Math.ceil((ground-1e-4)/1.5)*1.5;
+  if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;baseY=Math.round(top/1.5)*1.5;}
+  const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en sector habilitado":"¡Pieza colocada y alineada!");
 }
 function updateMoveStick(event) {
