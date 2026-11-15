@@ -17,7 +17,7 @@ let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
-let yaw = 0, pitch = 0.18;
+let yaw = 0, pitch = 0.48;
 let moveX = 0, moveZ = 0;
 let joyPointer = null;
 const polyHavenLoader = new GLTFLoader();
@@ -576,7 +576,7 @@ function addEvents() {
   });
   game.addEventListener("pointermove", e => {
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),2.4,24);return;}
+    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),3.2,20);return;}
     if (lookPointer !== e.pointerId || !started) return;
     const dx = e.clientX - lastLookX;
     const dy = e.clientY - lastLookY;
@@ -585,7 +585,7 @@ function addEvents() {
     lastLookY = e.clientY;
     // Cámara orbital libre: arrastrar gira alrededor del personaje incluso al construir.
     yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -0.18, 1.28);
+    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, 0.12, 1.12);
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -598,7 +598,7 @@ function addEvents() {
   game.addEventListener("wheel", e => {
     if (!started) return;
     e.preventDefault();
-    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*1.2, buildMode?2.4:4.5, 24);
+    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, buildMode?3.2:4.2, 20);
   }, {passive:false});
   joystick.addEventListener("pointerdown", e => {
     joyPointer = e.pointerId;
@@ -638,15 +638,15 @@ function addEvents() {
   const viewToggle = document.querySelector("#view-toggle");
   const materialsToggle = document.querySelector("#materials-toggle");
   materialsToggle.addEventListener("click", () => buildPanel.classList.toggle("hidden"));
-  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA"; cameraDistance = firstPersonBuild ? 2.4 : 16; if(!firstPersonBuild) pitch=1.05; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
+  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA"; cameraDistance = firstPersonBuild ? 2.4 : 9.5; if(!firstPersonBuild) pitch=0.48; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
   const buildPanel = document.querySelector("#build-panel");
   buildToggle.addEventListener("click", () => {
     buildMode = !buildMode;
     buildPanel.classList.toggle("hidden", !buildMode);
     document.querySelector("#materials-toggle").classList.toggle("hidden",!buildMode);
     buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 16) : 5.4;
-    if(buildMode && !firstPersonBuild) pitch = 1.05;
+    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 9.5) : 5.4;
+    if(buildMode && !firstPersonBuild) pitch = 0.48;
     viewToggle.classList.toggle("hidden",!buildMode);
     viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
     document.querySelector("#build-help").textContent = buildMode ? "BLOQUES PEQUEÑOS · TOCÁ para colocar · Arrastrá para mover la cámara aérea." : "Explorá el mundo y construí con bloques.";
@@ -749,7 +749,7 @@ function updateJoystick(e) {
   const length = Math.hypot(dx, dy);
   if (length > max) { dx = dx / length * max; dy = dy / length * max; }
   stick.style.transform = `translate(${dx}px,${dy}px)`;
-  moveX = dx / max;
+  moveX = 0;
   moveZ = dy / max;
 }
 
@@ -757,8 +757,8 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
-    let forward = moveZ;
-    let strafe = moveX;
+    let forward = -moveZ;
+    let strafe = 0;
     if (keys.has("w") || keys.has("arrowup")) forward -= 1;
     if (keys.has("s") || keys.has("arrowdown")) forward += 1;
     if (keys.has("a") || keys.has("arrowleft")) strafe -= 1;
@@ -789,23 +789,25 @@ function animate() {
     const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.62 : swing*0.62; });
-    if (moving) player.rotation.y = Math.atan2(dx, -dz);
+    // El personaje siempre mira hacia delante según la cámara; retroceder no lo da vuelta.
+    player.rotation.y = yaw;
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = buildMode && firstPersonBuild && player;
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildTool !== "erase";
   const distance = buildMode ? cameraDistance : 5.4;
-  const targetX = focus.position.x + Math.sin(yaw) * distance;
-  const targetZ = focus.position.z + Math.cos(yaw) * distance;
-  const targetY = focus.position.y + (buildMode ? 1.8 : 2.7) + pitch * (buildMode ? 28 : 4.5);
+  const orbitDistance = Math.cos(pitch) * distance;
+  const targetX = focus.position.x + Math.sin(yaw) * orbitDistance;
+  const targetZ = focus.position.z + Math.cos(yaw) * orbitDistance;
+  const targetY = focus.position.y + 1.8 + Math.sin(pitch) * distance;
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.lerp(eye,1-Math.pow(0.001,delta));
     camera.lookAt(eye.x-Math.sin(yaw)*10,eye.y+pitch*8,eye.z-Math.cos(yaw)*10);
   } else {
     camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
-    camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
+    camera.lookAt(focus.position.x, focus.position.y + 1.25, focus.position.z);
   }
   renderer.render(scene, camera);
 }
