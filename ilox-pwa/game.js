@@ -791,7 +791,8 @@ function addEvents() {
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : "Cámara en tercera persona");
   };
-  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => applyCameraMode(button.dataset.camera)));
+  cameraMenuToggle.addEventListener("click",()=>cameraModePanel.classList.toggle("hidden"));
+  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");}));
   cameraLockButton.addEventListener("click", () => {
     cameraLocked = !cameraLocked;
     game.classList.toggle("camera-locked", cameraLocked);
@@ -800,12 +801,12 @@ function addEvents() {
       resetMoveStick();
       keys.clear();
       yaw += Math.PI;
-      cameraLockButton.textContent = "🔒 GIRO LIBRE ACTIVADO";
+      cameraLockButton.textContent = "🔒";
       cameraLockButton.classList.add("locked");
       cameraLockButton.setAttribute("aria-pressed","true");
       showToast("Movimiento bloqueado: arrastrá para ver la cara del personaje");
     } else {
-      cameraLockButton.textContent = "🔓 GIRO LIBRE";
+      cameraLockButton.textContent = "🔓";
       cameraLockButton.classList.remove("locked");
       cameraLockButton.setAttribute("aria-pressed","false");
       showToast("Movimiento desbloqueado");
