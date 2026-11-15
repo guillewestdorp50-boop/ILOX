@@ -216,6 +216,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
+    .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "multiplayer_chat_messages", filter: "world_id=eq." + worldId }, payload => handlers.onChatMessage?.(payload.new))
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_player_states", filter: "world_id=eq." + worldId }, payload => handlers.onPlayerStateChange?.(payload))
     .on("presence", { event: "sync" }, () => handlers.onPresence?.(channel.presenceState()));
