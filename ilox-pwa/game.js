@@ -65,7 +65,7 @@ const POOL_DESIGNS = Object.freeze({
 });
 const avatarModelLoader = new GLTFLoader();
 const animalModelLoader = new GLTFLoader();
-const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb",pig:"https://gobkit.com/freebies/animal005/Pig.glb",goat:"https://gobkit.com/freebies/animalB/Goat.glb"};
+const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb",pig:"https://gobkit.com/freebies/animal005/Pig.glb",goat:"https://gobkit.com/freebies/animalB/Goat.glb",fox:"https://wihbxfebobfmohmqqhkt.supabase.co/storage/v1/object/public/ilox-assets/bake3d-fox-animated.glb",person:"https://wihbxfebobfmohmqqhkt.supabase.co/storage/v1/object/public/ilox-assets/bake3d-person-animated.glb",robot:"https://wihbxfebobfmohmqqhkt.supabase.co/storage/v1/object/public/ilox-assets/bake3d-robot-animated.glb",trex:"https://wihbxfebobfmohmqqhkt.supabase.co/storage/v1/object/public/ilox-assets/bake3d-trex-animated.glb"};
 const animalAssetPromises = new Map();
 // Modelo humanoide GLB con malla skinned, texturas PBR y clips Idle/Walk/Run.
 // Recurso de ejemplo oficial de Three.js (licencia MIT).
@@ -1093,7 +1093,7 @@ function addEvents() {
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
     structure:[["platea","▰","PLATEA"],["pool-small","🏊","PILETA CHICA"],["pool-large","🏊","PILETA GRANDE"],["pool-municipal","🏊","PILETA MUNICIPAL"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door-solid","🚪","PUERTA SÓLIDA"],["door-brick","🚪","PUERTA LADRILLO"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
-    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["fox","🦊","ZORRO REALISTA"],["person","🧍","PERSONA 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
   };
   function renderBuildTools(category="block"){
     buildToolsHost.innerHTML="";
@@ -1262,7 +1262,7 @@ function addEvents() {
       if(!Array.isArray(structures)||structures.length>1200)throw new Error("El archivo no contiene un mundo ILOX válido (máximo 1200 piezas).");
       if(parsed?.format&&parsed.format!=="ILOX_WORLD")throw new Error("Este archivo no es una copia JSON de ILOX.");
       if(parsed?.worldId&&activeMultiplayerWorldId&&parsed.worldId!==activeMultiplayerWorldId)throw new Error("Esta copia pertenece a otra partida compartida.");
-      const allowed=new Set(["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]);
+      const allowed=new Set(["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]);
       const clean=structures.filter(record=>record&&allowed.has(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)).map(record=>{
         const copy={...record};
         if(!activeMultiplayerWorldId){delete copy.cloudId;delete copy.cloudOwnerId;}
@@ -1402,7 +1402,7 @@ function createBuildPiece(record, options = {}) {
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);
   if(kind==="pool"||kind==="platea")refreshTerrainSurface();
-  if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
+  if(["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
   return group;
 }
 async function loadAnimalModel(group,kind,notify=false){
@@ -1418,7 +1418,7 @@ async function loadAnimalModel(group,kind,notify=false){
     const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
     let meshCount=0;model.traverse(o=>{if(o.isMesh)meshCount++;});
     if(!meshCount||!Number.isFinite(size.y)||size.y<.01)throw new Error("El GLB no contiene una malla 3D visible.");
-    const targetHeight={sheep:.95,cow:1.55,horse:1.65,chicken:.55,pig:.9,goat:.95}[kind]||1;
+    const targetHeight={sheep:.95,cow:1.55,horse:1.65,chicken:.55,pig:.9,goat:.95,fox:.9,person:1.75,robot:1.8,trex:3.2}[kind]||1;
     const scale=targetHeight/size.y;
     model.scale.setScalar(scale);
     model.position.y=-bounds.min.y*scale;
@@ -1474,7 +1474,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62,fox:.9,person:1.75,robot:1.8,trex:3.2};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
@@ -1968,7 +1968,7 @@ function showMultiplayerError(error){
 }
 
 function buildFootprint(kind){
-  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1]};
+  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
   return sizes[kind]||[1.5,1.5];
 }
 function snapDoorToPlateaGrid(x,z,rotation=0){
@@ -2198,7 +2198,7 @@ function placeBuildAtPointer(event){
   const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:2.4),rotation:buildRotation,color:selectedBlockColor};
   if(isPoolTool){record.poolDesign=poolDesign;record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
-  const isAnimal=["sheep","cow","horse","chicken","pig","goat"].includes(buildTool);
+  const isAnimal=["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(buildTool);
   createBuildPiece(record,{notify:isAnimal});persistBuilds();
   if(isAnimal)showToast("Descargando modelo 3D del animal...");
   else showToast(buildTool==="water"?"Pileta llena: ¡a nadar!":isPoolTool?"Pileta instalada con dos metros de profundidad.":"¡Pieza colocada y alineada!");
@@ -2339,7 +2339,7 @@ function animate() {
         new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
         new THREE.Vector3(x+0.28, feet+PLAYER_HEIGHT, z+0.28)
       );
-      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]); // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
+      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]); // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
       const playerSwimming=!!player.userData.isSwimming;
       const filledPoolAtCandidate=buildRecords.some(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(z-p.z)<(p.poolDepth||6)/2-.48);
       for (const g of buildGroups) {
