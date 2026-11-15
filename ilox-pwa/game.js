@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -908,7 +909,7 @@ async function loadAnimalModel(group,kind){
   try{
     if(!animalAssetPromises.has(url))animalAssetPromises.set(url,animalModelLoader.loadAsync(url));
     const gltf=await animalAssetPromises.get(url);if(!group.parent)return;
-    const model=gltf.scene.clone(true);
+    const model=cloneSkeleton(gltf.scene);
     const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
     const targetHeight={sheep:.78,cow:1.42,horse:1.62,chicken:.58}[kind]||1;
     const scale=targetHeight/Math.max(size.y,.001);model.scale.setScalar(scale);model.position.y=-bounds.min.y*scale;
