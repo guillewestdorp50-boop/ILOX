@@ -2,8 +2,9 @@ name: Publicar ILOX — mundo natural y mapas experimentales
 
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/ilox-pwa-world-hub]
     paths:
+      - 'ilox-pwa/**'
       - 'manifest.webmanifest'
       - 'scripts/prepare_ilox_island.py'
       - 'LICENSE-Island.txt'
@@ -52,6 +53,13 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch == 'experiment/the-forest-third-person' && github.event.workflow_run.head_sha || 'experiment/the-forest-third-person' }}
           path: forest-preview-source
+          persist-credentials: false
+
+      - name: Obtener PWA ILOX World Hub aislada
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/ilox-pwa-world-hub
+          path: ilox-pwa-source
           persist-credentials: false
 
       - name: Obtener mundo The Forest original (MIT, commit fijado)
@@ -145,13 +153,17 @@ jobs:
         run: |
           mkdir -p _site
           cp -R island-source/dist/. _site/
-          mkdir -p _site/urban-rural _site/forest
+          mkdir -p _site/urban-rural _site/forest _site/ilox
           cp urban-rural-source/index.html urban-rural-source/styles.css urban-rural-source/app.js urban-rural-source/manifest.webmanifest _site/urban-rural/
           cp -R forest-source/dist/. _site/forest/
-          touch _site/.nojekyll _site/urban-rural/.nojekyll _site/forest/.nojekyll
+          cp -R ilox-pwa-source/ilox-pwa/. _site/ilox/
+          touch _site/.nojekyll _site/urban-rural/.nojekyll _site/forest/.nojekyll _site/ilox/.nojekyll
           test -s _site/index.html
           test -s _site/urban-rural/index.html
           test -s _site/forest/index.html
+          test -s _site/ilox/index.html
+          test -s _site/ilox/manifest.webmanifest
+          test -s _site/ilox/sw.js
           test -s _site/forest/assets/index-*.js
 
       - name: Subir sitio
