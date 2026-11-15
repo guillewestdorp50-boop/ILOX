@@ -865,7 +865,7 @@ function addEvents() {
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
   });
   document.querySelector("#erase-parts").addEventListener("click",()=>{
-    buildMode=true;buildTool="erase";buildPanel.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    buildMode=true;buildTool="erase";doorRotateControl?.classList.add("hidden");buildPanel.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
     buildToggle.textContent="✓ TERMINAR";renderBuildTools(categorySelect.value);showToast("Tocá cada pieza que quieras eliminar.");
   });
   viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
