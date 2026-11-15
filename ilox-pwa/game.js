@@ -793,8 +793,8 @@ function animate() {
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const speed = 7.2;
     const cameraYaw = yaw;
-    const dx = (Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
-    const dz = (-Math.cos(cameraYaw) * forward + Math.sin(cameraYaw) * strafe) * speed * delta;
+    const dx = (-Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
+    const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
     const collides = (x,z) => {
