@@ -375,13 +375,12 @@ unused_shelves = root / "public" / "assets" / "rocks" / "shelves.glb"
 if unused_shelves.exists():
     unused_shelves.unlink()
 
-# Experimental 2,000,000 m² world: a 1,414.2136 m square.
-# Keep the original authored layout intact in source control, and apply one
-# deterministic transform to its exported coordinates at build time.
+# ILOX mainland world: restore the full 2,048 m square (4,194,304 m²).
+# The one-sided coastline polygon is authored directly in these world coordinates.
 patch("src/world/layout.ts",
 "export const WORLD_SIZE = 2048;",
-"export const WORLD_SIZE = Math.sqrt(2_000_000);",
-"set 2 million square metre world")
+"export const WORLD_SIZE = 2048;",
+"restore full 4.19 million square metre world")
 patch("src/world/layout.ts",
 "export const SPAWN = SPOTS[0];",
 """export const SPAWN = SPOTS[0];
