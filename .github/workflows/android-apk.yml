@@ -72,8 +72,8 @@ jobs:
       - name: Publicar instalador APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ilox-v89-android
-          name: ILOX v89 — Instalador Android
-          body: APK de prueba de ILOX v89. Corrige la entrada al mundo y recupera la última partida multijugador guardada.
+          tag_name: ilox-v90-android
+          name: ILOX v90 — Instalador Android
+          body: APK de prueba de ILOX v90. Sincroniza construcciones compartidas por respaldo y agrega un kit modular de pileta seca con agua separada.
           files: app/build/outputs/apk/debug/app-debug.apk
           make_latest: true
