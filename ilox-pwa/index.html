@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-builder-1">
+  <link rel="stylesheet" href="./styles.css?v=ilox-builder-2">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -39,7 +39,8 @@
     <section class="build-panel hidden" id="build-panel" aria-label="Herramientas de construcción">
       <div class="build-panel-title">CONSTRUIR TU MUNDO</div>
       <div class="build-tools">
-        <button class="build-tool selected" data-tool="floor">▰<small>Piso</small></button>
+        <button class="build-tool selected" data-tool="block">🧱<small>Bloque</small></button>
+        <button class="build-tool" data-tool="floor">▰<small>Piso</small></button>
         <button class="build-tool" data-tool="wall">▥<small>Pared</small></button>
         <button class="build-tool" data-tool="door">🚪<small>Puerta</small></button>
         <button class="build-tool" data-tool="window">▧<small>Ventana</small></button>
@@ -47,7 +48,7 @@
         <button class="build-tool" data-tool="erase">⌫<small>Borrar</small></button>
         <button class="build-tool" id="rotate-build">↻<small>Girar</small></button>
       </div>
-      <div class="build-help" id="build-help">Elegí una pieza y tocá el terreno para colocarla.</div>
+      <div class="build-help" id="build-help">Elegí bloques y tocá el terreno o una pieza para apilar.</div>
     </section>
     <button id="build-toggle" class="build-toggle hidden">＋ CONSTRUIR</button>
     <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
