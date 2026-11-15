@@ -342,20 +342,29 @@ function makeMeadowDetails() {
   }
   grass.instanceMatrix.needsUpdate=true; scene.add(grass);
 }
-function makePlayer(kind = "boy") {
+function makePlayer(kind = "explorer:0") {
   const group = new THREE.Group();
+  const [avatarType, variantText] = String(kind).split(":");
+  const variant = Number(variantText || 0);
+  kind = avatarType;
+  const rig = new THREE.Group();
+  group.add(rig);
   const isBuilder = kind === "builder";
+  const isFantasy = ["elf","knight","ninja","mage","orc","fairy"].includes(kind);
   const isAstronaut = kind === "astronaut";
   const isRobot = kind === "robot";
   const isFemale = kind === "woman" || kind === "girl";
-  const adult = kind === "woman" || isBuilder;
+  const adult = kind === "woman" || isBuilder || kind === "knight";
   const scale = adult ? 1 : 0.94;
   const mat = (color, roughness = 0.86, metalness = 0) =>
     new THREE.MeshStandardMaterial({ color, roughness, metalness });
-  const skin = mat(kind === "girl" ? 0xc98b65 : kind === "woman" ? 0xb97855 : 0xd49a76, 0.92);
-  const hair = mat(kind === "girl" ? 0x3a241c : kind === "woman" ? 0x241a16 : 0x30231d, 1);
+  const skinTones = [0xd49a76,0xb97855,0x8e5b42,0xe0b18d,0x70452f];
+  const skin = mat(kind === "girl" ? 0xc98b65 : kind === "woman" ? 0xb97855 : skinTones[variant % skinTones.length], 0.92);
+  const hairColors = [0x30231d,0x5a321f,0x171717,0x9a6734,0x6d344f,0x344b72,0xb5a06c,0x4c6b47,0x773c2b,0xaaa7a0];
+  const hair = mat(hairColors[(variant + (kind === "girl" ? 2 : 0)) % hairColors.length], 1);
   const shirtColor = isBuilder ? 0x263c36 : isAstronaut ? 0xe2e7e9 : isRobot ? 0x536a79 : kind === "girl" ? 0x8a547f : kind === "woman" ? 0x315d76 : 0x315a8c;
-  const shirt = mat(shirtColor);
+  const palette = [0x315a8c,0x8a547f,0x386b52,0x9b542f,0x5b5b91,0x9b813c,0x347d86,0x873d4c,0x596b39,0x6b5547];
+  const shirt = mat(isBuilder ? shirtColor : isAstronaut ? shirtColor : isRobot ? shirtColor : palette[variant % palette.length]);
   const pants = mat(isBuilder ? 0x303b40 : isAstronaut ? 0x526779 : isRobot ? 0x344653 : kind === "girl" ? 0x4b3d63 : 0x394b5c);
   const bootMat = mat(isBuilder ? 0x292b2b : 0x302820);
   const gloveMat = mat(isBuilder ? 0x34383a : 0x4b4239);
@@ -407,13 +416,13 @@ function makePlayer(kind = "boy") {
   const arms = [], legs = [];
   for (const side of [-1,1]) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side*.37,1.56,0);
+    shoulder.position.set(side*.43,1.48,0);
     group.add(shoulder);
-    capsule(shoulder,.115,.36,shirt,0,-.20,0,1,1.05,1);
-    const elbow = new THREE.Group(); elbow.position.set(0,-.40,0); shoulder.add(elbow);
-    capsule(elbow,.085,.34,shirt,0,-.19,0,1,1,1);
-    add(elbow,new THREE.SphereGeometry(.082,12,10),skin,0,-.40,-.005,1,.85,.9);
-    add(elbow,new THREE.CapsuleGeometry(.075,.07,4,8),isBuilder?gloveMat:skin,0,-.49,-.01);
+    capsule(shoulder,.105,.27,shirt,0,-.15,0,1,1,1);
+    const elbow = new THREE.Group(); elbow.position.set(0,-.31,0); shoulder.add(elbow);
+    capsule(elbow,.078,.25,shirt,0,-.14,0,1,1,1);
+    add(elbow,new THREE.SphereGeometry(.073,12,10),skin,0,-.29,-.005,1,.85,.9);
+    add(elbow,new THREE.CapsuleGeometry(.068,.055,4,8),isBuilder?gloveMat:skin,0,-.36,-.01);
     arms.push(shoulder);
 
     const hip = new THREE.Group(); hip.position.set(side*.18,.99,0); group.add(hip);
@@ -480,11 +489,20 @@ function makePlayer(kind = "boy") {
   const logoTexture = new THREE.CanvasTexture(logoCanvas);
   add(group,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
 
+  // Variantes fantásticas con siluetas reconocibles, no solo cambios de color.
+  if (kind === "elf") { for (const side of [-1,1]) { const ear=add(rig,new THREE.ConeGeometry(.09,.34,8),skin,side*.34,2.06,-.01); ear.rotation.z=side*-Math.PI/2; } }
+  if (kind === "knight") { const armor=mat(0x87939d,.38,.62); add(rig,new THREE.CapsuleGeometry(.37,.48,5,12),armor,0,1.36,-.02,1.12,1,.82); add(rig,new THREE.SphereGeometry(.31,18,14),armor,0,2.08,0,1.05,1,.95); add(rig,new THREE.BoxGeometry(.43,.12,.08),dark,0,2.05,-.27); }
+  if (kind === "ninja") { const mask=mat(0x252735); add(rig,new THREE.BoxGeometry(.43,.20,.12),mask,0,1.99,-.25); add(rig,new THREE.BoxGeometry(.48,.10,.20),hair,0,2.28,0); }
+  if (kind === "mage") { const robe=mat(0x493b78); add(rig,new THREE.CylinderGeometry(.22,.43,.85,16),robe,0,1.14,0); add(rig,new THREE.ConeGeometry(.34,.55,16),robe,0,2.40,0); }
+  if (kind === "orc") { const tusk=mat(0xf0e6ce); for(const side of [-1,1]) add(rig,new THREE.ConeGeometry(.055,.20,8),tusk,side*.13,1.94,-.26); add(rig,new THREE.SphereGeometry(.32,18,14),mat(0x66834d),0,2.05,-.01,1.05,1.08,.92); }
+  if (kind === "fairy") { const wing=mat(0x9edbe0,.3,.15); for(const side of [-1,1]) { const w=add(rig,new THREE.SphereGeometry(.22,16,12),wing,side*.40,1.62,.25,1.25,1.7,.28); w.rotation.z=side*.35; } }
+  // Ajuste de tonos y rasgos por variante para que las cien opciones se distingan.
   group.scale.setScalar(scale);
   group.position.set(0,terrainHeight(0,0),0);
   group.userData.avatarKind=kind;
   group.userData.legs=legs;
   group.userData.arms=arms;
+  group.userData.rig=rig;
   scene.add(group);
   return group;
 
@@ -624,6 +642,26 @@ function addEvents() {
     welcome.classList.add("hidden");
     avatarSelect.classList.remove("hidden");
   });
+  const avatarCatalog = [
+    ["explorer","🧭","Explorador"],["girl","🧑‍🦰","Exploradora"],["builder","👷","Constructor"],
+    ["woman","👩‍🔧","Constructora"],["astronaut","🧑‍🚀","Astronauta"],["robot","🤖","Robot"],
+    ["elf","🧝","Elfo"],["knight","🛡️","Caballero"],["ninja","🥷","Ninja"],
+    ["mage","🧙","Mago"],["orc","👹","Orco"],["fairy","🧚","Hada"]
+  ];
+  const avatarGrid = document.querySelector(".avatar-options");
+  avatarGrid.innerHTML = "";
+  let firstAvatar = true;
+  avatarCatalog.slice(0,10).forEach(([type,emoji,label]) => {
+    for (let variant=0; variant<10; variant++) {
+      const option=document.createElement("button");
+      option.className="avatar-option"+(firstAvatar?" selected":"");
+      option.dataset.avatar=type+":"+variant;
+      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+label+' '+(variant+1)+'</strong><small>Modelo '+String(variant+1).padStart(2,"0")+'</small>';
+      avatarGrid.appendChild(option);
+      firstAvatar=false;
+    }
+  });
+  selectedAvatar = "explorer:0";
   document.querySelectorAll(".avatar-option").forEach(option => {
     option.addEventListener("click", () => {
       selectedAvatar = option.dataset.avatar;
@@ -822,9 +860,16 @@ function animate() {
     const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
     playerHeading += angleDelta * Math.min(1, delta * 12);
     player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
-    const swing = moving ? Math.sin(player.userData.walkPhase) * 0.62 : 0;
+    const swing = moving ? Math.sin(player.userData.walkPhase) * 0.48 : 0;
+    const stride = moving ? Math.cos(player.userData.walkPhase * 2) : 0;
+    const rig = player.userData.rig;
+    if (rig) {
+      rig.position.y = moving ? Math.abs(stride) * 0.055 : 0;
+      rig.rotation.z = moving ? Math.sin(player.userData.walkPhase) * 0.035 : 0;
+      rig.rotation.x = moving ? -0.035 : 0;
+    }
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
-    player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.62 : swing*0.62; });
+    player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
   }
