@@ -30,7 +30,7 @@ let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild 
 let selectedBlockColor = 0xff3030;
 const buildRecords = [], buildGroups = [];
 let started = false;
-let yaw = 0, playerHeading = 0, pitch = 0.48;
+let yaw = 0, playerHeading = 0, pitch = 0;
 let cameraMode = "third", cameraLocked = false;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
@@ -370,8 +370,6 @@ function makeFantasyWorld() {
     const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s);
     const top=new THREE.Mesh(new THREE.CylinderGeometry(5.5,2.1,2.1,7),grassMat);top.position.y=0;top.castShadow=true;g.add(top);
     const rock=new THREE.Mesh(new THREE.ConeGeometry(3.9,9,7),stoneDark);rock.position.y=-5.1;rock.rotation.y=.3;rock.castShadow=true;g.add(rock);
-    const treeTrunk=cylinder(g,.22,.3,2.5,wood,0,1.9,0,7);
-    const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.8,1),mat(0x4d854e));crown.position.set(0,3.5,0);g.add(crown);
     scene.add(g);
   }
   // Camino principal de tierra: conecta la plaza, el castillo y las aldeas.
@@ -639,24 +637,10 @@ function init() {
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
   scene.add(sun);
-  makeDistantMountains();
+  // Escenario limpio: sin montañas, árboles, plantas ni rocas decorativas atravesables.
+  // El terreno queda libre para construir; la naturaleza se agrega desde las herramientas
+  // del jugador, con las colisiones del sistema de construcción.
   makeTerrain();
-  makeMeadowDetails();
-  // Las construcciones grandes ya no vienen hechas: el jugador crea su propio mundo.
-  const random = seededRandom(20261114);
-  for (let i = 0; i < 58; i++) {
-    const x = (random() - 0.5) * 190;
-    const z = (random() - 0.5) * 190;
-    if (Math.hypot(x, z) < 21) continue;
-    if (Math.abs(x - (Math.sin(z * 0.025) * 17 - 15)) < 5) continue;
-    makeTree(x, z, 0.72 + random() * 0.65, random);
-  }
-  for (let i = 0; i < 42; i++) {
-    const x = (random() - 0.5) * 195;
-    const z = (random() - 0.5) * 195;
-    if (Math.hypot(x, z) < 13) continue;
-    makeRock(x, z, 0.35 + random() * 1.1, random);
-  }
   clock = new THREE.Clock();
   camera.position.set(0, terrainHeight(0,0) + 4.1, 8.5);
   camera.lookAt(0, terrainHeight(0,0) + 1.2, 0);
@@ -719,7 +703,7 @@ function addEvents() {
     lastLookY = e.clientY;
     // Cámara orbital libre: arrastrar gira alrededor del personaje incluso al construir.
     yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, 0.12, 1.12);
+    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0032, -1.45, 1.45);
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -785,8 +769,7 @@ function addEvents() {
     cameraMode = mode;
     firstPersonBuild = mode === "first";
     cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
-    if (mode === "second") pitch = 0.28;
-    else if (mode === "third") pitch = 0.48;
+    pitch = 0;
     document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
     const buildView = document.querySelector("#view-toggle");
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
@@ -1105,27 +1088,36 @@ function animate() {
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
-  const orbitDistance = Math.cos(pitch) * distance;
-  // La cámara conserva su ángulo relativo y acompaña el rumbo del personaje.
+  // Pitch expresa la dirección de la mirada: positivo = cielo, negativo = suelo.
+  // La cámara conserva su posición detrás del avatar; así puede mirar hacia arriba
+  // sin hundirse bajo el terreno ni alterar el joystick o el rumbo del jugador.
   const cameraYaw = yaw;
-  const targetX = focus.position.x + Math.sin(cameraYaw) * orbitDistance;
-  const targetZ = focus.position.z + Math.cos(cameraYaw) * orbitDistance;
-  const targetY = focus.position.y + 1.8 + Math.sin(pitch) * distance;
+  const targetX = focus.position.x + Math.sin(cameraYaw) * distance;
+  const targetZ = focus.position.z + Math.cos(cameraYaw) * distance;
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.lerp(eye,1-Math.pow(0.001,delta));
-    const cameraYaw = yaw;
-    camera.lookAt(eye.x-Math.sin(cameraYaw)*10,eye.y+pitch*8,eye.z-Math.cos(cameraYaw)*10);
+    const viewDistance = 10;
+    camera.lookAt(
+      eye.x-Math.sin(cameraYaw)*Math.cos(pitch)*viewDistance,
+      eye.y+Math.sin(pitch)*viewDistance,
+      eye.z-Math.cos(cameraYaw)*Math.cos(pitch)*viewDistance
+    );
   } else {
-    camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
-    camera.lookAt(focus.position.x, focus.position.y + 1.25, focus.position.z);
+    const cameraHeight = cameraMode === "second" ? 2.55 : 3.35;
+    camera.position.lerp(new THREE.Vector3(targetX, focus.position.y + cameraHeight, targetZ), 1 - Math.pow(0.001, delta));
+    const viewDistance = Math.max(8, distance + 3);
+    camera.lookAt(
+      focus.position.x-Math.sin(cameraYaw)*Math.cos(pitch)*viewDistance,
+      focus.position.y+1.25+Math.sin(pitch)*viewDistance,
+      focus.position.z-Math.cos(cameraYaw)*Math.cos(pitch)*viewDistance
+    );
   }
   renderer.render(scene, camera);
 }
 
 try {
   init();
-  loadFreeNatureAssets();
 } catch (error) {
   console.error(error);
   loading.innerHTML = '<div class="loading-mark">ILOX</div><p>No se pudo iniciar el mundo 3D. Revisá la conexión y volvé a intentar.</p>';
