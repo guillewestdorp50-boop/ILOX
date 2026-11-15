@@ -121,7 +121,7 @@ replace_once(audio_path, "private readonly controller: FirstPersonController",
 
 # Unificar las pisadas: mismo sonido en pasto, tierra, piedra y senderos.
 # Quitar el roce de hierba y cualquier cambio de timbre según la superficie.
-replace_once(audio_path, "  private rustleGain!: GainNode;\n", "")
+replace_once(audio_path, "  private rustleGain!: GainNode;", "")
 replace_once(audio_path,
              """    const rustleSrc = ctx.createBufferSource();
     rustleSrc.buffer = this.noiseBuf;
