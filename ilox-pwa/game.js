@@ -656,7 +656,7 @@ function addEvents() {
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   movePad.addEventListener("pointerdown", e => {
-    if (!started || e.button !== 0 || moveStickPointer !== null) return;
+    if (!started || cameraLocked || e.button !== 0 || moveStickPointer !== null) return;
     e.preventDefault();
     e.stopPropagation();
     moveStickPointer = e.pointerId;
@@ -664,7 +664,7 @@ function addEvents() {
     updateMoveStick(e);
   });
   movePad.addEventListener("pointermove", e => {
-    if (e.pointerId !== moveStickPointer) return;
+    if (e.pointerId !== moveStickPointer || cameraLocked) return;
     e.preventDefault();
     updateMoveStick(e);
   });
@@ -746,6 +746,7 @@ function addEvents() {
     if (player) scene.remove(player);
     player = makePlayer(selectedAvatar);
     started = true;
+    cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
     avatarSelect.classList.add("hidden");
     document.querySelector("#build-toggle").classList.remove("hidden");
@@ -753,7 +754,6 @@ function addEvents() {
     loadBuilds();
     showToast("¡Tu mundo, tus reglas!");
   });
-  cameraControls.classList.remove("hidden");
   const applyCameraMode = mode => {
     cameraMode = mode;
     firstPersonBuild = mode === "first";
@@ -768,6 +768,7 @@ function addEvents() {
   document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => applyCameraMode(button.dataset.camera)));
   cameraLockButton.addEventListener("click", () => {
     cameraLocked = !cameraLocked;
+    game.classList.toggle("camera-locked", cameraLocked);
     if (cameraLocked) {
       if (cameraMode === "first") applyCameraMode("second");
       resetMoveStick();
