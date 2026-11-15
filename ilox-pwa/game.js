@@ -861,31 +861,44 @@ function addEvents() {
 
 
 function createBuildPiece(record) {
-  const group = new THREE.Group();
-  const wood = new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.88});
-  const wallMat = new THREE.MeshStandardMaterial({color:0xe7d9bb,roughness:0.95});
-  const roofMat = new THREE.MeshStandardMaterial({color:0x9a5545,roughness:0.9});
-  const glass = new THREE.MeshStandardMaterial({color:0x75cde0,transparent:true,opacity:0.62,roughness:0.2});
-  const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
-  const {kind,x,z,rotation=0}=record;
-  const baseY=Number.isFinite(record.y) ? record.y : terrainHeight(x,z);
-  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color??0xff3030,roughness:0.88}); addBox(1.5,1.5,1.5,blockMat,0,0.75,0); }
-  if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
-  if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
-  if(kind==="door") {
-    addBox(1.15,3,0.2,wallMat,-1.42,1.5,0); addBox(1.15,3,0.2,wallMat,1.42,1.5,0);
-    addBox(1.7,0.8,0.2,wallMat,0,2.6,0); addBox(1.15,2.2,0.08,wood,0,1.1,-0.04);
-    const knob=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8),new THREE.MeshStandardMaterial({color:0xe8c56b,metalness:0.6}));knob.position.set(.42,1.1,-.11);group.add(knob);
+  const group=new THREE.Group(),mat=(c,r=.9,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+  const wood=mat(0x93633d),darkWood=mat(0x583a27),wall=mat(0xe7d9bb),glass=mat(0x75cde0,.2),metal=mat(0x737d80,.42,.62);
+  const box=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
+  const ball=(x,y,z,sx,sy,sz,m)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(1,20,16),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
+  const cyl=(x,y,z,rt,rb,h,m)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,12),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
+  const {kind,x,z,rotation=0}=record,baseY=Number.isFinite(record.y)?record.y:terrainHeight(x,z);
+  if(kind==="block"||kind==="brick"){
+    let material=mat(record.color??0xff3030);
+    if(kind==="brick"){const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;const ctx=canvas.getContext("2d");ctx.fillStyle="#9d5946";ctx.fillRect(0,0,256,256);ctx.strokeStyle="#e5b49b";ctx.lineWidth=5;for(let row=0;row<6;row++){const yy=row*43;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(256,yy);ctx.stroke();const off=row%2?0:64;for(let col=-1;col<4;col++){ctx.beginPath();ctx.moveTo(off+col*128,yy);ctx.lineTo(off+col*128,yy+43);ctx.stroke();}}const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;material=new THREE.MeshStandardMaterial({map:texture,roughness:.95});}
+    box(1.5,1.5,1.5,material,0,.75,0);
   }
-  if(kind==="window") {
-    addBox(1.1,3,0.2,wallMat,-1.45,1.5,0); addBox(1.1,3,0.2,wallMat,1.45,1.5,0);
-    addBox(1.8,0.75,0.2,wallMat,0,2.625,0); addBox(1.8,0.65,0.2,wallMat,0,0.325,0);
-    addBox(1.75,1.55,0.07,glass,0,1.5,-0.02);
-    addBox(1.9,0.12,0.28,wood,0,2.32,0); addBox(0.12,1.65,0.28,wood,0,1.5,0);
+  if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
+  if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
+  if(kind==="door"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.12,1.28,.07,wood,0,.66,-.04);ball(.42,.68,-.09,.045,.045,.045,metal);}
+  if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
+  if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
+  if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
+  if(kind==="rock"){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(.68,1),mat(0x85877e));o.position.y=.48;o.scale.set(1.1,.7,.9);o.rotation.set(.2,.4,.1);o.castShadow=true;group.add(o);}
+  if(kind==="water"){const geo=new THREE.PlaneGeometry(1.5,1.5,12,12),water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x3dadd0,roughness:.16,metalness:.12,transparent:true,opacity:.82,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.position.y=.055;water.userData.water=true;group.add(water);group.userData.water=true;}
+  if(kind==="chair"){box(.95,.12,.9,wood,0,.72,0);box(.95,.85,.12,wood,0,1.15,-.39);for(const sx of [-.38,.38])for(const sz of [-.32,.32])box(.12,.68,.12,darkWood,sx,.34,sz);}
+  if(kind==="table"){box(1.4,.14,1.2,wood,0,.92,0);for(const sx of [-.55,.55])for(const sz of [-.42,.42])box(.12,.9,.12,darkWood,sx,.45,sz);}
+  if(kind==="bed"){box(1.4,.22,1.5,darkWood,0,.38,0);box(1.32,.2,1.32,mat(0xe4dfd0),0,.58,0);box(.55,.18,.35,mat(0xf4eee0),-.36,.76,-.45);box(1.4,.95,.12,wood,0,.55,-.7);}
+  if(kind==="sofa"){box(1.5,.42,.72,mat(0x547a74),0,.45,0);box(1.5,.72,.16,mat(0x547a74),0,.83,-.28);for(const sx of [-.68,.68])box(.16,.62,.72,mat(0x42635d),sx,.67,0);}
+  if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
+  if(["gate","fence","pen"].includes(kind)){for(const sx of [-.68,.68])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
+  if(["sheep","cow","horse","chicken"].includes(kind)){
+    const coat=mat(kind==="sheep"?0xe6e0d2:kind==="cow"?0xe8e5dc:kind==="horse"?0x805239:0xc98b35),dark=mat(0x302820),skin=mat(0xe5b8a0);
+    ball(0,kind==="chicken"?.62:.76,0,kind==="chicken"?.38:kind==="horse"?.58:.58,kind==="chicken"?.42:.42,kind==="horse"?.82:.48,coat);
+    if(kind==="sheep")for(let i=0;i<14;i++){const ang=i*2.399;ball(Math.cos(ang)*.37,.82+(i%3)*.12,Math.sin(ang)*.32,.22,.23,.22,coat);}
+    if(kind==="cow")for(const [x0,y0,z0] of [[-.25,.9,-.2],[.3,.82,.12],[-.12,.65,.32]])ball(x0,y0,z0,.17,.2,.08,dark);
+    const hx=kind==="horse"?.48:.42,hy=kind==="chicken"?.9:1.05,hz=kind==="horse"?-.56:-.38;
+    ball(hx,hy,hz,.22,.24,.24,coat);ball(hx-.09,hy+.04,hz-.2,.045,.04,.04,dark);ball(hx+.09,hy+.04,hz-.2,.045,.04,.04,dark);
+    if(kind==="cow"||kind==="sheep")ball(hx,hy-.12,hz-.2,.16,.11,.18,skin);
+    if(kind==="horse"){ball(.38,1.0,-.18,.12,.42,.13,dark);ball(.62,1.31,-.58,.16,.12,.12,dark);}
+    if(kind==="chicken"){ball(hx,1.18,hz,.12,.12,.1,mat(0xc63e32));ball(hx,hy-.1,hz-.2,.13,.08,.12,mat(0xd89a22));}
+    for(const sx of [-.34,.34])for(const sz of [-.24,.24])cyl(sx,.24,sz,.07,.08,.48,coat);
   }
-  if(kind==="roof") { const slab=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.22,4.4),roofMat);slab.position.set(0,3.25,0);slab.rotation.z=-0.12;slab.castShadow=true;group.add(slab); }
-  group.position.set(x,baseY,z); group.rotation.y=rotation; group.userData.buildRecord=record;
-  scene.add(group); buildGroups.push(group); return group;
+  group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;scene.add(group);buildGroups.push(group);return group;
 }
 function persistBuilds() {
   try { localStorage.setItem("ilox-builds-v1",JSON.stringify(buildRecords)); }
@@ -895,39 +908,24 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,500).forEach(record=>{if(record&&["block","floor","wall","door","window","roof"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
-function placeBuildAtPointer(event) {
-  const rect=renderer.domElement.getBoundingClientRect();
-  const pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
-  const raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
-  if(buildTool==="erase") {
-    const hits=raycaster.intersectObjects(buildGroups,true);
-    if(!hits.length){showToast("Tocá una pieza construida para borrarla.");return;}
-    let group=hits[0].object;while(group.parent&&group.parent!==scene)group=group.parent;
-    const record=group.userData.buildRecord;const index=buildRecords.indexOf(record);
-    if(index>=0){buildRecords.splice(index,1);scene.remove(group);const gi=buildGroups.indexOf(group);if(gi>=0)buildGroups.splice(gi,1);persistBuilds();showToast("Pieza borrada");}
-    return;
-  }
-  if(!terrainMesh)return;
-  const terrainHit=raycaster.intersectObject(terrainMesh,false)[0];
-  const pieceHits=raycaster.intersectObjects(buildGroups,true);
-  const firstPiece=pieceHits[0];
-  let baseY=terrainHit?.point.y ?? terrainHeight(0,0);
-  if(buildTool==="block" && firstPiece && (!terrainHit || firstPiece.distance<terrainHit.distance)) {
-    let root=firstPiece.object; while(root.parent&&root.parent!==scene) root=root.parent;
-    baseY=new THREE.Box3().setFromObject(root).max.y;
-  }
-  if(!terrainHit&&!firstPiece){showToast("Tocá el terreno para colocar una pieza.");return;}
-  const grid=buildTool==="block"?1.5:4;
-  const point=firstPiece && buildTool==="block" && (!terrainHit || firstPiece.distance<terrainHit.distance) ? firstPiece.point : terrainHit.point;
-  const x=Math.round(point.x/grid)*grid,z=Math.round(point.z/grid)*grid;
+function placeBuildAtPointer(event){
+  const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
+  if(buildTool==="erase"){const hits=raycaster.intersectObjects(buildGroups,true);if(!hits.length){showToast("Tocá una construcción para borrarla.");return;}let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);if(idx>=0){buildRecords.splice(idx,1);scene.remove(root);const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);persistBuilds();showToast("Pieza eliminada");}return;}
+  if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
+  if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
+  const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
+  let x=Math.round(point.x/1.5)*1.5,z=Math.round(point.z/1.5)*1.5;
+  if(onPiece&&buildTool!=="water"&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=Math.round((point.x+normal.x*.76)/1.5)*1.5;z=Math.round((point.z+normal.z*.76)/1.5)*1.5;}}
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
-  const record={kind:buildTool,x,z,y:buildTool==="block"?baseY:undefined,rotation:buildRotation,color:selectedBlockColor};
-  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
+  if(buildTool==="water"&&(Math.abs(x)>42||Math.abs(z)>42)){showToast("El agua solo se puede colocar en los sectores habilitados del valle central.");return;}
+  const ground=terrainHeight(x,z);let layer=0;
+  if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;layer=Math.max(0,Math.round((top-ground)/1.5));}
+  const record={kind:buildTool,x,z,y:ground+layer*1.5,rotation:buildRotation,color:selectedBlockColor};
+  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en sector habilitado":"¡Pieza colocada y alineada!");
 }
-
 function updateMoveStick(event) {
   const rect = movePad.getBoundingClientRect();
   const radius = Math.min(rect.width, rect.height) * 0.36;
@@ -1015,6 +1013,7 @@ function animate() {
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
+  for(const group of buildGroups){if(group.userData.water){const water=group.children.find(child=>child.userData.water);if(water)water.position.y=.055+Math.sin(clock.elapsedTime*2.2+group.position.x*.2)*.018;}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
