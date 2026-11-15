@@ -14,7 +14,7 @@ const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
 
 let scene, camera, renderer, player, clock, terrainMesh;
-let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = true, viewHands = null;
+let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.18;
@@ -512,7 +512,7 @@ function init() {
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.105,12,10),handMat);
     hand.position.set(side*0.36,-0.56,-0.9); viewHands.add(hand);
   }
-  const heldBlock = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.34,0.34),new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.85}));
+  const heldBlock = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.22,0.22),new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.85}));
   heldBlock.position.set(0.02,-0.53,-0.82); heldBlock.rotation.set(0.18,0.25,0.12); viewHands.add(heldBlock);
   camera.add(viewHands); scene.add(camera);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
@@ -585,7 +585,7 @@ function addEvents() {
     lastLookY = e.clientY;
     // Cámara orbital libre: arrastrar gira alrededor del personaje incluso al construir.
     yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -0.18, 1.05);
+    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -0.18, 1.28);
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -636,16 +636,20 @@ function addEvents() {
   });
   const buildToggle = document.querySelector("#build-toggle");
   const viewToggle = document.querySelector("#view-toggle");
-  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "👤 TERCERA PERSONA"; cameraDistance = firstPersonBuild ? 2.4 : 6.2; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
+  const materialsToggle = document.querySelector("#materials-toggle");
+  materialsToggle.addEventListener("click", () => buildPanel.classList.toggle("hidden"));
+  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA"; cameraDistance = firstPersonBuild ? 2.4 : 16; if(!firstPersonBuild) pitch=1.05; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
   const buildPanel = document.querySelector("#build-panel");
   buildToggle.addEventListener("click", () => {
     buildMode = !buildMode;
     buildPanel.classList.toggle("hidden", !buildMode);
+    document.querySelector("#materials-toggle").classList.toggle("hidden",!buildMode);
     buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 6.2) : 5.4;
+    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 16) : 5.4;
+    if(buildMode && !firstPersonBuild) pitch = 1.05;
     viewToggle.classList.toggle("hidden",!buildMode);
-    viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "👤 TERCERA PERSONA";
-    document.querySelector("#build-help").textContent = buildMode ? "TOCÁ para colocar un cubo · Arrastrá para mirar · Pellizcá para acercar o alejar." : "Explorá el mundo y construí con bloques.";
+    viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
+    document.querySelector("#build-help").textContent = buildMode ? "BLOQUES PEQUEÑOS · TOCÁ para colocar · Arrastrá para mover la cámara aérea." : "Explorá el mundo y construí con bloques.";
     showToast(buildMode ? "Vista libre: arrastrá para mirar y tocá para construir" : "¡A explorar!");
   });
   document.querySelectorAll(".build-tool").forEach(button => {
@@ -653,7 +657,8 @@ function addEvents() {
     button.addEventListener("click", () => {
       buildTool = button.dataset.tool;
       document.querySelectorAll(".build-tool[data-tool]").forEach(item => item.classList.toggle("selected", item === button));
-      document.querySelector("#build-help").textContent = buildTool === "erase" ? "Tocá una construcción para borrarla." : "Tocá el terreno para colocar: " + button.querySelector("small").textContent.toLowerCase() + ".";
+      document.querySelector("#build-help").textContent = buildTool === "erase" ? "Tocá una construcción para borrarla." : "Bloque pequeño seleccionado. Tocá el terreno para colocarlo.";
+      buildPanel.classList.add("hidden");
     });
   });
   document.querySelector("#rotate-build").addEventListener("click", () => { buildRotation = (buildRotation + Math.PI/2) % (Math.PI*2); showToast("Pieza girada"); });
@@ -675,7 +680,7 @@ function createBuildPiece(record) {
   const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
   const {kind,x,z,rotation=0}=record;
   const baseY=Number.isFinite(record.y) ? record.y : terrainHeight(x,z);
-  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color||0xb88752,roughness:0.88}); addBox(2,2,2,blockMat,0,1,0); }
+  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color||0xb88752,roughness:0.88}); addBox(0.5,0.5,0.5,blockMat,0,0.25,0); }
   if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
   if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
   if(kind==="door") {
@@ -726,7 +731,7 @@ function placeBuildAtPointer(event) {
     baseY=new THREE.Box3().setFromObject(root).max.y;
   }
   if(!terrainHit&&!firstPiece){showToast("Tocá el terreno para colocar una pieza.");return;}
-  const grid=buildTool==="block"?2:4;
+  const grid=buildTool==="block"?0.5:4;
   const point=firstPiece && buildTool==="block" && (!terrainHit || firstPiece.distance<terrainHit.distance) ? firstPiece.point : terrainHit.point;
   const x=Math.round(point.x/grid)*grid,z=Math.round(point.z/grid)*grid;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
