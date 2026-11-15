@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-mp-live-broadcast-v83">
+  <link rel="stylesheet" href="./styles.css?v=ilox-mp-live-broadcast-v84">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -68,7 +68,7 @@
       <div class="touch-note">MOVER</div>
       <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
     </div>
-    <button id="mp-chat-toggle" class="mp-chat-toggle hidden" type="button" aria-label="Abrir chat del mundo" title="Chat del mundo">💬</button>
+    <button id="mp-chat-toggle" class="mp-chat-toggle hidden" type="button" aria-label="Abrir chat del mundo" title="Chat del mundo">💬<span class="mp-chat-unread hidden" aria-live="polite">0</span></button>
     <section id="mp-chat-panel" class="mp-chat-panel hidden" aria-label="Chat del mundo compartido">
       <header class="mp-chat-header"><strong>CHAT DEL MUNDO</strong><button id="mp-chat-close" type="button" aria-label="Cerrar chat">×</button></header>
       <div id="mp-chat-messages" class="mp-chat-messages" aria-live="polite"><p class="mp-chat-empty">Todavía no hay mensajes. ¡Saludá a tu compañero!</p></div>
@@ -144,6 +144,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-mp-live-broadcast-v83"></script>
+  <script type="module" src="./game.js?v=ilox-mp-live-broadcast-v84"></script>
 </body>
 </html>
