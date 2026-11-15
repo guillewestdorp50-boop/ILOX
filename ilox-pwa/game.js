@@ -1230,7 +1230,7 @@ async function refreshMultiplayerPermissions(){
   const list=document.querySelector("#mp-permission-current");
   const status=document.querySelector("#mp-permissions-status");
   if(!activeMultiplayerWorldId){status.textContent="Primero entrá a un mundo multijugador.";return;}
-  const ownStructures=buildRecords.filter(record=>record.cloudId&&record.cloudOwnerId===multiplayerUserId);
+  const ownStructures=buildRecords.filter(record=>record.cloudId&&(record.cloudOwnerId===multiplayerUserId||foundationAt(record.x,record.z)?.cloudOwnerId===multiplayerUserId));
   structureSelect.innerHTML="";
   const ownedPlateas=ownStructures.filter(record=>record.kind==="platea");
   const visited=new Set(),grouped=new Set();
