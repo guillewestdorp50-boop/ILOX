@@ -1354,6 +1354,8 @@ function persistBuilds(){
     try{writeLocalBuildSave();}
     catch(error){localBuildSaveTimer=null;showToast("No se pudo guardar el mundo en este dispositivo.");}
   },650);
+  // La nube se actualiza por tandas, no con cada objeto colocado.
+  if(activeMultiplayerWorldId)scheduleMultiplayerSync();
   return true;
 }
 function loadBuilds() {
@@ -1389,7 +1391,7 @@ async function loadMultiplayerStructures(worldId){
 function scheduleMultiplayerSync(){
   if(!activeMultiplayerWorldId)return;
   if(multiplayerSyncTimer)clearTimeout(multiplayerSyncTimer);
-  multiplayerSyncTimer=setTimeout(()=>{multiplayerSyncTimer=null;syncMultiplayerStructures();},280);
+  multiplayerSyncTimer=setTimeout(()=>{multiplayerSyncTimer=null;syncMultiplayerStructures();},5000);
 }
 async function syncMultiplayerStructures(){
   if(!activeMultiplayerWorldId||!multiplayerUserId)return true;
