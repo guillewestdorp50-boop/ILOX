@@ -122,8 +122,10 @@ h1 em{font-style:normal;color:#e8d29a}
 @media(max-width:600px){.camera-controls{top:calc(66px + env(safe-area-inset-top));right:10px}.camera-menu-toggle{width:36px;height:34px}.camera-menu-toggle svg{width:27px;height:21px}.camera-mode-panel{top:40px}.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:31px;height:30px}.jump-button{right:18px;bottom:calc(34px + env(safe-area-inset-bottom));width:62px;height:62px}}
 
 /* ILOX v45: pileta y agua contenida, sin textos promocionales del inicio */
-.hud-minimal{position:absolute;z-index:15;top:calc(10px + env(safe-area-inset-top));right:12px;left:auto;padding:0;pointer-events:none}
-.hud-minimal #fullscreen{pointer-events:auto}
+.hud-minimal{position:absolute;z-index:15;top:calc(10px + env(safe-area-inset-top));right:12px;left:auto;padding:0;display:flex;align-items:center;gap:6px;pointer-events:none}
+.hud-minimal #fullscreen,.hud-minimal #quick-save{pointer-events:auto}
+.quick-save-button{width:31px;height:31px;padding:0;border:1px solid #ffffff55;border-radius:50%;background:#10251fc9;color:#fff;font-size:15px;line-height:1;backdrop-filter:blur(8px);box-shadow:0 2px 8px #0005}
+.quick-save-button.saved{border-color:#45e982;color:#45e982}
 .hud-minimal .brand,.hud-minimal .world-label{display:none!important}
 .welcome.hidden,.avatar-select.hidden{display:none!important}
 .bottom-hint,.controls-help,.asset-credit{display:none!important}
