@@ -603,6 +603,7 @@ function createBuildPiece(record) {
   const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
   const {kind,x,z,rotation=0}=record;
   const baseY=terrainHeight(x,z);
+  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color||0xb88752,roughness:0.88}); addBox(2,2,2,blockMat,0,1,0); }
   if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
   if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
   if(kind==="door") {
@@ -628,7 +629,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,500).forEach(record=>{if(record&&["floor","wall","door","window","roof"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,500).forEach(record=>{if(record&&["block","floor","wall","door","window","roof"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function placeBuildAtPointer(event) {
@@ -644,11 +645,20 @@ function placeBuildAtPointer(event) {
     return;
   }
   if(!terrainMesh)return;
-  const hit=raycaster.intersectObject(terrainMesh,false)[0];
-  if(!hit){showToast("Tocá una zona de terreno libre.");return;}
-  const x=Math.round(hit.point.x/4)*4,z=Math.round(hit.point.z/4)*4;
+  const terrainHit=raycaster.intersectObject(terrainMesh,false)[0];
+  const pieceHits=raycaster.intersectObjects(buildGroups,true);
+  const firstPiece=pieceHits[0];
+  let baseY=terrainHit?.point.y ?? terrainHeight(0,0);
+  if(buildTool==="block" && firstPiece && (!terrainHit || firstPiece.distance<terrainHit.distance)) {
+    let root=firstPiece.object; while(root.parent&&root.parent!==scene) root=root.parent;
+    baseY=new THREE.Box3().setFromObject(root).max.y;
+  }
+  if(!terrainHit&&!firstPiece){showToast("Tocá el terreno para colocar una pieza.");return;}
+  const grid=buildTool==="block"?2:4;
+  const point=firstPiece && buildTool==="block" && (!terrainHit || firstPiece.distance<terrainHit.distance) ? firstPiece.point : terrainHit.point;
+  const x=Math.round(point.x/grid)*grid,z=Math.round(point.z/grid)*grid;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
-  const record={kind:buildTool,x,z,rotation:buildRotation};
+  const record={kind:buildTool,x,z,y:buildTool==="block"?Math.round(baseY/2)*2:undefined,rotation:buildRotation,color:0xb88752};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
