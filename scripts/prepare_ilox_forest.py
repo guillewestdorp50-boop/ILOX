@@ -17,6 +17,22 @@ def replace_once(path, old, new):
 # Conservar el mundo The Forest y retirar solo sus elementos de ciencia ficción.
 replace_once(engine_path, "import { Heightfield, SPAWN } from '../world/heightfield';",
              "import { Heightfield } from '../world/heightfield';")
+
+# Limitar el alcance de renderizado del mundo a 300 metros.
+# Three.js recorta la geometría fuera del plano lejano de cámara.
+replace_once(engine_path,
+             """    this.camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      2000
+    );""",
+             """    this.camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      300
+    );")
 replace_once(engine_path, "import { createLandmarks } from '../world/Landmarks';\n", "")
 replace_once(engine_path, "import { Drone } from '../world/Drone';\n", "")
 replace_once(engine_path, "import { FirstPersonController } from '../player/FirstPersonController';",
@@ -52,8 +68,12 @@ replace_once(engine_path, "    this.drone.update(dt, t, p);\n", "")
 # de su ancho anterior, dejando más suelo natural visible.
 heightfield_path = root / "src/world/heightfield.ts"
 replace_once(heightfield_path,
-             "        const wide = smooth(18, 45, h) * 1.5;\\n        const pd = distToPath(x, z);\\n        m *= smooth(0.7 + wide, 1.9 + wide * 2.2, pd);",
-             "        const wide = smooth(18, 45, h) * 1.5 * 0.123;\\n        const pd = distToPath(x, z);\\n        m *= smooth((0.7 + wide) * 0.123, (1.9 + wide * 2.2) * 0.123, pd);")
+             """        const wide = smooth(18, 45, h) * 1.5;
+        const pd = distToPath(x, z);
+        m *= smooth(0.7 + wide, 1.9 + wide * 2.2, pd);""",
+             """        const wide = smooth(18, 45, h) * 1.5 * 0.123;
+        const pd = distToPath(x, z);
+        m *= smooth((0.7 + wide) * 0.123, (1.9 + wide * 2.2) * 0.123, pd);""")
 
 # Aligerar el cielo conservando su domo, color, sol y nubes.
 # El shader original evalúa 7 campos FBM de 4 octavas por píxel (28 muestras
