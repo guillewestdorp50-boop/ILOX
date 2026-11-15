@@ -21,66 +21,6 @@ def patch_many(path, old, new, expected, label):
         raise SystemExit(f"{label}: expected {expected} matches, found {n}")
     p.write_text(s.replace(old, new), encoding="utf-8")
 
-
-# The ocean is a camera-following surface; without this dry-land depth guard it
-# renders over the prairie even when the generated heightfield is above sea level.
-# ILOX: keep the original ocean renderer and waves intact.
-# The ocean is not hidden; the actual coastline polygon below defines where land replaces sea.
-
-# Broad prairie world profile: preserve the original generator, but gently reshape its inputs.
-# Coastline expands by 14%, interior relief is reduced, and the volcanic escarpment becomes low rolling terrain.
-patch("src/world/layout.ts",
-"/** small islands and sea stacks, each its own closed coast */",
-"""// ILOX prairie profile: expand usable land and soften the rocky coastline.
-// Replace the closed island ring with a mainland-sized prairie that reaches
-// the north, south and west map edges. The only open-sea shoreline is on the east.
-COAST.splice(0, COAST.length,
-  // Mainland polygon: west, north and south reach the actual world limits.
-  // The east side is the ONLY open-ocean shoreline, roughly 1.46 km east of the west edge.
-  { p: [-1024, -1024], kind: 0.15 },
-  { p: [0, -1024], kind: 0.15 },
-  { p: [420, -1024], kind: 0.15 },
-  { p: [455, -900], kind: 0.15 },
-  { p: [475, -700], kind: 0.15 },
-  { p: [455, -480], kind: 0.15 },
-  { p: [470, -240], kind: 0.15 },
-  { p: [450, 0], kind: 0.15 },
-  { p: [470, 240], kind: 0.15 },
-  { p: [455, 480], kind: 0.15 },
-  { p: [475, 700], kind: 0.15 },
-  { p: [455, 900], kind: 0.15 },
-  { p: [420, 1024], kind: 0.15 },
-  { p: [0, 1024], kind: 0.15 },
-  { p: [-1024, 1024], kind: 0.15 },
-);
-
-/** small islands and sea stacks, each its own closed coast */""",
-"expand prairie land and soften coast")
-patch("tools/gen-island.ts",
-"log('rasterised island');",
-"log('rasterised island');\nconst mainlandAreaM2 = inside.reduce((sum, value) => sum + value, 0) * CELL * CELL;\nconsole.log(`ILOX verified dry-land footprint: ${Math.round(mainlandAreaM2).toLocaleString()} m²`);\nif (mainlandAreaM2 < 3_000_000) throw new Error(`Mainland below 3,000,000 m²: ${mainlandAreaM2}`);",
-"verify at least three million square metres of land")
-patch("src/world/layout.ts",
-"/** river from the spring under the peak to its mouth at the north end of the spawn beach */",
-"""// Retain gentle natural relief, but remove the tall volcanic mountain walls.
-HILLS.forEach((hill) => { hill.h *= 0.06; hill.r *= 1.2; });
-PEAK.h = 8;
-LIGHTHOUSE.base = 8;
-
-/** river from the spring under the peak to its mouth at the north end of the spawn beach */""",
-"convert volcanic relief to rolling prairie")
-patch("src/world/layout.ts",
-"""/** the fishing village on the cove's north shore */""",
-"""// Keep the waterfall escarpment, but reduce its cliff height for a walkable prairie.
-ESCARPMENT.forEach((edge) => { edge.step *= 0.18; });
-
-/** the fishing village on the cove's north shore */""",
-"soften waterfall escarpment after declaration")
-patch("src/world/layout.ts",
-"{ name: 'jungle', player: [365, 18], yaw: -2.6 },",
-"{ name: 'jungle', player: [0, 150], yaw: -2.6 },",
-"move default start into central prairie")
-
 # Open plain performance mode: keep terrain and all freshwater, remove scattered foliage and boulders.
 # Keep only the waterfall's gorge rock faces; remove coastal rock props and offshore stacks.
 patch("src/main.ts",
@@ -105,12 +45,6 @@ patch("src/main.ts",
 "  setPlantSkyMaps(hf.mask0Tex, hf.heightTex, HALF_WORLD, WORLD_SIZE);\n  const veg = new Vegetation(hf, colliders);\n  const tv = performance.now();\n  veg.build();\n  // the plants (helpers' GLBs) load and scatter while the rest of the island comes up\n  const plantsReady = veg.buildGlb().then(() => {\n    console.log(`plants in ${(performance.now() - tv).toFixed(0)} ms`);\n    mark('plants');\n  }, (e) => console.warn('plants', e));\n  mark('vegetation built');\n  if (!skip.has('veg')) scene.add(veg.group);\n  if (!skip.has('canopy')) scene.add(buildCanopy(hf, renderer));\n  // rocks stream in with the props: the helper's jointed basalt blocks (the island's own dark volcanic rock, the cliff\n  // kit's palette), each set into the ground by its buried part rather than resting on its lowest point\n  const rocksReady = (async () => {\n    const set = await loadVariants('assets/rocks/boulders.glb');\n    const mats = new Map<THREE.Material, THREE.Material>();\n    const model = (name: string, big: boolean): RockModel | null => {\n      const v = set.get(name);\n      const near = v?.lods[0]?.[0], far = (v?.lods[1] ?? v?.lods[0])?.[0];\n      if (!v || !near || !far) return null;\n      let mat = mats.get(near.src);\n      if (!mat) mats.set(near.src, (mat = rockMaterial(near.src)));\n      for (const g of [near.geometry, far.geometry]) g.computeBoundingSphere();\n      return { geometry: near.geometry, far: far.geometry, material: mat, radius: Math.max(0.3, v.radius), big, sink: 0.4 };\n    };\n    const out = [model('basalt_a', false), model('basalt_b', false), model('basalt_c', true), model('basalt_d', true)].filter((m): m is RockModel => !!m);\n    veg.addRocks(out);\n    mark('rocks');\n  })().catch((e) => console.warn('rocks', e));\n  // cliff faces, sea stacks and the gorge of the falls\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('rock kit'), (e) => console.warn('rock kit', e));",
 "  // Open plain: no grass, plants, tree canopy or scattered boulders are generated or loaded.\n  const veg = new Vegetation(hf, colliders);\n  const plantsReady = Promise.resolve();\n  const rocksReady = Promise.resolve();\n  mark('open plain: foliage and scattered rocks disabled');\n  // Keep the rock kit only for the natural waterfall gorge and cliff support.\n  const kit = new RockKit(rockPlan, colliders);\n  if (!skip.has('rockkit')) scene.add(kit.group);\n  const kitReady = kit.load().then(() => mark('waterfall gorge ready'), (e) => console.warn('waterfall gorge', e));",
 "disable foliage canopy and scattered boulders")
-# Flatten the lowland noise as well as the authored hills; retain only subtle natural variation.
-patch("tools/gen-island.ts",
-"m += 2.2 * noise.fbm(x / 85, z / 85, 4) + 0.6 * noiseB.fbm(x / 23, z / 23, 3);",
-"m += 0.55 * noise.fbm(x / 125, z / 125, 3) + 0.12 * noiseB.fbm(x / 32, z / 32, 2);",
-"flatten prairie micro-relief")
-
 # Mobile-first performance profile: retain scanned assets, trim expensive passes and instance counts.
 patch("src/core/quality.ts",
 "  low: { renderScale: 0.7, shadowMap: 1024, cascades: 2, shadowFar: 140, ao: false, aoScale: 0.5, taa: true, bloom: true, density: 0.45, grassFar: 28, lodScale: 0.6, oceanSegments: 128, cloudSteps: 8, rainParticles: 4000 },",
@@ -187,13 +121,13 @@ patch("src/main.ts",
 # Carve several broad, naturally irregular grass clearings into the forest mask.
 patch("src/world/Heightfield.ts",
 "    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);",
-"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);\n    const meadowCenters = [\n      [-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96], [0, 150, 230],\n    ] as const;\n    for (let j = 0; j < this.m; j++) for (let i = 0; i < this.m; i++) {\n      const x = (i + 0.5) * 2 - HALF_WORLD, z = (j + 0.5) * 2 - HALF_WORLD;\n      const o = (j * this.m + i) * 4;\n      const hX = Math.max(0, Math.min(N - 1, Math.round(x + HALF_WORLD)));\n      const hZ = Math.max(0, Math.min(N - 1, Math.round(z + HALF_WORLD)));\n      const h = heights[hZ * N + hX];\n      if (h < 2 || this.mask1[o + 2] > 18 || this.mask1[o] > 210 || this.mask0[o + 2] > 175 || this.mask0[o] > 190) continue;\n      let meadow = 0;\n      for (const [cx, cz, radius] of meadowCenters) {\n        const dx = (x - cx) / (radius * (1.0 + 0.09 * Math.sin(z * 0.035)));\n        const dz = (z - cz) / (radius * (1.0 + 0.08 * Math.sin(x * 0.031)));\n        const d = Math.hypot(dx, dz);\n        const f = Math.max(0, Math.min(1, (1.0 - d) / 0.24));\n        meadow = Math.max(meadow, f * f * (3 - 2 * f));\n      }\n      if (meadow < 0.03) continue;\n      this.mask0[o + 3] = Math.round(this.mask0[o + 3] * (1 - meadow * 0.98));\n      this.mask0[o + 1] = Math.max(this.mask0[o + 1], Math.round(meadow * 205));\n    }",
+"    this.mask0 = new Uint8Array(m0);\n    this.mask1 = new Uint8Array(m1);\n    const meadowCenters = [\n      [-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96],\n    ] as const;\n    for (let j = 0; j < this.m; j++) for (let i = 0; i < this.m; i++) {\n      const x = (i + 0.5) * 2 - HALF_WORLD, z = (j + 0.5) * 2 - HALF_WORLD;\n      const o = (j * this.m + i) * 4;\n      const hX = Math.max(0, Math.min(N - 1, Math.round(x + HALF_WORLD)));\n      const hZ = Math.max(0, Math.min(N - 1, Math.round(z + HALF_WORLD)));\n      const h = heights[hZ * N + hX];\n      if (h < 2 || this.mask1[o + 2] > 18 || this.mask1[o] > 210 || this.mask0[o + 2] > 175 || this.mask0[o] > 190) continue;\n      let meadow = 0;\n      for (const [cx, cz, radius] of meadowCenters) {\n        const dx = (x - cx) / (radius * (1.0 + 0.09 * Math.sin(z * 0.035)));\n        const dz = (z - cz) / (radius * (1.0 + 0.08 * Math.sin(x * 0.031)));\n        const d = Math.hypot(dx, dz);\n        const f = Math.max(0, Math.min(1, (1.0 - d) / 0.24));\n        meadow = Math.max(meadow, f * f * (3 - 2 * f));\n      }\n      if (meadow < 0.03) continue;\n      this.mask0[o + 3] = Math.round(this.mask0[o + 3] * (1 - meadow * 0.98));\n      this.mask0[o + 1] = Math.max(this.mask0[o + 1], Math.round(meadow * 205));\n    }",
 "bake meadows")
 
 # Keep clearings open at ground level, not merely as holes in the distant canopy.
 patch("src/veg/Vegetation.ts",
 "const CELL = 32;",
-"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96], [0, 150, 230]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
+"const CELL = 32;\nconst MEADOWS = [[-260, -10, 118], [-330, 230, 94], [235, 255, 112], [485, 30, 78], [35, 335, 86], [365, 18, 96]] as const;\nconst inMeadow = (x: number, z: number) => MEADOWS.some(([cx, cz, r]) => {\n  const dx = (x - cx) / (r * (1 + 0.09 * Math.sin(z * 0.035)));\n  const dz = (z - cz) / (r * (1 + 0.08 * Math.sin(x * 0.031)));\n  return dx * dx + dz * dz < 0.78;\n});",
 "meadow scatter mask")
 patch("src/veg/Vegetation.ts",
 "mesh.castShadow = lod.shadow;",
@@ -379,12 +313,13 @@ unused_shelves = root / "public" / "assets" / "rocks" / "shelves.glb"
 if unused_shelves.exists():
     unused_shelves.unlink()
 
-# ILOX mainland world: restore the full 2,048 m square (4,194,304 m²).
-# The one-sided coastline polygon is authored directly in these world coordinates.
+# Experimental 2,000,000 m² world: a 1,414.2136 m square.
+# Keep the original authored layout intact in source control, and apply one
+# deterministic transform to its exported coordinates at build time.
 patch("src/world/layout.ts",
 "export const WORLD_SIZE = 2048;",
-"export const WORLD_SIZE = 2048;",
-"restore full 4.19 million square metre world")
+"export const WORLD_SIZE = Math.sqrt(2_000_000);",
+"set 2 million square metre world")
 patch("src/world/layout.ts",
 "export const SPAWN = SPOTS[0];",
 """export const SPAWN = SPOTS[0];
@@ -960,24 +895,3 @@ patch("src/player/Player.ts",
       }
     }""",
 "procedural moving celebratory arms during channel ride")
-
-
-# ILOX coastline repair: the upstream ocean is a camera-following polar surface.
-# Keep its FFT waves, surf and swash, but render it only where the generated
-# mainland heightfield is actually below sea level and inside the map's
-# north/south/west bounds. The east remains the sole open-ocean edge.
-# This is additive: no ocean geometry, wave simulation or terrain systems are removed.
-patch("src/water/Ocean.ts",
-"    m.opacityNode = float(1);\n    return m;",
-"""    const clipXZ = positionWorld.xz;
-    const clipGround = heightAt(clipXZ);
-    const inMainlandFrame = clipXZ.x.greaterThan(-1023)
-      .and(clipXZ.x.lessThan(1025))
-      .and(clipXZ.y.greaterThan(-1023))
-      .and(clipXZ.y.lessThan(1025));
-    const openWater = inMainlandFrame.and(clipGround.lessThan(0.35));
-    m.opacityNode = select(openWater, float(1), float(0));
-    // Transparent clipped ocean must not write depth where its alpha is zero.
-    m.depthWrite = false;
-    return m;""",
-"clip camera-following ocean to real water cells and one-sided mainland frame")
