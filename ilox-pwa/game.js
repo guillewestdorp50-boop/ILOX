@@ -12,6 +12,8 @@ const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
 const moveKnob = document.querySelector("#move-knob");
+const cameraControls = document.querySelector("#camera-controls");
+const cameraLockButton = document.querySelector("#camera-lock");
 let moveStickPointer = null;
 let moveStick = { x: 0, y: 0 };
 
@@ -21,6 +23,7 @@ let selectedBlockColor = 0xff3030;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0.48;
+let cameraMode = "third", cameraLocked = false;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
 
@@ -705,7 +708,7 @@ function addEvents() {
   game.addEventListener("wheel", e => {
     if (!started) return;
     e.preventDefault();
-    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, buildMode?3.2:4.2, 20);
+    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, cameraMode==="second"?2.2:(buildMode?3.2:4.2), 20);
   }, {passive:false});
 
   startButton.addEventListener("click", () => {
@@ -750,18 +753,49 @@ function addEvents() {
     loadBuilds();
     showToast("¡Tu mundo, tus reglas!");
   });
+  cameraControls.classList.remove("hidden");
+  const applyCameraMode = mode => {
+    cameraMode = mode;
+    firstPersonBuild = mode === "first";
+    cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
+    if (mode === "second") pitch = 0.28;
+    else if (mode === "third") pitch = 0.48;
+    document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
+    const buildView = document.querySelector("#view-toggle");
+    if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
+    showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : "Cámara en tercera persona");
+  };
+  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => applyCameraMode(button.dataset.camera)));
+  cameraLockButton.addEventListener("click", () => {
+    cameraLocked = !cameraLocked;
+    if (cameraLocked) {
+      if (cameraMode === "first") applyCameraMode("second");
+      resetMoveStick();
+      keys.clear();
+      yaw += Math.PI;
+      cameraLockButton.textContent = "🔒 GIRO LIBRE ACTIVADO";
+      cameraLockButton.classList.add("locked");
+      cameraLockButton.setAttribute("aria-pressed","true");
+      showToast("Movimiento bloqueado: arrastrá para ver la cara del personaje");
+    } else {
+      cameraLockButton.textContent = "🔓 GIRO LIBRE";
+      cameraLockButton.classList.remove("locked");
+      cameraLockButton.setAttribute("aria-pressed","false");
+      showToast("Movimiento desbloqueado");
+    }
+  });
   const buildToggle = document.querySelector("#build-toggle");
   const viewToggle = document.querySelector("#view-toggle");
   const materialsToggle = document.querySelector("#materials-toggle");
   materialsToggle.addEventListener("click", () => buildPanel.classList.toggle("hidden"));
-  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA"; cameraDistance = firstPersonBuild ? 2.4 : 9.5; if(!firstPersonBuild) pitch=0.48; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
+  viewToggle.addEventListener("click", () => { applyCameraMode(cameraMode === "first" ? "third" : "first"); cameraDistance = firstPersonBuild ? 0.08 : 9.5; });
   const buildPanel = document.querySelector("#build-panel");
   buildToggle.addEventListener("click", () => {
     buildMode = !buildMode;
     buildPanel.classList.toggle("hidden", !buildMode);
     document.querySelector("#materials-toggle").classList.toggle("hidden",!buildMode);
     buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 9.5) : 5.4;
+    cameraDistance = cameraMode === "first" ? 0.08 : (cameraMode === "second" ? 3.0 : (buildMode ? 9.5 : 5.4));
     if(buildMode && !firstPersonBuild) pitch = 0.48;
     viewToggle.classList.toggle("hidden",!buildMode);
     viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
@@ -890,10 +924,10 @@ function animate() {
     // Entrada nueva: el joystick da un vector 360°. La cámara define el frente;
     // por eso, al mantener el joystick arriba y arrastrar la vista a la derecha,
     // el personaje sigue avanzando y curva su trayectoria con la cámara.
-    let forward = -moveStick.y + (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
-      + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0);
-    let strafe = moveStick.x + (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0)
-      + (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0);
+    let forward = cameraLocked ? 0 : (-moveStick.y + (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
+      + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0));
+    let strafe = cameraLocked ? 0 : (moveStick.x + (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0)
+      + (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0));
     const inputLength = Math.hypot(forward, strafe);
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const speed = 7.2;
@@ -931,7 +965,7 @@ function animate() {
     }
     // La espalda y la mochila quedan siempre orientadas hacia la cámara.
     // El movimiento es independiente: caminar hacia atrás o de costado no da vuelta el avatar.
-    const targetHeading = yaw;
+    const targetHeading = cameraLocked ? playerHeading : yaw;
     const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
     playerHeading += angleDelta * Math.min(1, delta * 12);
     player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
@@ -949,10 +983,10 @@ function animate() {
     player.rotation.y = playerHeading;
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
-  const firstPerson = buildMode && firstPersonBuild && player;
+  const firstPerson = player && cameraMode === "first";
   if (player) player.visible = !firstPerson;
-  if (viewHands) viewHands.visible = !!firstPerson && buildTool !== "erase";
-  const distance = buildMode ? cameraDistance : 5.4;
+  if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
+  const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
   const orbitDistance = Math.cos(pitch) * distance;
   // La cámara conserva su ángulo relativo y acompaña el rumbo del personaje.
   const cameraYaw = yaw;
