@@ -60,7 +60,7 @@ const keys = new Set();
 const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.05;
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
-function supportHeightAt(x,z,feet=Infinity){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.78:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){const kind=g.userData.buildRecord?.kind;if(!["block","brick","floor","wall","roof","stairs","table","chair"].includes(kind))continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
+function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-2:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!["block","brick","floor","wall","roof","stairs","table","chair"].includes(kind))continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
 function refreshTerrainSurface(){if(!terrainMesh)return;const a=terrainMesh.geometry.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i),f=foundationAt(x,z);a.setY(i,f?Math.min(terrainHeight(x,z),f.y-.36):terrainHeight(x,z));}a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();}
 
 function terrainHeight(x, z) {
@@ -884,7 +884,7 @@ function createBuildPiece(record, options = {}) {
     box(1.5,1.5,1.5,material,0,.75,0);
   }
   if(kind==="platea"){const slab=mat(0xb8b9b3,.88);box(6,.3,6,slab,0,.15,0);group.userData.isFoundation=true;group.userData.buildHeight=.3;}
-  if(kind==="pool"){const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);box(w-.36,.22,d-.36,pf,0,-depth+.11,0);box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;}
+  if(kind==="pool"){const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;}
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
@@ -984,7 +984,7 @@ function placeBuildAtPointer(event){
     }
     if(best){x=best.x;z=best.z;}
   }
-  let baseY=buildTool==="water"?containingPool.y-.18:supportHeightAt(x,z);
+  let baseY=buildTool==="water"?containingPool.y:supportHeightAt(x,z);
   if(buildTool==="platea"){const n=buildRecords.find(r=>r.kind==="platea"&&((Math.abs(Math.abs(r.x-x)-6)<.2&&Math.abs(r.z-z)<.2)||(Math.abs(Math.abs(r.z-z)-6)<.2&&Math.abs(r.x-x)<.2)));if(n)baseY=n.y;else{let top=-Infinity;for(let ix=-2;ix<=2;ix++)for(let iz=-2;iz<=2;iz++)top=Math.max(top,terrainHeight(x+ix*1.5,z+iz*1.5));baseY=top+.04;}}
   if(isPoolTool){let top=-Infinity;for(let ix=-poolWidth/2;ix<=poolWidth/2;ix+=1.5)for(let iz=-poolDepth/2;iz<=poolDepth/2;iz+=1.5)top=Math.max(top,terrainHeight(x+ix,z+iz));baseY=top+.04;}
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const sr=root.userData.buildRecord;if(sr){const normal=hit.face?hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize():new THREE.Vector3(0,1,0);baseY=normal.y<.65?sr.y:sr.y+(root.userData.buildHeight||1.5);}else baseY=new THREE.Box3().setFromObject(root).max.y;}
@@ -1020,7 +1020,7 @@ function updateBuildGravity(delta){
   for(const group of buildGroups){
     const record=group.userData.buildRecord;if(!record||record.kind==="water")continue;
     if(record.kind==="platea"||record.kind==="pool")continue;
-    let supportY=supportHeightAt(group.position.x,group.position.z);
+    let supportY=supportHeightAt(group.position.x,group.position.z,group.position.y,group);
     for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
     if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}}
     else if(group.position.y<supportY-.015){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}
@@ -1063,13 +1063,13 @@ function animate() {
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     const pool=buildRecords.find(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(player.position.x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(player.position.z-p.z)<(p.poolDepth||6)/2-.48);
-    const surface=pool?pool.y-.18:-Infinity,swimming=!!pool&&player.position.y<surface+.35&&player.position.y>pool.y-1.9;
+    const surface=pool?pool.y:-Infinity,swimming=!!pool&&player.position.y<surface+.35&&player.position.y>pool.y-1.9;
     if(swimming){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
     else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
     const moving = inputLength > 0.08;
     if (player.userData.isRiggedAvatar) {
       player.userData.mixer?.update(delta);
-      setRiggedAvatarMotion(player, moving);
+      setRiggedAvatarMotion(player, moving && !player.userData.isSwimming);
     }
     // La espalda y la mochila quedan siempre orientadas hacia la cámara.
     // El movimiento es independiente: caminar hacia atrás o de costado no da vuelta el avatar.
@@ -1077,16 +1077,17 @@ function animate() {
     const angleDelta = Math.atan2(Math.sin(targetHeading - playerHeading), Math.cos(targetHeading - playerHeading));
     playerHeading += angleDelta * Math.min(1, delta * 12);
     player.userData.walkPhase = (player.userData.walkPhase || 0) + (moving ? delta * 10.5 : 0);
-    const swing = moving ? Math.sin(player.userData.walkPhase) * 0.48 : 0;
-    const stride = moving ? Math.cos(player.userData.walkPhase * 2) : 0;
+    const swimmingNow=!!player.userData.isSwimming;
+    const swing = swimmingNow ? Math.sin(player.userData.walkPhase*1.7)*.24 : moving ? Math.sin(player.userData.walkPhase)*0.48 : 0;
+    const stride = swimmingNow ? Math.cos(player.userData.walkPhase*1.4)*.35 : moving ? Math.cos(player.userData.walkPhase * 2) : 0;
     const rig = player.userData.rig;
     if (rig) {
-      rig.position.y = moving ? Math.abs(stride) * 0.055 : 0;
-      rig.rotation.z = moving ? Math.sin(player.userData.walkPhase) * 0.035 : 0;
-      rig.rotation.x = moving ? -0.035 : 0;
+      rig.position.y = swimmingNow ? Math.sin(clock.elapsedTime*2.4)*.035 : moving ? Math.abs(stride)*.055 : 0;
+      rig.rotation.z = swimmingNow ? Math.sin(player.userData.walkPhase)*.025 : moving ? Math.sin(player.userData.walkPhase)*.035 : 0;
+      rig.rotation.x = swimmingNow ? -.12 : moving ? -.035 : 0;
     }
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
-    player.userData.arms?.forEach((arm,i) => { arm.rotation.x = i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
+    player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
   }
