@@ -764,12 +764,12 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
-    let forward = -moveZ;
-    let strafe = moveX;
-    if (keys.has("w") || keys.has("arrowup")) forward -= 1;
-    if (keys.has("s") || keys.has("arrowdown")) forward += 1;
-    if (keys.has("a") || keys.has("arrowleft")) strafe -= 1;
-    if (keys.has("d") || keys.has("arrowright")) strafe += 1;
+    let forward = moveZ;
+    let strafe = -moveX;
+    if (keys.has("w") || keys.has("arrowup")) forward += 1;
+    if (keys.has("s") || keys.has("arrowdown")) forward -= 1;
+    if (keys.has("a") || keys.has("arrowleft")) strafe += 1;
+    if (keys.has("d") || keys.has("arrowright")) strafe -= 1;
     const length = Math.hypot(forward, strafe);
     if (length > 1) { forward /= length; strafe /= length; }
     const speed = 7.2;
