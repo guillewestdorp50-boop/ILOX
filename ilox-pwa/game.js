@@ -740,8 +740,8 @@ function addEvents() {
     avatarSelect.classList.remove("hidden");
   });
   const avatarCatalog = [
-    ["soldier","🧍","Humano original",1],["man","👨","Hombre",10],["woman","👩","Mujer",10],
-    ["boy","👦","Niño",10],["girl","👧","Niña",10],["explorer","🧑‍🦰","Exploradora original",10],["builder","👷","Constructor",10],["builderwoman","👩‍🔧","Constructora original",10],
+    ["soldier","🧍","Humano original",1],["man","👨","Hombre",3],["woman","👩","Mujer",3],
+    ["boy","👦","Niño",2],["girl","👧","Niña",1],["explorer","🧑‍🦰","Exploradora original",10],["builder","👷","Constructor",10],["builderwoman","👩‍🔧","Constructora original",10],
     ["astronaut","🧑‍🚀","Astronauta",10],["robot","🤖","Robot",10],["elf","🧝","Elfo",10],
     ["knight","🛡️","Caballero",10],["ninja","🥷","Ninja",10],["mage","🧙","Mago",10]
   ];
