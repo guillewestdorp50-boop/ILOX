@@ -72,8 +72,8 @@ jobs:
       - name: Publicar instalador APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ilox-v88-android
-          name: ILOX v88 — Instalador Android
-          body: APK de prueba de ILOX v88. Incluye la pantalla animada de bienvenida y el icono nuevo.
+          tag_name: ilox-v89-android
+          name: ILOX v89 — Instalador Android
+          body: APK de prueba de ILOX v89. Corrige la entrada al mundo y recupera la última partida multijugador guardada.
           files: app/build/outputs/apk/debug/app-debug.apk
           make_latest: true
