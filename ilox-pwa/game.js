@@ -345,8 +345,8 @@ function makePlayer(kind = "boy") {
   const isFemale = kind === "woman" || kind === "girl";
   const scale = isAdult ? 1.0 : 0.79;
   const jacketColor = kind === "builder" ? 0xd18a32 : kind === "astronaut" ? 0xe4e9ee : kind === "robot" ? 0x657b8a : 0x315a8c;
-  const jacket = new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.92 });
-  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x744f86 : kind === "builder" ? 0x3d4850 : kind === "astronaut" ? 0x536779 : kind === "robot" ? 0x344653 : 0x394b5c, roughness: 1, metalness: kind === "robot" ? 0.65 : 0 });
+  const jacket = new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.82 });
+  const pants = new THREE.MeshStandardMaterial({ color: kind === "girl" ? 0x744f86 : kind === "builder" ? 0x3d4850 : kind === "astronaut" ? 0x536779 : kind === "robot" ? 0x344653 : 0x394b5c, roughness: 0.88, metalness: kind === "robot" ? 0.25 : 0 });
   const skin = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x9cc9d6 : kind === "woman" ? 0xc98d68 : kind === "girl" ? 0xd9a27d : 0xd49a76, roughness: 0.75, metalness: kind === "robot" ? 0.75 : 0 });
   const hair = new THREE.MeshStandardMaterial({ color: kind === "robot" ? 0x263b4b : kind === "woman" ? 0x33251e : kind === "girl" ? 0x493026 : 0x30251f, roughness: 1 });
   const canvas = new THREE.MeshStandardMaterial({ color: 0x887957, roughness: 1 });
@@ -355,7 +355,7 @@ function makePlayer(kind = "boy") {
   const bootMat = new THREE.MeshStandardMaterial({ color: 0x302820, roughness: 1 });
   const buckleMat = new THREE.MeshStandardMaterial({ color: 0xb49a61, metalness: 0.25, roughness: 0.7 });
 
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.52, 5, 12), jacket);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.82, 0.42), jacket);
   torso.position.y = 1.36;
   group.add(torso);
 
@@ -368,9 +368,9 @@ function makePlayer(kind = "boy") {
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.12, 0.18, 12), skin);
   neck.position.y = 1.79;
   group.add(neck);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.255, 20, 16), skin);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skin);
   head.position.set(0, 2.02, -0.015);
-  head.scale.set(0.9, 1.08, 0.94);
+  head.scale.set(1, 1, 1);
   group.add(head);
   if(kind !== "robot") {
     const eyeMat=new THREE.MeshStandardMaterial({color:0x28231f,roughness:0.55});
@@ -419,24 +419,24 @@ function makePlayer(kind = "boy") {
     for(const side of [-1,1]) { const ear=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.24,0.2),earMat); ear.position.set(side*0.29,2.02,0); group.add(ear); }
   }
 
-  // Brazos naturales y mangas de la camperita.
+  // Avatar humanoide cúbico estilo Roblox: torso, cabeza y extremidades rectangulares.
   const arms = [], legs = [];
   for (const side of [-1, 1]) {
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 0.48, 4, 10), jacket);
-    arm.position.set(side * 0.43, 1.38, 0);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.66, 0.24), jacket);
+    arm.position.set(side * 0.48, 1.38, 0);
     arm.rotation.z = side * -0.12;
     group.add(arm); arms.push(arm);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), skin);
-    hand.position.set(side * 0.47, 1.05, -0.005);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.20, 0.22), skin);
+    hand.position.set(side * 0.48, 1.00, -0.005);
     group.add(hand);
 
     const legPivot = new THREE.Group();
     legPivot.position.set(side * 0.18, 0.91, 0);
     group.add(legPivot);
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.53, 4, 10), pants);
-    leg.position.set(0, -0.31, 0);
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.70, 0.30), pants);
+    leg.position.set(0, -0.34, 0);
     legPivot.add(leg);
-    const boot = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.13, 3, 8), bootMat);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.18, 0.40), bootMat);
     boot.position.set(0, -0.78, -0.055);
     boot.scale.set(1.05, 0.72, 1.45);
     legPivot.add(boot); legs.push(legPivot);
