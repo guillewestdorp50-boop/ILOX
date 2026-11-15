@@ -1626,6 +1626,8 @@ doorPinForm?.addEventListener("submit",async event=>{
         record.pin=pin;
         persistBuilds();
       }
+      record.pinConfigured=true;
+      if(isMultiplayer)persistBuilds();
       closeDoorPinDialog();showToast("PIN configurado una sola vez. Puerta protegida.");return;
     }
     if(isOwner){
@@ -1777,6 +1779,27 @@ function animate() {
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
+  }
+  if(player){
+    const now=Date.now();
+    for(const group of buildGroups){
+      if(group.userData.buildRecord?.kind!=="door")continue;
+      if(group.userData.doorIsOpen){
+        const dx=player.position.x-group.position.x,dz=player.position.z-group.position.z,a=group.rotation.y;
+        const localX=dx*Math.cos(a)-dz*Math.sin(a),localZ=dx*Math.sin(a)+dz*Math.cos(a);
+        const previous=group.userData.doorPreviousLocalZ;
+        if(Math.abs(localX)<.82&&previous!==null&&previous!==undefined&&previous*localZ<0&&Math.abs(previous)<1.25&&Math.abs(localZ)<1.25){
+          group.userData.doorAutoCloseAt=now+3000;
+        }
+        group.userData.doorPreviousLocalZ=localZ;
+        if(now>=group.userData.doorAutoCloseAt){
+          group.userData.doorLeafPivot.rotation.y=0;
+          group.userData.doorIsOpen=false;
+          group.userData.doorAutoCloseAt=0;
+          group.userData.doorPreviousLocalZ=null;
+        }
+      }
+    }
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
