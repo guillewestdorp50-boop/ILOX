@@ -24,7 +24,7 @@ public class MainActivity extends Activity {
             .build();
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFF172B26);
+        webView.setBackgroundColor(0xFF241B50);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
