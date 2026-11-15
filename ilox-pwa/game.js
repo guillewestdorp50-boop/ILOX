@@ -1143,7 +1143,7 @@ function animate() {
   const targetZ = focus.position.z + Math.cos(cameraYaw) * distance;
   if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
-    camera.position.lerp(eye,1-Math.pow(0.001,delta));
+    camera.position.copy(eye);
     const viewDistance = 10;
     camera.lookAt(
       eye.x-Math.sin(cameraYaw)*Math.cos(pitch)*viewDistance,
@@ -1152,7 +1152,7 @@ function animate() {
     );
   } else {
     const cameraHeight = cameraMode === "second" ? 2.55 : 3.35;
-    camera.position.lerp(new THREE.Vector3(targetX, focus.position.y + cameraHeight, targetZ), 1 - Math.pow(0.001, delta));
+    camera.position.set(targetX, focus.position.y + cameraHeight, targetZ);
     const viewDistance = Math.max(8, distance + 3);
     camera.lookAt(
       focus.position.x-Math.sin(cameraYaw)*Math.cos(pitch)*viewDistance,
