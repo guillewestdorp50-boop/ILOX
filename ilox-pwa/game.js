@@ -383,32 +383,32 @@ function makePlayer(kind = "explorer:0") {
     add(parent, new THREE.CapsuleGeometry(radius,length,5,10), material,x,y,z,sx,sy,sz);
 
   if (isRobot) {
-    const body = add(group,new THREE.CapsuleGeometry(.34,.48,5,12),shirt,0,1.34,0,1,1,.82);
-    add(group,new THREE.SphereGeometry(.29,20,16),metal,0,2.02,0,1,1.05,.9);
-    add(group,new THREE.BoxGeometry(.38,.13,.08),mat(0x35d8ef,.22,.5),0,2.04,-.255);
-    add(group,new THREE.CylinderGeometry(.035,.045,.22,10),metal,0,2.36,0);
-    add(group,new THREE.SphereGeometry(.07,12,10),gold,0,2.49,0);
-    for (const side of [-1,1]) add(group,new THREE.BoxGeometry(.14,.22,.18),metal,side*.31,2.02,0);
+    const body = add(rig,new THREE.CapsuleGeometry(.34,.48,5,12),shirt,0,1.34,0,1,1,.82);
+    add(rig,new THREE.SphereGeometry(.29,20,16),metal,0,2.02,0,1,1.05,.9);
+    add(rig,new THREE.BoxGeometry(.38,.13,.08),mat(0x35d8ef,.22,.5),0,2.04,-.255);
+    add(rig,new THREE.CylinderGeometry(.035,.045,.22,10),metal,0,2.36,0);
+    add(rig,new THREE.SphereGeometry(.07,12,10),gold,0,2.49,0);
+    for (const side of [-1,1]) add(rig,new THREE.BoxGeometry(.14,.22,.18),metal,side*.31,2.02,0);
   } else {
     // Cuerpo con volúmenes redondeados y ropa superpuesta, en lugar de piezas cúbicas.
-    add(group,new THREE.CapsuleGeometry(.34,.48,6,14),shirt,0,1.34,0,1.08,1,.78);
-    add(group,new THREE.CylinderGeometry(.105,.12,.18,14),skin,0,1.76,0);
-    add(group,new THREE.SphereGeometry(.285,24,20),skin,0,2.05,-.015,0.94,1.08,.9);
+    add(rig,new THREE.CapsuleGeometry(.34,.48,6,14),shirt,0,1.34,0,1.08,1,.78);
+    add(rig,new THREE.CylinderGeometry(.105,.12,.18,14),skin,0,1.76,0);
+    add(rig,new THREE.SphereGeometry(.285,24,20),skin,0,2.05,-.015,0.94,1.08,.9);
     // Rasgos faciales: ojos, cejas, nariz y boca, orientados hacia el frente (-Z).
     for (const side of [-1,1]) {
-      add(group,new THREE.SphereGeometry(.035,12,10),white,side*.09,2.075,-.255);
-      add(group,new THREE.SphereGeometry(.018,10,8),dark,side*.09,2.075,-.285);
-      add(group,new THREE.SphereGeometry(.035,10,8),hair,side*.09,2.13,-.267,1.15,.35,.45);
+      add(rig,new THREE.SphereGeometry(.035,12,10),white,side*.09,2.075,-.255);
+      add(rig,new THREE.SphereGeometry(.018,10,8),dark,side*.09,2.075,-.285);
+      add(rig,new THREE.SphereGeometry(.035,10,8),hair,side*.09,2.13,-.267,1.15,.35,.45);
     }
-    add(group,new THREE.SphereGeometry(.035,10,8),skin,0,2.015,-.276,.8,1.15,.8);
-    add(group,new THREE.CapsuleGeometry(.012,.055,3,6),mat(0x754b43),0,1.96,-.274,1,.35,.45);
+    add(rig,new THREE.SphereGeometry(.035,10,8),skin,0,2.015,-.276,.8,1.15,.8);
+    add(rig,new THREE.CapsuleGeometry(.012,.055,3,6),mat(0x754b43),0,1.96,-.274,1,.35,.45);
     // Cabello con volumen y mechones diferenciados.
-    add(group,new THREE.SphereGeometry(.27,20,14,0,Math.PI*2,0,Math.PI*.58),hair,0,2.17,.005,1.04,.72,1);
+    add(rig,new THREE.SphereGeometry(.27,20,14,0,Math.PI*2,0,Math.PI*.58),hair,0,2.17,.005,1.04,.72,1);
     if (isFemale) {
-      add(group,new THREE.SphereGeometry(.20,16,12),hair,0,1.98,.17,.92,1.22,.85);
+      add(rig,new THREE.SphereGeometry(.20,16,12),hair,0,1.98,.17,.92,1.22,.85);
       for (const side of [-1,1]) capsule(group,.075,.22,hair,side*.22,1.99,.08,1,1.35,1);
     } else {
-      add(group,new THREE.SphereGeometry(.12,14,10),hair,0,2.23,-.19,1.25,.5,.65);
+      add(rig,new THREE.SphereGeometry(.12,14,10),hair,0,2.23,-.19,1.25,.5,.65);
     }
   }
 
@@ -417,7 +417,7 @@ function makePlayer(kind = "explorer:0") {
   for (const side of [-1,1]) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side*.43,1.48,0);
-    group.add(shoulder);
+    rig.add(shoulder);
     capsule(shoulder,.105,.27,shirt,0,-.15,0,1,1,1);
     const elbow = new THREE.Group(); elbow.position.set(0,-.31,0); shoulder.add(elbow);
     capsule(elbow,.078,.25,shirt,0,-.14,0,1,1,1);
@@ -425,7 +425,7 @@ function makePlayer(kind = "explorer:0") {
     add(elbow,new THREE.CapsuleGeometry(.068,.055,4,8),isBuilder?gloveMat:skin,0,-.36,-.01);
     arms.push(shoulder);
 
-    const hip = new THREE.Group(); hip.position.set(side*.18,.99,0); group.add(hip);
+    const hip = new THREE.Group(); hip.position.set(side*.18,.99,0); rig.add(hip);
     capsule(hip,.145,.42,pants,0,-.26,0,1,1.12,1);
     add(hip,new THREE.SphereGeometry(.145,14,12),pants,0,-.51,0,1,.7,1);
     add(hip,new THREE.CapsuleGeometry(.13,.10,4,8),bootMat,0,-.61,-.045,1,.72,1.35);
@@ -436,58 +436,58 @@ function makePlayer(kind = "explorer:0") {
   if (isBuilder) {
     const vest = mat(0xf08a18,0.78);
     const reflective = mat(0xe8e8d5,0.38,0.12);
-    add(group,new THREE.CapsuleGeometry(.355,.43,5,14),vest,0,1.37,-.012,1.08,1,.80);
+    add(rig,new THREE.CapsuleGeometry(.355,.43,5,14),vest,0,1.37,-.012,1.08,1,.80);
     for (const y of [1.20,1.48]) {
-      const band = add(group,new THREE.CylinderGeometry(.355,.355,.075,24,1,true),reflective,0,y,0,1.02,1,.80);
+      const band = add(rig,new THREE.CylinderGeometry(.355,.355,.075,24,1,true),reflective,0,y,0,1.02,1,.80);
     }
-    add(group,new THREE.BoxGeometry(.07,.62,.035),reflective,0,1.39,-.305);
+    add(rig,new THREE.BoxGeometry(.07,.62,.035),reflective,0,1.39,-.305);
     for (const side of [-1,1]) {
-      add(group,new THREE.BoxGeometry(.17,.18,.035),vest,side*.20,1.18,-.305);
-      add(group,new THREE.BoxGeometry(.13,.10,.045),gold,side*.20,1.12,-.33);
+      add(rig,new THREE.BoxGeometry(.17,.18,.035),vest,side*.20,1.18,-.305);
+      add(rig,new THREE.BoxGeometry(.13,.10,.045),gold,side*.20,1.12,-.33);
     }
     // Cinturón de herramientas, hebilla, bolsillos y herramientas visibles.
-    add(group,new THREE.CylinderGeometry(.30,.30,.10,20),beltMat,0,1.02,0,1.05,1,.82);
-    add(group,new THREE.BoxGeometry(.13,.12,.045),gold,0,1.02,-.27);
+    add(rig,new THREE.CylinderGeometry(.30,.30,.10,20),beltMat,0,1.02,0,1.05,1,.82);
+    add(rig,new THREE.BoxGeometry(.13,.12,.045),gold,0,1.02,-.27);
     for (const side of [-1,1]) {
-      add(group,new THREE.BoxGeometry(.18,.22,.12),leatherMaterial(),side*.29,.91,-.02);
-      add(group,new THREE.CylinderGeometry(.025,.025,.28,8),metal,side*.30,.88,-.12);
+      add(rig,new THREE.BoxGeometry(.18,.22,.12),leatherMaterial(),side*.29,.91,-.02);
+      add(rig,new THREE.CylinderGeometry(.025,.025,.28,8),metal,side*.30,.88,-.12);
     }
     // Casco amarillo de obra con visera, ala y nervaduras.
     const helmet = mat(0xf4bd24,.58);
-    add(group,new THREE.SphereGeometry(.30,20,14,0,Math.PI*2,0,Math.PI*.52),helmet,0,2.31,0,1.08,.86,1);
-    add(group,new THREE.CylinderGeometry(.34,.34,.055,24),helmet,0,2.20,0,1,1,.95);
-    add(group,new THREE.BoxGeometry(.075,.22,.045),gold,0,2.37,-.22);
-    add(group,new THREE.BoxGeometry(.34,.045,.045),gold,0,2.30,-.04);
+    add(rig,new THREE.SphereGeometry(.30,20,14,0,Math.PI*2,0,Math.PI*.52),helmet,0,2.31,0,1.08,.86,1);
+    add(rig,new THREE.CylinderGeometry(.34,.34,.055,24),helmet,0,2.20,0,1,1,.95);
+    add(rig,new THREE.BoxGeometry(.075,.22,.045),gold,0,2.37,-.22);
+    add(rig,new THREE.BoxGeometry(.34,.045,.045),gold,0,2.30,-.04);
   }
 
   if (isAstronaut) {
-    add(group,new THREE.CylinderGeometry(.27,.29,.13,20),metal,0,1.79,0);
-    add(group,new THREE.SphereGeometry(.37,24,18),new THREE.MeshPhysicalMaterial({color:0x8ed8ec,transparent:true,opacity:.22,roughness:.08,metalness:.12}),0,2.06,0);
-    add(group,new THREE.BoxGeometry(.42,.42,.16),white,0,1.35,.31);
+    add(rig,new THREE.CylinderGeometry(.27,.29,.13,20),metal,0,1.79,0);
+    add(rig,new THREE.SphereGeometry(.37,24,18),new THREE.MeshPhysicalMaterial({color:0x8ed8ec,transparent:true,opacity:.22,roughness:.08,metalness:.12}),0,2.06,0);
+    add(rig,new THREE.BoxGeometry(.42,.42,.16),white,0,1.35,.31);
   }
 
   // Calzado, costuras y detalles de ropa.
   for (const side of [-1,1]) {
-    add(group,new THREE.BoxGeometry(.12,.08,.035),dark,side*.18,.98,-.19);
+    add(rig,new THREE.BoxGeometry(.12,.08,.035),dark,side*.18,.98,-.19);
   }
   if (!isBuilder && !isRobot) {
-    add(group,new THREE.BoxGeometry(.44,.24,.12),beltMat,0,1.01,.015);
+    add(rig,new THREE.BoxGeometry(.44,.24,.12),beltMat,0,1.01,.015);
   }
 
   // Mochila de exploración de lona con correas, tapa y bolsillos (espalda +Z).
   const packMat = mat(isBuilder ? 0x414b43 : 0x756247);
-  add(group,new THREE.BoxGeometry(.48,.62,.25),packMat,0,1.34,.34,1,1,1);
-  add(group,new THREE.BoxGeometry(.50,.15,.27),mat(0x9a815b),0,1.68,.34);
-  add(group,new THREE.BoxGeometry(.27,.22,.08),mat(0x9a815b),0,1.25,.50);
+  add(rig,new THREE.BoxGeometry(.48,.62,.25),packMat,0,1.34,.34,1,1,1);
+  add(rig,new THREE.BoxGeometry(.50,.15,.27),mat(0x9a815b),0,1.68,.34);
+  add(rig,new THREE.BoxGeometry(.27,.22,.08),mat(0x9a815b),0,1.25,.50);
   for (const side of [-1,1]) {
-    add(group,new THREE.BoxGeometry(.065,.65,.055),dark,side*.18,1.34,.19);
-    add(group,new THREE.CylinderGeometry(.075,.075,.18,10),packMat,side*.27,1.34,.34);
+    add(rig,new THREE.BoxGeometry(.065,.65,.055),dark,side*.18,1.34,.19);
+    add(rig,new THREE.CylinderGeometry(.075,.075,.18,10),packMat,side*.27,1.34,.34);
   }
   const logoCanvas = document.createElement("canvas"); logoCanvas.width=512; logoCanvas.height=128;
   const ctx=logoCanvas.getContext("2d"); ctx.clearRect(0,0,512,128);
   ctx.fillStyle="#e7d29a"; ctx.font="900 82px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("ILOX",256,67);
   const logoTexture = new THREE.CanvasTexture(logoCanvas);
-  add(group,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
+  add(rig,new THREE.PlaneGeometry(.42,.105),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,side:THREE.DoubleSide}),0,1.84,.475);
 
   // Variantes fantásticas con siluetas reconocibles, no solo cambios de color.
   if (kind === "elf") { for (const side of [-1,1]) { const ear=add(rig,new THREE.ConeGeometry(.09,.34,8),skin,side*.34,2.06,-.01); ear.rotation.z=side*-Math.PI/2; } }
