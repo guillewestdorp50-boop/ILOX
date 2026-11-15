@@ -16,8 +16,6 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-ser
 #controls{position:absolute;bottom:46px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;color:#d2ddc7;font-size:9px;letter-spacing:.12em}
 #credits{position:absolute;bottom:14px;color:#b0bba5;font-size:9px;letter-spacing:.05em}
 #credits a{color:#e0eacb}
-#crosshair{position:fixed;z-index:5;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#ffffffaa;box-shadow:0 0 5px #000;opacity:0;pointer-events:none}
-body.playing #crosshair{opacity:1}
 #touch-ui{display:none;position:fixed;z-index:8;inset:0;pointer-events:none;touch-action:none}
 #joystick{position:absolute;left:25px;bottom:calc(24px + env(safe-area-inset-bottom));width:116px;height:116px;border:1px solid #ffffff65;border-radius:50%;background:#10251c66;backdrop-filter:blur(5px);pointer-events:auto;touch-action:none}
 #stick{position:absolute;left:35px;top:35px;width:44px;height:44px;border-radius:50%;background:#d5e3b4e8;border:2px solid #ffffffb0;box-shadow:0 3px 14px #0008;will-change:transform}
