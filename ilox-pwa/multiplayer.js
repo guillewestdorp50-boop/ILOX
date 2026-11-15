@@ -6,6 +6,12 @@ export const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
 });
 
+export async function hasSavedIdentity() {
+  const { data: { session }, error } = await client.auth.getSession();
+  if (error) throw error;
+  return !!session?.user;
+}
+
 export async function ensureIdentity(displayName, avatarKind) {
   let { data: { session } } = await client.auth.getSession();
   if (!session) {
