@@ -887,6 +887,10 @@ function addEvents() {
   categorySelect.addEventListener("change",()=>renderBuildTools(categorySelect.value));
   menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
+  document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
+  document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
+  document.querySelector("#mp-back-branches-load")?.addEventListener("click",()=>showMultiplayerBranch("home"));
+  document.querySelector("#mp-back-branches-create")?.addEventListener("click",()=>showMultiplayerBranch("home"));
   document.querySelector("#mp-close")?.addEventListener("click",()=>document.querySelector("#multiplayer-dialog").classList.add("hidden"));
   document.querySelector("#mp-permissions-open")?.addEventListener("click",()=>{
     menuPanel.classList.add("hidden");openMultiplayerPermissions();
@@ -1390,7 +1394,11 @@ async function renderMultiplayerWorldList(){
   try{
     const worlds=await Multiplayer.listMyWorlds();
     host.innerHTML="";
-    if(!worlds.length){host.innerHTML='<div class="mp-permission-empty">Todavía no tenés mundos multijugador guardados. Creá uno o ingresá con un código.</div>';return;}
+    if(!worlds.length){
+      const empty=document.createElement("div");empty.className="mp-permission-empty";empty.textContent="Todavía no hay mundos guardados en este teléfono.";
+      const create=document.createElement("button");create.type="button";create.className="door-pin-submit";create.textContent="CREAR MUNDO";create.addEventListener("click",()=>showMultiplayerBranch("create"));
+      host.append(empty,create);return;
+    }
     for(const world of worlds){
       const button=document.createElement("button");button.type="button";button.className="mp-world-row";
       const info=document.createElement("div");
@@ -1410,14 +1418,27 @@ async function renderMultiplayerWorldList(){
     }
   }catch(error){host.innerHTML='<div class="mp-permission-empty">No se pudieron cargar tus partidas. Revisá la conexión.</div>';console.warn(error);}
 }
+function showMultiplayerBranch(branch){
+  const branches=document.querySelector("#mp-branches");
+  const load=document.querySelector("#mp-load-panel");
+  const create=document.querySelector("#mp-create-panel");
+  branches?.classList.toggle("hidden",branch!=="home");
+  load?.classList.toggle("hidden",branch!=="load");
+  create?.classList.toggle("hidden",branch!=="create");
+  if(branch==="home")document.querySelector("#multiplayer-status").textContent=activeMultiplayerWorldId?"Estás conectado a un mundo compartido. Elegí cargar otro mundo o crear uno nuevo.":"Elegí cargar un mundo guardado o crear uno nuevo.";
+  if(branch==="load"){
+    document.querySelector("#multiplayer-status").textContent="Estos son los mundos guardados a los que tenés acceso.";
+    renderMultiplayerWorldList();
+  }
+  if(branch==="create")document.querySelector("#multiplayer-status").textContent="Poné el nombre que tendrá tu nuevo mundo.";
+}
 function openMultiplayerDialog(){
   const dialog=document.querySelector("#multiplayer-dialog");
   const nameInput=document.querySelector("#mp-display-name");
   if(nameInput&&!nameInput.value)nameInput.value=localStorage.getItem("ilox-player-name")||"Jugador";
   document.querySelector("#mp-leave-world")?.classList.toggle("hidden",!activeMultiplayerWorldId);
-  document.querySelector("#multiplayer-status").textContent=activeMultiplayerWorldId?"Estás conectado a un mundo compartido. Podés copiar el código o volver a tu mundo individual.":"Creá un mundo nuevo o ingresá el código de un compañero.";
+  showMultiplayerBranch("home");
   dialog.classList.remove("hidden");
-  renderMultiplayerWorldList();
 }
 function showMultiplayerError(error){
   const message=String(error?.message||error||"Error desconocido");
