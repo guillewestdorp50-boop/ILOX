@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-menu-scroll-v74">
+  <link rel="stylesheet" href="./styles.css?v=ilox-mp-chat-v75">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -68,6 +68,12 @@
       <div class="touch-note">MOVER</div>
       <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
     </div>
+    <button id="mp-chat-toggle" class="mp-chat-toggle hidden" type="button" aria-label="Abrir chat del mundo" title="Chat del mundo">💬</button>
+    <section id="mp-chat-panel" class="mp-chat-panel hidden" aria-label="Chat del mundo compartido">
+      <header class="mp-chat-header"><strong>CHAT DEL MUNDO</strong><button id="mp-chat-close" type="button" aria-label="Cerrar chat">×</button></header>
+      <div id="mp-chat-messages" class="mp-chat-messages" aria-live="polite"><p class="mp-chat-empty">Todavía no hay mensajes. ¡Saludá a tu compañero!</p></div>
+      <form id="mp-chat-form" class="mp-chat-form"><input id="mp-chat-input" type="text" maxlength="500" autocomplete="off" placeholder="Escribí un mensaje…" aria-label="Mensaje"><button id="mp-chat-send" type="submit">ENVIAR</button></form>
+    </section>
     <div class="toast" id="toast" role="status"></div>
     <section id="mp-permissions-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="mp-permissions-title">
       <div class="door-pin-card multiplayer-card">
@@ -128,6 +134,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-multiplayer-code-5-v73"></script>
+  <script type="module" src="./game.js?v=ilox-mp-chat-v75"></script>
 </body>
 </html>
