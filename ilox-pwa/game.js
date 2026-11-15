@@ -385,6 +385,23 @@ function makePlayer(kind = "boy") {
     hairBack.scale.set(0.95, 1.12, 0.72);
     group.add(hairBack);
   }
+  if (kind === "builder") {
+    const helmetMat = new THREE.MeshStandardMaterial({color:0xf0b72f,roughness:0.7});
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.31,16,12,0,Math.PI*2,0,Math.PI*0.55),helmetMat);
+    helmet.position.set(0,2.19,0); group.add(helmet);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.07,16),helmetMat);
+    brim.position.y=2.08; group.add(brim);
+  }
+  if (kind === "astronaut") {
+    const glassHelmet = new THREE.Mesh(new THREE.SphereGeometry(0.36,20,16),new THREE.MeshPhysicalMaterial({color:0x8ed8ec,transparent:true,opacity:0.28,roughness:0.08,metalness:0.12}));
+    glassHelmet.position.set(0,2.03,0); group.add(glassHelmet);
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.29,0.07,8,20),new THREE.MeshStandardMaterial({color:0x9aa9b4,metalness:0.55}));
+    collar.position.y=1.78; group.add(collar);
+  }
+  if (kind === "robot") {
+    const earMat=new THREE.MeshStandardMaterial({color:0x35cce0,metalness:0.65,roughness:0.25});
+    for(const side of [-1,1]) { const ear=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.24,0.2),earMat); ear.position.set(side*0.29,2.02,0); group.add(ear); }
+  }
 
   // Brazos naturales y mangas de la camperita.
   const arms = [], legs = [];
@@ -556,6 +573,7 @@ function addEvents() {
     option.addEventListener("click", () => {
       selectedAvatar = option.dataset.avatar;
       document.querySelectorAll(".avatar-option").forEach(item => item.classList.toggle("selected", item === option));
+      enterWorldButton.innerHTML = "ENTRAR COMO " + option.querySelector("strong").textContent.toUpperCase() + " <span>→</span>";
     });
   });
   enterWorldButton.addEventListener("click", () => {
@@ -602,7 +620,7 @@ function createBuildPiece(record) {
   const glass = new THREE.MeshStandardMaterial({color:0x75cde0,transparent:true,opacity:0.62,roughness:0.2});
   const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
   const {kind,x,z,rotation=0}=record;
-  const baseY=terrainHeight(x,z);
+  const baseY=Number.isFinite(record.y) ? record.y : terrainHeight(x,z);
   if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color||0xb88752,roughness:0.88}); addBox(2,2,2,blockMat,0,1,0); }
   if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
   if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
@@ -658,7 +676,7 @@ function placeBuildAtPointer(event) {
   const point=firstPiece && buildTool==="block" && (!terrainHit || firstPiece.distance<terrainHit.distance) ? firstPiece.point : terrainHit.point;
   const x=Math.round(point.x/grid)*grid,z=Math.round(point.z/grid)*grid;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
-  const record={kind:buildTool,x,z,y:buildTool==="block"?Math.round(baseY/2)*2:undefined,rotation:buildRotation,color:0xb88752};
+  const record={kind:buildTool,x,z,y:buildTool==="block"?baseY:undefined,rotation:buildRotation,color:0xb88752};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
@@ -715,10 +733,10 @@ function animate() {
     if (moving) player.rotation.y = Math.atan2(dx, -dz);
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
-  const distance = 8.5;
+  const distance = 6.8;
   const targetX = focus.position.x + Math.sin(yaw) * distance;
   const targetZ = focus.position.z + Math.cos(yaw) * distance;
-  const targetY = focus.position.y + 3.2 + pitch * 5;
+  const targetY = focus.position.y + 2.7 + pitch * 4.5;
   camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
   camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
   renderer.render(scene, camera);
