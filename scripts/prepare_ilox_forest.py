@@ -119,6 +119,138 @@ replace_once(audio_path,
 replace_once(audio_path, "private readonly controller: FirstPersonController",
              "private readonly controller: ThirdPersonController")
 
+# Unificar las pisadas: mismo sonido en pasto, tierra, piedra y senderos.
+# Quitar el roce de hierba y cualquier cambio de timbre según la superficie.
+replace_once(audio_path, "  private rustleGain!: GainNode;\\n", "")
+replace_once(audio_path,
+             """    const rustleSrc = ctx.createBufferSource();
+    rustleSrc.buffer = this.noiseBuf;
+    rustleSrc.loop = true;
+    const rustleHp = ctx.createBiquadFilter();
+    rustleHp.type = 'highpass';
+    rustleHp.frequency.value = 2400;
+    this.rustleGain = ctx.createGain();
+    this.rustleGain.gain.value = 0;
+    rustleSrc.connect(rustleHp).connect(this.rustleGain).connect(this.master);
+    rustleSrc.start();
+
+""", "")
+replace_once(audio_path,
+             """    const grassMask = this.field.sampleMask(pos.x, pos.z);
+
+    // Roce del pasto al avanzar entre hierba alta.
+    const rustleTarget =
+      grassMask > 0.4 && this.controller.isGrounded
+        ? THREE.MathUtils.clamp(speed / 7.5, 0, 1) * 0.16
+        : 0;
+    this.rustleGain.gain.setTargetAtTime(rustleTarget, ctx.currentTime, 0.12);
+
+    // Pasos por distancia recorrida.
+    if (this.controller.isGrounded && speed > 0.6) {
+      this.stepAccum += dist;
+      const stride = 1.55 + speed * 0.12;
+      if (this.stepAccum >= stride) {
+        this.stepAccum = 0;
+        this.playStep(speed, grassMask);
+      }
+    } else {
+      this.stepAccum = Math.min(this.stepAccum, 1.2);
+    }
+
+    // Aterrizaje tras un salto o caída.
+    if (this.controller.landingSpeed > 3.5) {
+      this.playStep(this.controller.landingSpeed * 1.6, grassMask, true);
+    }
+""",
+             """    // Único sonido de pasos: no depende del material ni añade roce de hierba.
+    if (this.controller.isGrounded && speed > 0.6) {
+      this.stepAccum += dist;
+      const stride = 1.55 + speed * 0.12;
+      if (this.stepAccum >= stride) {
+        this.stepAccum = 0;
+        this.playStep(speed);
+      }
+    } else {
+      this.stepAccum = Math.min(this.stepAccum, 1.2);
+    }
+""")
+replace_once(audio_path,
+             """  private playStep(speed: number, grassMask: number, landing = false): void {
+    const ctx = this.ctx!;
+    const t = ctx.currentTime;
+    const onGrass = grassMask > 0.4;
+
+    const g = ctx.createGain();
+    const amp =
+      (landing ? 0.34 : 0.14 + Math.min(speed / 8, 1) * 0.1) * (0.85 + Math.random() * 0.3);
+    g.gain.setValueAtTime(amp, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (landing ? 0.22 : 0.13));
+    g.connect(this.master);
+
+    // Golpe grave.
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    const f0 = (landing ? 58 : 72) + Math.random() * 24;
+    osc.frequency.setValueAtTime(f0 * 1.5, t);
+    osc.frequency.exponentialRampToValueAtTime(f0, t + 0.07);
+    const og = ctx.createGain();
+    og.gain.value = onGrass ? 0.5 : 1.0;
+    osc.connect(og).connect(g);
+    osc.start(t);
+    osc.stop(t + 0.16);
+
+    // Crujido: banda alta en pasto, media en tierra.
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    src.playbackRate.value = 0.8 + Math.random() * 0.5;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = onGrass ? 2100 + Math.random() * 900 : 620 + Math.random() * 260;
+    bp.Q.value = 0.7;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(onGrass ? 1.0 : 0.8, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    src.connect(bp).connect(ng).connect(g);
+    src.start(t, Math.random() * 1.2);
+    src.stop(t + 0.14);
+  }
+
+""",
+             """  private playStep(_speed: number): void {
+    const ctx = this.ctx!;
+    const t = ctx.currentTime;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    g.connect(this.master);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(132, t);
+    osc.frequency.exponentialRampToValueAtTime(82, t + 0.07);
+    const og = ctx.createGain();
+    og.gain.value = 0.75;
+    osc.connect(og).connect(g);
+    osc.start(t);
+    osc.stop(t + 0.16);
+
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    src.playbackRate.value = 1;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 850;
+    bp.Q.value = 0.7;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.7, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    src.connect(bp).connect(ng).connect(g);
+    src.start(t, 0.4);
+    src.stop(t + 0.14);
+  }
+
+""")
+
 player_dir = root / "src/player"
 player_dir.mkdir(parents=True, exist_ok=True)
 shutil.copy2(source / "ILOXAvatar.ts", player_dir / "ILOXAvatar.ts")
