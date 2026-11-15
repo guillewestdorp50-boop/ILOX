@@ -2,11 +2,20 @@ name: ILOX Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, deploy/render-ilox]
+    paths:
+      - '.github/workflows/android-apk.yml'
+      - 'ilox-pwa/**'
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - 'assets/**'
+      - 'scripts/fetch_polyhaven_assets.py'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -21,6 +30,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Configurar Python e icono Android
+        run: |
+          python3 -m pip install --user cairosvg
+          mkdir -p app/src/main/res/mipmap-mdpi app/src/main/res/mipmap-hdpi app/src/main/res/mipmap-xhdpi app/src/main/res/mipmap-xxhdpi app/src/main/res/mipmap-xxxhdpi
+          python3 - <<'PY'
+          import cairosvg
+          from pathlib import Path
+          svg = Path('ilox-pwa/icon.svg').read_bytes()
+          for density, size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+              cairosvg.svg2png(bytestring=svg, write_to=f'app/src/main/res/mipmap-{density}/ic_launcher.png', output_width=size, output_height=size)
+          PY
+
       - name: Configurar Android SDK
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
@@ -33,23 +54,26 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Descargar recursos 3D gratuitos CC0
+      - name: Descargar recursos 3D
         run: python3 scripts/fetch_polyhaven_assets.py
 
-      - name: Validar JavaScript y preparar archivos web dentro de la app
+      - name: Empaquetar la versión web ILOX v88 dentro del APK
         run: |
-          node --check app.js
+          node --check ilox-pwa/game.js
+          node --check ilox-pwa/multiplayer.js
           mkdir -p app/src/main/assets/www
-          cp index.html styles.css app.js manifest.webmanifest app/src/main/assets/www/
+          cp ilox-pwa/index.html ilox-pwa/styles.css ilox-pwa/game.js ilox-pwa/app.js ilox-pwa/multiplayer.js ilox-pwa/manifest.webmanifest ilox-pwa/sw.js app/src/main/assets/www/
+          cp ilox-pwa/icon.svg ilox-pwa/icon-192.svg ilox-pwa/icon-512.svg app/src/main/assets/www/
           cp -R assets app/src/main/assets/www/assets
 
       - name: Compilar APK de prueba
         run: gradle --no-daemon assembleDebug
 
-      - name: Publicar instalador de prueba
-        uses: actions/upload-artifact@v4
+      - name: Publicar instalador APK
+        uses: softprops/action-gh-release@v2
         with:
-          name: ILOX-Android-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: ilox-v88-android
+          name: ILOX v88 — Instalador Android
+          body: APK de prueba de ILOX v88. Incluye la pantalla animada de bienvenida y el icono nuevo.
+          files: app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true
