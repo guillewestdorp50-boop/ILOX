@@ -44,10 +44,15 @@ const animalAssetPromises = new Map();
 // Recurso de ejemplo oficial de Three.js (licencia MIT).
 const RIGGED_AVATAR_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb";
 const HUMAN_AVATAR_MODELS = {
-  man:["https://gobkit.com/freebies/human001/StoreManager.glb","https://gobkit.com/freebies/human002/ItEngineer.glb","https://gobkit.com/freebies/human015/OfficeWorker.glb"],
-  woman:["https://gobkit.com/freebies/human001/OfficeLady.glb","https://gobkit.com/freebies/human002/Receptionist.glb","https://gobkit.com/freebies/human005/ChiefSurgeon.glb"],
+  man:["https://gobkit.com/freebies/human001/StoreManager.glb","https://gobkit.com/freebies/human002/ItEngineer.glb","https://gobkit.com/freebies/human015/OfficeWorker.glb","https://gobkit.com/freebies/human002/Accountant.glb","https://gobkit.com/freebies/human002/CompanyCeo.glb","https://gobkit.com/freebies/human002/OfficeManager.glb","https://gobkit.com/freebies/human002/SecurityGuard.glb","https://gobkit.com/freebies/human015/DeliveryRider.glb","https://gobkit.com/freebies/human015/HeadChef.glb","https://gobkit.com/freebies/human015/PoliceOfficer.glb","https://gobkit.com/freebies/human015/Student.glb","https://gobkit.com/freebies/human020/SiteForeman.glb"],
+  woman:["https://gobkit.com/freebies/human001/OfficeLady.glb","https://gobkit.com/freebies/human002/Receptionist.glb","https://gobkit.com/freebies/human005/ChiefSurgeon.glb","https://gobkit.com/freebies/human005/WardNurse.glb","https://gobkit.com/freebies/human005/Pharmacist.glb","https://gobkit.com/freebies/human005/Paramedic.glb","https://gobkit.com/freebies/human001/GrandmaShopper.glb","https://gobkit.com/freebies/human001/FoodCourier.glb","https://gobkit.com/freebies/human008/CabinAttendant.glb","https://gobkit.com/freebies/human007/FireChief.glb"],
   boy:["https://gobkit.com/freebies/human019/Schoolboy.glb","https://gobkit.com/freebies/human001/Schoolkid.glb"],
   girl:["https://gobkit.com/freebies/human019/Schoolgirl.glb"]
+};
+const HUMAN_AVATAR_LABELS = {
+  man:["Gerente de tienda","Ingeniero IT","Trabajador de oficina","Contador","Director ejecutivo","Gerente de oficina","Guardia de seguridad","Repartidor","Chef","Policía","Estudiante","Jefe de obra"],
+  woman:["Oficinista","Recepcionista","Cirujana","Enfermera","Farmacéutica","Paramédica","Abuela","Repartidora","Tripulante de cabina","Jefa de bomberos"],
+  boy:["Escolar","Estudiante"],girl:["Escolar"]
 };
 const HUMAN_MODEL_LOADER = new GLTFLoader();
 let avatarLoadToken = 0;
@@ -698,7 +703,7 @@ function addEvents() {
   });
   game.addEventListener("pointermove", e => {
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),3.2,20);return;}
+    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),1.2,40);return;}
     if (lookPointer !== e.pointerId || !started) return;
     const dx = e.clientX - lastLookX;
     const dy = e.clientY - lastLookY;
@@ -706,10 +711,10 @@ function addEvents() {
     lastLookX = e.clientX;
     lastLookY = e.clientY;
     // Cámara libre compartida por primera, segunda, tercera persona y bloqueo.
-    // Arrastrar el dedo hacia arriba mira al suelo; hacia abajo, al cielo.
-    // El recorrido vertical llega casi al cenit/nadir, sin un techo artificial.
+    // Arrastrar el dedo hacia arriba mira al cielo; hacia abajo, al suelo.
+    // Giro horizontal completo y vertical casi de cenit a nadir, en las tres vistas.
     yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -1.56, 1.56);
+    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -722,7 +727,7 @@ function addEvents() {
   game.addEventListener("wheel", e => {
     if (!started) return;
     e.preventDefault();
-    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, cameraMode==="second"?2.2:(buildMode?3.2:4.2), 20);
+    cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, 1.2, 40);
   }, {passive:false});
 
   startButton.addEventListener("click", () => {
@@ -730,24 +735,36 @@ function addEvents() {
     avatarSelect.classList.remove("hidden");
   });
   const avatarCatalog = [
-    ["soldier","🧍","Humano original",1],["man","👨","Hombre",3],["woman","👩","Mujer",3],
-    ["boy","👦","Niño",2],["girl","👧","Niña",1],["explorer","🧑‍🦰","Exploradora original",10],["builder","👷","Constructor",10],["builderwoman","👩‍🔧","Constructora original",10],
-    ["astronaut","🧑‍🚀","Astronauta",10],["robot","🤖","Robot",10],["elf","🧝","Elfo",10],
-    ["knight","🛡️","Caballero",10],["ninja","🥷","Ninja",10],["mage","🧙","Mago",10]
+    ["man","👨","Hombre 3D",12],["woman","👩","Mujer 3D",10],["boy","👦","Niño 3D",2],["girl","👧","Niña 3D",1],
+    ["soldier","🧍","Humano original",1],["explorer","🧑‍🦰","Explorador",10],["builder","👷","Constructor",10],["builderwoman","👩‍🔧","Constructora",10],
+    ["astronaut","🧑‍🚀","Astronauta",8],["robot","🤖","Robot",8],["elf","🧝","Elfo",7],
+    ["knight","🛡️","Caballero",7],["ninja","🥷","Ninja",7],["mage","🧙","Mago",7]
   ];
   const avatarGrid = document.querySelector(".avatar-options");
   avatarGrid.innerHTML = "";
+  const humanHeading=document.createElement("div");
+  humanHeading.className="avatar-section-title";
+  humanHeading.textContent="HUMANOS 3D REALISTAS · ANIMADOS";
+  avatarGrid.appendChild(humanHeading);
   let firstAvatar = true;
   avatarCatalog.forEach(([type,emoji,label,count]) => {
+    if(type==="soldier"){
+      const otherHeading=document.createElement("div");
+      otherHeading.className="avatar-section-title";
+      otherHeading.textContent="FANTASÍA Y PERSONAJES CLÁSICOS";
+      avatarGrid.appendChild(otherHeading);
+    }
     for (let variant=0; variant<count; variant++) {
       const option=document.createElement("button");
-      option.className="avatar-option"+(firstAvatar?" selected":"");
+      const human=!!HUMAN_AVATAR_MODELS[type];
+      const displayName=HUMAN_AVATAR_LABELS[type]?.[variant] || label+(count>1?" "+(variant+1):"");
+      option.className="avatar-option"+(human?" human-avatar":"")+(firstAvatar?" selected":"");
       option.dataset.avatar=type+":"+variant;
-      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+label+(count>1?" "+(variant+1):"")+'</strong><small>'+(HUMAN_AVATAR_MODELS[type]?"Humano animado":"Modelo "+String(variant+1).padStart(2,"0"))+'</small>';
+      option.innerHTML='<span class="avatar-emoji">'+emoji+'</span><strong>'+displayName+'</strong><small>'+(human?"MODELO HUMANO 3D · ANIMADO":"Modelo "+String(variant+1).padStart(2,"0"))+'</small>';
       avatarGrid.appendChild(option);firstAvatar=false;
     }
   });
-  selectedAvatar = "soldier:0";
+  selectedAvatar = "man:0";
   document.querySelectorAll(".avatar-option").forEach(option => {
     option.addEventListener("click", () => {
       selectedAvatar = option.dataset.avatar;
@@ -884,7 +901,7 @@ function createBuildPiece(record, options = {}) {
     box(1.5,1.5,1.5,material,0,.75,0);
   }
   if(kind==="platea"){const slab=mat(0xb8b9b3,.88);box(6,.3,6,slab,0,.15,0);group.userData.isFoundation=true;group.userData.buildHeight=.3;}
-  if(kind==="pool"){const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;}
+  if(kind==="pool"){const w=record.poolWidth||6,d=record.poolDepth||6,depth=2,pf=mat(0x8ca6a4,.82),pw=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);box(w,.3,d,pf,0,-depth-.37,0);box(w-.36,.22,d-.36,pf,0,-depth-.11,0);box(.28,depth+.22,d,pw,-w/2+.14,-depth/2+.11,0);box(.28,depth+.22,d,pw,w/2-.14,-depth/2+.11,0);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,-d/2+.14);box(w-.28,depth+.22,.28,pw,0,-depth/2+.11,d/2-.14);box(w,.22,.34,rim,0,.11,-d/2+.17);box(w,.22,.34,rim,0,.11,d/2-.17);box(.34,.22,d-.34,rim,-w/2+.17,.11,0);box(.34,.22,d-.34,rim,w/2-.17,.11,0);group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;}
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
@@ -1052,9 +1069,14 @@ function animate() {
         new THREE.Vector3(x+0.34, feet+2.05, z+0.34)
       );
       const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","stairs","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]);
+      const playerSwimming=!!player.userData.isSwimming;
+      const filledPoolAtCandidate=buildRecords.some(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(z-p.z)<(p.poolDepth||6)/2-.48);
       for (const g of buildGroups) {
         const kind=g.userData.buildRecord?.kind;
         if (!solidKinds.has(kind) || !g.visible) continue;
+        // Dentro del agua, las paredes dejan de bloquear al nadador; al entrar
+        // se permite cruzar el borde desde un salto, y al nadar se puede salir.
+        if(kind==="pool"&&(playerSwimming||(filledPoolAtCandidate&&player.position.y>=(g.userData.buildRecord.y||0)+.18)))continue;
         g.updateMatrixWorld(true);
         let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
@@ -1063,7 +1085,7 @@ function animate() {
     if (!collides(nextX, player.position.z)) player.position.x = nextX;
     if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
     const pool=buildRecords.find(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(player.position.x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(player.position.z-p.z)<(p.poolDepth||6)/2-.48);
-    const surface=pool?pool.y:-Infinity,swimming=!!pool&&player.position.y<surface+.35&&player.position.y>pool.y-1.9;
+    const surface=pool?pool.y:-Infinity,swimming=!!pool&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(swimming){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
     else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
     const moving = inputLength > 0.08;
@@ -1113,7 +1135,7 @@ function animate() {
   for(const group of buildGroups){if(group.userData.animalMixer){ group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;group.userData.roamTimer-=delta; if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;} const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22; if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:.42;group.position.x+=dx/dist*speed*delta;group.position.z+=dz/dist*speed*delta;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=group.position.x;group.userData.buildRecord.z=group.position.z;} const next=moving?(actions.walk||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}if(group.userData.water){const water=group.children.find(child=>child.userData.water);if(water){const pos=water.geometry.attributes.position,base=water.userData.basePositions,t=clock.elapsedTime;for(let i=0;i<pos.count;i++){const x=base[i*3],z=base[i*3+1];pos.setZ(i,Math.sin(x*4+t*1.8)*.012+Math.cos(z*4+t*1.4)*.012);}pos.needsUpdate=true;water.geometry.computeVertexNormals();}}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
-  const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
+  const distance = cameraDistance;
   // Pitch orbital compartido: permite mirar desde el suelo hasta el cielo
   // en primera, segunda y tercera persona, sin límite superior artificial.
   const cameraYaw = yaw;
