@@ -756,6 +756,7 @@ function placeBuildAtPointer(event) {
 }
 
 function updateArrowMovement() {
+  // Arriba/abajo avanzan o retroceden; izquierda/derecha giran el cuerpo.
   moveX = (pressedMoveButtons.has("right") ? 1 : 0) - (pressedMoveButtons.has("left") ? 1 : 0);
   moveZ = (pressedMoveButtons.has("down") ? 1 : 0) - (pressedMoveButtons.has("up") ? 1 : 0);
 }
@@ -765,17 +766,18 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.05);
   if (started && player) {
     let forward = -moveZ;
-    let strafe = moveX;
-    if (keys.has("w") || keys.has("arrowup")) forward += 1;
-    if (keys.has("s") || keys.has("arrowdown")) forward -= 1;
-    if (keys.has("a") || keys.has("arrowleft")) strafe += 1;
-    if (keys.has("d") || keys.has("arrowright")) strafe -= 1;
-    const length = Math.hypot(forward, strafe);
-    if (length > 1) { forward /= length; strafe /= length; }
+    const keyboardForward = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
+      + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0);
+    const keyboardTurn = (keys.has("d") || keys.has("arrowright") ? 1 : 0)
+      - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
+    forward += keyboardForward;
+    const turn = moveX + keyboardTurn;
+    playerHeading -= turn * 2.25 * delta;
+    const length = Math.abs(forward);
     const speed = 7.2;
-    // La cámara orbita de forma independiente; el movimiento sigue el rumbo propio del personaje.
-    const dx = (Math.sin(playerHeading) * forward + Math.cos(playerHeading) * strafe) * speed * delta;
-    const dz = (-Math.cos(playerHeading) * forward + Math.sin(playerHeading) * strafe) * speed * delta;
+    // El giro cambia el rumbo sin cancelar el avance mantenido.
+    const dx = Math.sin(playerHeading) * forward * speed * delta;
+    const dz = -Math.cos(playerHeading) * forward * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
     const collides = (x,z) => {
