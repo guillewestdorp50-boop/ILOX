@@ -916,7 +916,7 @@ function addEvents() {
     finally{button.disabled=false;}
   });
   document.querySelector("#mp-join-world")?.addEventListener("click",async()=>{
-    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.replace(/\\D/g,"");
+    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.replace(/\D/g,"");
     if(!name||code.length!==5){status.textContent="Ingresá tu nombre y el código numérico de 5 dígitos.";return;}
     const button=document.querySelector("#mp-join-world");button.disabled=true;status.textContent="Buscando la partida…";
     try{
