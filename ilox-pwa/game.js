@@ -6,6 +6,7 @@ import * as Multiplayer from "./multiplayer.js";
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
 const welcome = document.querySelector("#welcome");
+const welcomeScene = document.querySelector("#welcome-scene");
 const avatarSelect = document.querySelector("#avatar-select");
 const enterWorldButton = document.querySelector("#enter-world");
 let selectedAvatar = "boy";
@@ -876,7 +877,8 @@ function addEvents() {
       enterWorldButton.innerHTML = (started ? "APLICAR " : "ENTRAR COMO ") + option.querySelector("strong").textContent.toUpperCase() + " <span>→</span>";
     });
   });
-  enterWorldButton.addEventListener("click", () => {
+  enterWorldButton.addEventListener("click", async () => {
+    const firstEntry = !started;
     const oldPosition=player?player.position.clone():new THREE.Vector3(0,terrainHeight(0,0),0);
     const oldHeading=player?player.rotation.y:yaw;
     if (player) scene.remove(player);
@@ -885,15 +887,38 @@ function addEvents() {
     if(activeMultiplayerWorldId)spawnPlayerAtMultiplayerMeetingPoint();
     started = true;
     game.classList.add("playing");
-    document.querySelector("#welcome-scene")?.classList.add("hidden");
+    if (welcomeScene) {
+      welcomeScene.classList.add("hidden");
+      welcomeScene.style.display = "none";
+    }
+    if (welcome) welcome.style.display = "none";
+    loading?.classList.add("done");
+    if (renderer?.domElement) renderer.domElement.style.visibility = "visible";
     cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
     if(multiplayerSession) Multiplayer.updateMyAvatar(selectedAvatar).catch(error=>console.warn("ILOX multiplayer: no se pudo actualizar el avatar",error));
     avatarSelect.classList.add("hidden");
     menuToggle.classList.remove("hidden");
-    hint.textContent = "";
-    if(!activeMultiplayerWorldId)loadBuilds();
-    showToast(activeMultiplayerWorldId?"¡Estás en el mundo compartido!":"¡Tu mundo, tus reglas!");
+    if (hint) hint.textContent = "";
+
+    if (firstEntry && !activeMultiplayerWorldId) {
+      showToast("Buscando tu mundo compartido…");
+      try {
+        const resumed = await resumeSavedMultiplayerWorld();
+        if (!resumed && !activeMultiplayerWorldId) loadBuilds();
+      } catch (error) {
+        console.warn("ILOX multiplayer: no se pudo recuperar la última partida", error);
+        if (!activeMultiplayerWorldId) loadBuilds();
+        openMultiplayerDialog();
+        showMultiplayerBranch("load");
+        showMultiplayerError(error);
+      }
+    } else if (!activeMultiplayerWorldId) {
+      loadBuilds();
+    }
+
+    if (activeMultiplayerWorldId) showToast("¡Estás en el mundo compartido!");
+    else if (!firstEntry) showToast("¡Personaje actualizado!");
   });
   const applyCameraMode = mode => {
     if (cameraLocked && mode === "first") mode = "second";
@@ -1454,6 +1479,33 @@ async function enterMultiplayerWorld(worldId){
     showToast(error.message||"No se pudo entrar al mundo compartido.");
     throw error;
   }
+}
+
+async function resumeSavedMultiplayerWorld(){
+  const hasSession=await Multiplayer.hasSavedIdentity();
+  if(!hasSession){
+    openMultiplayerDialog();
+    showMultiplayerBranch("load");
+    document.querySelector("#multiplayer-status").textContent="Para volver a tu mundo compartido, elegí una partida guardada o ingresá el código de invitación.";
+    return false;
+  }
+  const savedName=localStorage.getItem("ilox-player-name")||"Jugador";
+  const user=await Multiplayer.ensureIdentity(savedName,selectedAvatar);
+  multiplayerUserId=user.id;
+  const worlds=await Multiplayer.listMyWorlds();
+  const lastWorldId=localStorage.getItem("ilox-last-multiplayer-world");
+  let target=worlds.find(world=>world.id===lastWorldId)||null;
+  if(!target&&worlds.length===1)target=worlds[0];
+  if(target){
+    await enterMultiplayerWorld(target.id);
+    return true;
+  }
+  openMultiplayerDialog();
+  showMultiplayerBranch("load");
+  document.querySelector("#multiplayer-status").textContent=worlds.length
+    ?"Tenés varias partidas guardadas. Elegí el mundo al que querés entrar."
+    :"No encontramos partidas guardadas para esta sesión. Si tu mundo sigue activo, ingresá su código de invitación.";
+  return false;
 }
 async function leaveMultiplayerWorld(){
   stopMultiplayerFallbackSync();
