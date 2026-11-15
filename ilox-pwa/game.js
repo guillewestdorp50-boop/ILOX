@@ -430,7 +430,6 @@ function makePlayer(kind = "boy") {
     add(group,new THREE.CapsuleGeometry(.355,.43,5,14),vest,0,1.37,-.012,1.08,1,.80);
     for (const y of [1.20,1.48]) {
       const band = add(group,new THREE.CylinderGeometry(.355,.355,.075,24,1,true),reflective,0,y,0,1.02,1,.80);
-      band.rotation.z = Math.PI/2;
     }
     add(group,new THREE.BoxGeometry(.07,.62,.035),reflective,0,1.39,-.305);
     for (const side of [-1,1]) {
