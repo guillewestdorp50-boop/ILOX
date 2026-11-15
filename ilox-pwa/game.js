@@ -646,7 +646,7 @@ function makePlayer(kind = "explorer:0") {
   const hair = mat(hairColors[(variant + (kind === "girl" ? 2 : 0)) % hairColors.length], 1);
   const shirtColor = isBuilder ? 0x263c36 : isAstronaut ? 0xe2e7e9 : isRobot ? 0x536a79 : kind === "girl" ? 0x8a547f : kind === "woman" ? 0x315d76 : 0x315a8c;
   const palette = [0x315a8c,0x8a547f,0x386b52,0x9b542f,0x5b5b91,0x9b813c,0x347d86,0x873d4c,0x596b39,0x6b5547];
-  const toonShirtColors = {burbu:0xffc928,marea:0x38b9d4,pipo:0x4b9a63,zarpa:0x42536d,luma:0x9a64bd};
+  const toonShirtColors = {burbu:0xffc928,marea:0x38b9d4,pipo:0xf0793c,zarpa:0x42536d,luma:0x9a64bd};
   const shirt = mat(isToon ? toonShirtColors[kind] : isBuilder ? shirtColor : isAstronaut ? shirtColor : isRobot ? shirtColor : palette[variant % palette.length]);
   const pants = mat(isBuilder ? 0x303b40 : isAstronaut ? 0x526779 : isRobot ? 0x344653 : kind === "girl" ? 0x4b3d63 : 0x394b5c);
   const bootMat = mat(isBuilder ? 0x292b2b : 0x302820);
@@ -667,7 +667,7 @@ function makePlayer(kind = "explorer:0") {
 
   if (isToon) {
     const fur = mat(kind==="burbu"?0xffd22e:kind==="marea"?0xf49a9b:kind==="pipo"?0xc98b65:kind==="zarpa"?0x536b86:0xc56bc2,0.88);
-    const accent = mat(kind==="burbu"?0x2d9e9a:kind==="marea"?0x4a9ec2:kind==="pipo"?0xe6c56c:kind==="zarpa"?0x7cc7c2:0x573c88,0.82);
+    const accent = mat(kind==="burbu"?0x2d9e9a:kind==="marea"?0x4a9ec2:kind==="pipo"?0x35c4c8:kind==="zarpa"?0x7cc7c2:0x573c88,0.82);
     const eyeWhite = mat(0xfffaf0,0.48), pupil = mat(0x202536,0.42), blush = mat(0xf28b83,0.8);
     if(kind==="burbu"){
       add(rig,new THREE.SphereGeometry(.43,24,20),fur,0,1.38,0,1.08,1.26,.78);
@@ -690,9 +690,12 @@ function makePlayer(kind = "explorer:0") {
       add(rig,new THREE.SphereGeometry(.30,22,18),skin,0,2.06,-.015,1,.98,.9);
       for(const side of [-1,1]){add(rig,new THREE.SphereGeometry(.065,14,12),eyeWhite,side*.105,2.09,-.265);add(rig,new THREE.SphereGeometry(.03,10,8),pupil,side*.105,2.09,-.325);add(rig,new THREE.SphereGeometry(.025,8,8),blush,side*.21,1.99,-.24);}
       add(rig,new THREE.CapsuleGeometry(.014,.07,3,6),pupil,0,1.96,-.285);
-      const cap=add(rig,new THREE.SphereGeometry(.32,18,12,0,Math.PI*2,0,Math.PI*.48),accent,0,2.27,.01,1.08,.62,1);cap.rotation.z=-.12;
-      add(rig,new THREE.CylinderGeometry(.29,.29,.055,18),accent,0,2.22,-.055,1,.7,1);
-      for(let i=0;i<3;i++)add(rig,new THREE.BoxGeometry(.10,.42,.035),accent,-.22+i*.22,1.38,-.315);
+      const curls=mat(0x6b3828,0.94);
+      add(rig,new THREE.SphereGeometry(.29,18,12,0,Math.PI*2,0,Math.PI*.52),curls,0,2.25,.02,1.08,.68,1);
+      for(let i=0;i<5;i++){const a=-Math.PI*.82+i*Math.PI*.41;add(rig,new THREE.SphereGeometry(.105,12,10),curls,Math.cos(a)*.23,2.30+Math.sin(a)*.10,-.08);}
+      add(rig,new THREE.TorusGeometry(.25,.065,8,20),accent,0,1.78,-.015,1,.55,.72);
+      add(rig,new THREE.BoxGeometry(.11,.42,.035),accent,-.22,1.38,-.315);
+      add(rig,new THREE.BoxGeometry(.11,.42,.035),accent,.22,1.38,-.315);
     } else if(kind==="zarpa"){
       add(rig,new THREE.SphereGeometry(.34,22,18),fur,0,1.38,0,1.02,1.20,.82);
       add(rig,new THREE.SphereGeometry(.30,22,18),fur,0,2.08,0,1.08,.98,.88);
@@ -2373,7 +2376,7 @@ function animate() {
     const stride = swimmingNow ? Math.cos(player.userData.walkPhase*1.4)*.35 : moving ? Math.cos(player.userData.walkPhase * 2) : 0;
     const rig = player.userData.rig;
     if (rig) {
-      rig.position.y = swimmingNow ? Math.sin(clock.elapsedTime*2.4)*.035 : moving ? Math.abs(stride)*.055 : 0;
+      rig.position.y = swimmingNow ? Math.sin(clock.elapsedTime*2.4)*.035 : moving ? Math.abs(stride)*.055 : player.userData.toonType ? Math.sin(clock.elapsedTime*2.0)*.022 : 0;
       rig.rotation.z = swimmingNow ? Math.sin(player.userData.walkPhase)*.025 : moving ? Math.sin(player.userData.walkPhase)*.035 : 0;
       rig.rotation.x = swimmingNow ? -.12 : moving ? -.035 : 0;
     }
@@ -2411,7 +2414,7 @@ function animate() {
     const swing=swimming?Math.sin(phase*1.7)*.24:moving?Math.sin(phase)*.48:0;
     const stride=swimming?Math.cos(phase*1.4)*.35:moving?Math.cos(phase*2):0;
     const rig=avatar.userData.rig;
-    if(rig){rig.position.y=swimming?Math.sin(clock.elapsedTime*2.4)*.035:moving?Math.abs(stride)*.055:0;rig.rotation.z=swimming?Math.sin(phase)*.025:moving?Math.sin(phase)*.035:0;rig.rotation.x=swimming?-.12:moving?-.035:0;}
+    if(rig){rig.position.y=swimming?Math.sin(clock.elapsedTime*2.4)*.035:moving?Math.abs(stride)*.055:avatar.userData.toonType?Math.sin(clock.elapsedTime*2.0+avatar.position.x)*.022:0;rig.rotation.z=swimming?Math.sin(phase)*.025:moving?Math.sin(phase)*.035:0;rig.rotation.x=swimming?-.12:moving?-.035:0;}
     avatar.userData.legs?.forEach((leg,i)=>{leg.rotation.x=i===0?swing:-swing;});
     avatar.userData.arms?.forEach((arm,i)=>{arm.rotation.x=swimming?Math.sin(phase*1.8+i*Math.PI)*.72:i===0?-swing*.82:swing*.82;arm.rotation.z=i===0?-.035:.035;});
   }
