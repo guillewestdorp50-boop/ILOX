@@ -326,7 +326,7 @@ function makeMeadowDetails() {
   const bladeMaterial=new THREE.MeshStandardMaterial({color:0x718b4d,roughness:1});
   const grass=new THREE.InstancedMesh(bladeGeometry,bladeMaterial,520);
   const dummy=new THREE.Object3D();
-  for(let i=0;i<1900;i++){
+  for(let i=0;i<520;i++){
     const x=(random()-.5)*190,z=(random()-.5)*190;
     if(Math.hypot(x,z)<7) { dummy.position.set(0,-100,0); }
     else { dummy.position.set(x,terrainHeight(x,z)+.18,z); }
