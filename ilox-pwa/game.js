@@ -884,6 +884,8 @@ function addEvents() {
     player.position.copy(oldPosition);player.rotation.y=oldHeading;
     if(activeMultiplayerWorldId)spawnPlayerAtMultiplayerMeetingPoint();
     started = true;
+    game.classList.add("playing");
+    document.querySelector("#welcome-scene")?.classList.add("hidden");
     cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
     if(multiplayerSession) Multiplayer.updateMyAvatar(selectedAvatar).catch(error=>console.warn("ILOX multiplayer: no se pudo actualizar el avatar",error));
