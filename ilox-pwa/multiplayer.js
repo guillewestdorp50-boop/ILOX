@@ -142,6 +142,7 @@ export async function revokeStructurePermission(structureId, userId) {
 export async function subscribeWorld(worldId, handlers = {}) {
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError || !user) throw userError || new Error("No hay una sesión activa.");
+  await client.realtime.setAuth();
   const channel = client.channel("world:" + worldId, {
     config: { private: true, presence: { key: user.id } }
   });
@@ -152,15 +153,20 @@ export async function subscribeWorld(worldId, handlers = {}) {
   return new Promise((resolve, reject) => {
     channel.subscribe(async status => {
       if (status === "SUBSCRIBED") {
-        await channel.track({ user_id: user.id, joined_at: new Date().toISOString() });
-        resolve({
+        try {
+          await channel.track({ user_id: user.id, joined_at: new Date().toISOString() });
+          resolve({
           channel,
           userId: user.id,
           sendPlayerState: payload => channel.send({ type: "broadcast", event: "player_state", payload }),
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
           updatePresence: payload => channel.track({ ...payload, user_id: user.id }),
           close: () => client.removeChannel(channel)
-        });
+          });
+        } catch (error) {
+          await client.removeChannel(channel);
+          reject(error);
+        }
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         reject(new Error("No se pudo conectar al canal privado del mundo (" + status + ")."));
       }
