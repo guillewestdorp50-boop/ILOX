@@ -259,6 +259,7 @@ async function loadRiggedAvatar(kind) {
     const gltf = avatarType==="soldier" ? await avatarModelLoader.loadAsync(avatarUrl) : await HUMAN_MODEL_LOADER.loadAsync(avatarUrl);
     if (token !== avatarLoadToken || !started) return;
     const model = gltf.scene;
+    if (avatarType !== "soldier") model.rotation.y = Math.PI;
     const bounds = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     bounds.getSize(size);
