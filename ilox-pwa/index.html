@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-rigged-humanoid-v31">
+  <link rel="stylesheet" href="./styles.css?v=ilox-camera-lock-v32">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -48,6 +48,14 @@
     </section>
     <button id="build-toggle" class="build-toggle hidden">＋ CONSTRUIR</button>
     <button id="materials-toggle" class="materials-toggle hidden">🧱 MATERIALES</button>
+    <div id="camera-controls" class="camera-controls hidden" aria-label="Cámaras del personaje">
+      <div class="camera-mode-group">
+        <button class="camera-mode" data-camera="first" type="button">1ª PERSONA</button>
+        <button class="camera-mode" data-camera="second" type="button">2ª PERSONA</button>
+        <button class="camera-mode selected" data-camera="third" type="button">3ª PERSONA</button>
+      </div>
+      <button id="camera-lock" class="camera-lock" type="button" aria-pressed="false">🔓 GIRO LIBRE</button>
+    </div>
     <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
     <div class="touch-ui" id="touch-ui">
       <div class="move-pad" id="move-pad" aria-label="Joystick de movimiento">
@@ -61,6 +69,6 @@ remove right joystick markup    </div>
     <div class="toast" id="toast" role="status"></div>
   </main>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-rigged-humanoid-v31"></script>
+  <script type="module" src="./game.js?v=ilox-camera-lock-v32"></script>
 </body>
 </html>
