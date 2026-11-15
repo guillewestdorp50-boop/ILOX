@@ -17,7 +17,7 @@ export class ThirdPersonController {
   private yaw = 0;
   private pitch = 0.22;
   private moveX = 0;
-  private moveY = 0;
+  private moveY = 0;\n  private sprintInput = false;
   private readonly cameraTarget = new THREE.Vector3();
   private readonly desiredCamera = new THREE.Vector3();
 
@@ -46,7 +46,7 @@ export class ThirdPersonController {
     if (!enabled) {
       this.keys.clear();
       this.moveX = 0;
-      this.moveY = 0;
+      this.moveY = 0;\n      this.sprintInput = false;
     }
   }
 
@@ -55,7 +55,7 @@ export class ThirdPersonController {
     this.moveY = THREE.MathUtils.clamp(y, -1, 1);
   }
 
-  look(deltaX: number, deltaY: number): void {
+  setSprintInput(active: boolean): void {\n    this.sprintInput = active;\n  }\n\n  look(deltaX: number, deltaY: number): void {
     if (!this.enabled) return;
     this.yaw -= deltaX * 0.004;
     this.pitch = THREE.MathUtils.clamp(this.pitch + deltaY * 0.002, -0.08, 0.72);
@@ -76,7 +76,7 @@ export class ThirdPersonController {
     const direction = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(sideInput));
     if (direction.lengthSq() > 1) direction.normalize();
 
-    const sprinting = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
+    const sprinting = this.sprintInput || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
     const speed = sprinting ? RUN_SPEED : WALK_SPEED;
     const targetX = direction.x * speed;
     const targetZ = direction.z * speed;
