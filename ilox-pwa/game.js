@@ -821,7 +821,7 @@ function addEvents() {
     block:[["block","🧱","CUBO"],["brick","🧱","LADRILLO"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     nature:[["tree","🌳","ÁRBOL"],["rock","🪨","ROCA"],["erase","⌫","BORRAR"]],
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
-    structure:[["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door","🚪","PUERTA"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
+    structure:[["pool","🏊","PILETA"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door","🚪","PUERTA"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
     farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"]]
   };
@@ -832,7 +832,7 @@ function addEvents() {
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
-        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="water"?"Agua: solo en los sectores habilitados del valle central.":"Pieza seleccionada. Se coloca alineada a la cuadrícula.";
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="water"?"Agua: colocala dentro de una pileta.":kind==="pool"?"Pileta: construí la estructura y después llenala con agua.":"Pieza seleccionada. Se coloca alineada a la cuadrícula.";
         buildPanel.classList.add("hidden");
       });buildToolsHost.appendChild(button);
     }
@@ -893,6 +893,15 @@ function createBuildPiece(record) {
     if(kind==="brick"){const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;const ctx=canvas.getContext("2d");ctx.fillStyle="#9d5946";ctx.fillRect(0,0,256,256);ctx.strokeStyle="#e5b49b";ctx.lineWidth=5;for(let row=0;row<6;row++){const yy=row*43;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(256,yy);ctx.stroke();const off=row%2?0:64;for(let col=-1;col<4;col++){ctx.beginPath();ctx.moveTo(off+col*128,yy);ctx.lineTo(off+col*128,yy+43);ctx.stroke();}}const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;material=new THREE.MeshStandardMaterial({map:texture,roughness:.95});}
     box(1.5,1.5,1.5,material,0,.75,0);
   }
+  if(kind==="pool"){
+    const poolFloor=mat(0xb9c7c2,.82),poolWall=mat(0xe7e4d8,.78),rim=mat(0xf4f0e4,.72);
+    box(6,.24,6,poolFloor,0,.12,0);
+    box(.34,1.25,6,poolWall,-2.83,.625,0);box(.34,1.25,6,poolWall,2.83,.625,0);
+    box(5.66,1.25,.34,poolWall,0,.625,-2.83);box(5.66,1.25,.34,poolWall,0,.625,2.83);
+    box(.42,.16,6.18,rim,-2.83,1.32,0);box(.42,.16,6.18,rim,2.83,1.32,0);
+    box(6.18,.16,.42,rim,0,1.32,-2.83);box(6.18,.16,.42,rim,0,1.32,2.83);
+    group.userData.isPool=true;
+  }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
   if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
@@ -901,7 +910,7 @@ function createBuildPiece(record) {
   if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
   if(kind==="rock"){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(.68,1),mat(0x85877e));o.position.y=.48;o.scale.set(1.1,.7,.9);o.rotation.set(.2,.4,.1);o.castShadow=true;group.add(o);}
-  if(kind==="water"){const geo=new THREE.PlaneGeometry(1.5,1.5,12,12),water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x3dadd0,roughness:.16,metalness:.12,transparent:true,opacity:.82,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.position.y=.055;water.userData.water=true;water.userData.basePositions=geo.attributes.position.array.slice();group.add(water);group.userData.water=true;}
+  if(kind==="water"){const geo=new THREE.PlaneGeometry(1.5,1.5,12,12),water=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x3dadd0,roughness:.16,metalness:.12,transparent:true,opacity:.82,side:THREE.DoubleSide}));water.rotation.x=-Math.PI/2;water.position.y=.055;water.userData.water=true;water.userData.basePositions=geo.attributes.position.array.slice();group.add(water);group.userData.water=true;group.userData.buildHeight=.02;}
   if(kind==="chair"){box(.95,.12,.9,wood,0,.72,0);box(.95,.85,.12,wood,0,1.15,-.39);for(const sx of [-.38,.38])for(const sz of [-.32,.32])box(.12,.68,.12,darkWood,sx,.34,sz);}
   if(kind==="table"){box(1.4,.14,1.2,wood,0,.92,0);for(const sx of [-.55,.55])for(const sz of [-.42,.42])box(.12,.9,.12,darkWood,sx,.45,sz);}
   if(kind==="bed"){box(1.4,.22,1.5,darkWood,0,.38,0);box(1.32,.2,1.32,mat(0xe4dfd0),0,.58,0);box(.55,.18,.35,mat(0xf4eee0),-.36,.76,-.45);box(1.4,.95,.12,wood,0,.55,-.7);}
@@ -936,7 +945,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&record.y>terrainHeight(record.x,record.z)+.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,pool:1.5,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&record.y>terrainHeight(record.x,record.z)+.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function placeBuildAtPointer(event){
@@ -948,11 +957,20 @@ function placeBuildAtPointer(event){
   let x=Math.round(point.x/1.5)*1.5,z=Math.round(point.z/1.5)*1.5;
   if(onPiece&&buildTool!=="water"&&hit.face){const normal=hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize();if(normal.y<.65){x=Math.round((point.x+normal.x*.76)/1.5)*1.5;z=Math.round((point.z+normal.z*.76)/1.5)*1.5;}}
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
-  if(buildTool==="water"&&(Math.abs(x)>42||Math.abs(z)>42)){showToast("El agua solo se puede colocar en los sectores habilitados del valle central.");return;}
-  const ground=terrainHeight(x,z);let baseY=ground;
+  let containingPool=null;
+  if(buildTool==="water"){
+    containingPool=buildRecords.find(item=>{
+      if(item.kind!=="pool")return false;
+      const dx=x-item.x,dz=z-item.z,a=-(item.rotation||0),lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);
+      return Math.abs(lx)<=1.51&&Math.abs(lz)<=1.51;
+    });
+    if(!containingPool){showToast("El agua solo se puede colocar dentro de una pileta.");return;}
+    if(buildRecords.some(item=>item.kind==="water"&&Math.abs(item.x-x)<.2&&Math.abs(item.z-z)<.2)){showToast("Ese sector de la pileta ya tiene agua.");return;}
+  }
+  const ground=terrainHeight(x,z);let baseY=buildTool==="water"?containingPool.y+.76:ground;
   if(onPiece&&buildTool!=="water"){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const top=new THREE.Box3().setFromObject(root).max.y;baseY=top;}
   const record={kind:buildTool,x,z,y:baseY,rotation:buildRotation,color:selectedBlockColor};
-  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en sector habilitado":"¡Pieza colocada y alineada!");
+  buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast(buildTool==="water"?"Agua colocada en la pileta":"¡Pieza colocada y alineada!");
 }
 function triggerJump(){if(!started||!player||!playerGrounded||cameraLocked)return;playerVerticalVelocity=7.2;playerGrounded=false;}
 function updateMoveStick(event) {
@@ -977,7 +995,7 @@ function resetMoveStick() {
 
 function updateBuildGravity(delta){
   for(const group of buildGroups){
-    const record=group.userData.buildRecord;if(!record)continue;
+    const record=group.userData.buildRecord;if(!record||record.kind==="water")continue;
     let supportY=terrainHeight(group.position.x,group.position.z);
     for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
     if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;}}
