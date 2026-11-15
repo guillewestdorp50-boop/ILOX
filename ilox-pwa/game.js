@@ -1093,7 +1093,7 @@ function addEvents() {
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
     structure:[["platea","▰","PLATEA"],["pool-small","🏊","PILETA CHICA"],["pool-large","🏊","PILETA GRANDE"],["pool-municipal","🏊","PILETA MUNICIPAL"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door-solid","🚪","PUERTA SÓLIDA"],["door-brick","🚪","PUERTA LADRILLO"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
-    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["fox","🦊","ZORRO REALISTA"],["person","🧍","PERSONA 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["fox","🦊","ZORRO REALISTA"],["person","🧓","ANCIANO 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
   };
   function renderBuildTools(category="block"){
     buildToolsHost.innerHTML="";
@@ -1418,7 +1418,7 @@ async function loadAnimalModel(group,kind,notify=false){
     const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
     let meshCount=0;model.traverse(o=>{if(o.isMesh)meshCount++;});
     if(!meshCount||!Number.isFinite(size.y)||size.y<.01)throw new Error("El GLB no contiene una malla 3D visible.");
-    const targetHeight={sheep:.95,cow:1.55,horse:1.65,chicken:.55,pig:.9,goat:.95,fox:.9,person:1.75,robot:1.8,trex:3.2}[kind]||1;
+    const targetHeight={sheep:.95,cow:1.55,horse:1.65,chicken:.55,pig:.9,goat:.95,fox:.65,person:1.75,robot:1.9,trex:4}[kind]||1;
     const scale=targetHeight/size.y;
     model.scale.setScalar(scale);
     model.position.y=-bounds.min.y*scale;
