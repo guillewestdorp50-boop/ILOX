@@ -916,8 +916,8 @@ function addEvents() {
     finally{button.disabled=false;}
   });
   document.querySelector("#mp-join-world")?.addEventListener("click",async()=>{
-    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.trim().toUpperCase();
-    if(!name||code.length!==12){status.textContent="Ingresá tu nombre y el código de 12 caracteres.";return;}
+    const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.replace(/\\D/g,"");
+    if(!name||code.length!==5){status.textContent="Ingresá tu nombre y el código numérico de 5 dígitos.";return;}
     const button=document.querySelector("#mp-join-world");button.disabled=true;status.textContent="Buscando la partida…";
     try{
       localStorage.setItem("ilox-player-name",name);
@@ -1351,7 +1351,7 @@ function openMultiplayerDialog(){
 function showMultiplayerError(error){
   const message=String(error?.message||error||"Error desconocido");
   const authHint=/anonymous|anonymous sign|disabled|not enabled/i.test(message)
-    ?" Activá los inicios de sesión anónimos en Authentication → Sign In / Providers → Anonymous y volvé a intentar: https://supabase.com/dashboard/project/wihbxfebobfmohmqqhkt/auth/providers"
+    ?" El servidor tiene desactivados los inicios anónimos. Hay que habilitarlos en Supabase → Authentication → Sign In / Providers → Anonymous: https://supabase.com/dashboard/project/wihbxfebobfmohmqqhkt/auth/providers"
     :"";
   document.querySelector("#multiplayer-status").textContent=message+authHint;
 }
