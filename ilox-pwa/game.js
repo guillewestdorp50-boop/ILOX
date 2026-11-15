@@ -28,6 +28,7 @@ let moveStick = { x: 0, y: 0 };
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
 let selectedBlockColor = 0xff3030;
+let buildGuide = null, buildPointer = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0;
@@ -688,6 +689,7 @@ function addEvents() {
     if (e.pointerId === moveStickPointer) resetMoveStick();
   });
   game.addEventListener("pointerdown", e => {
+    buildPointer={x:e.clientX,y:e.clientY};
     if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
@@ -698,6 +700,7 @@ function addEvents() {
     if (game.setPointerCapture) game.setPointerCapture(e.pointerId);
   });
   game.addEventListener("pointermove", e => {
+    buildPointer={x:e.clientX,y:e.clientY};
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),1.2,40);return;}
     if (lookPointer !== e.pointerId || !started) return;
@@ -977,6 +980,41 @@ function foundationContainsFootprint(x,z,kind,rotation=0){
   }
   return true;
 }
+
+function updateBuildPlacementGuide(){
+  if(!scene||!renderer||!camera||!buildMode||buildTool==="erase"||!buildPointer){if(buildGuide)buildGuide.visible=false;return;}
+  const rect=renderer.domElement.getBoundingClientRect();
+  if(buildPointer.x<rect.left||buildPointer.x>rect.right||buildPointer.y<rect.top||buildPointer.y>rect.bottom){if(buildGuide)buildGuide.visible=false;return;}
+  const pointer=new THREE.Vector2((buildPointer.x-rect.left)/rect.width*2-1,-((buildPointer.y-rect.top)/rect.height)*2+1);
+  const raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
+  const terrainHit=terrainMesh?raycaster.intersectObject(terrainMesh,false)[0]:null;
+  const pieceHit=raycaster.intersectObjects(buildGroups,true)[0];
+  if(!terrainHit&&!pieceHit){if(buildGuide)buildGuide.visible=false;return;}
+  const onPiece=!!pieceHit&&(!terrainHit||pieceHit.distance<terrainHit.distance);
+  const point=onPiece?pieceHit.point:terrainHit.point;
+  let x=point.x,z=point.z;
+  const poolTool=["pool-small","pool-large","pool-municipal"].includes(buildTool);
+  if(buildTool==="platea"||buildTool==="water"||poolTool){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
+  if(buildTool==="platea"){x=Math.round(x/6)*6;z=Math.round(z/6)*6;}
+  const [w,d]=buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
+  if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!poolTool&&pieceHit.face){
+    const normal=pieceHit.object.localToWorld(pieceHit.face.normal.clone()).sub(pieceHit.object.getWorldPosition(new THREE.Vector3())).normalize();
+    if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}
+  }
+  const valid=buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
+  if(!buildGuide){
+    const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
+    const geometry=new THREE.BufferGeometry();
+    buildGuide=new THREE.LineLoop(geometry,material);buildGuide.renderOrder=999;buildGuide.frustumCulled=false;scene.add(buildGuide);
+  }
+  const c=Math.cos(buildRotation),sn=Math.sin(buildRotation),pts=[];
+  for(const [dx,dz] of [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]])pts.push(new THREE.Vector3(dx*c-dz*sn,0.035,dx*sn+dz*c));
+  buildGuide.geometry.dispose();buildGuide.geometry=new THREE.BufferGeometry().setFromPoints(pts);
+  buildGuide.position.set(x,buildTool==="platea"?terrainHeight(x,z)+.05:supportHeightAt(x,z)+.035,z);
+  buildGuide.material.color.setHex(valid?0x22ee66:0xff3333);
+  buildGuide.visible=true;
+}
+
 function placeBuildAtPointer(event){
   const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
   if(buildTool==="erase"){const hits=raycaster.intersectObjects(buildGroups,true);if(!hits.length){showToast("Tocá una construcción para borrarla.");return;}let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);if(idx>=0){buildRecords.splice(idx,1);scene.remove(root);const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);refreshTerrainSurface();persistBuilds();showToast("Pieza eliminada");}return;}
@@ -1173,6 +1211,7 @@ function animate() {
       focus.position.z-Math.cos(cameraYaw)*Math.cos(pitch)*viewDistance
     );
   }
+  updateBuildPlacementGuide();
   renderer.render(scene, camera);
 }
 
