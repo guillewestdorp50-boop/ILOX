@@ -1027,7 +1027,7 @@ function autoSnapBuildPlacement(x,z,kind,rotation=0){
         const otherHalfT=(ow/2)*Math.abs(tangent.x*ou.x+tangent.z*ou.z)+(od/2)*Math.abs(tangent.x*ov.x+tangent.z*ov.z);
         let candidateRotation=rotation;
         if(kind==="wall"){
-          const longAxis=other.kind==="wall"?ou:(Math.abs(axis.x)>=Math.abs(axis.z)?{x:1,z:0}:{x:0,z:1});
+          const longAxis=other.kind==="wall"?ou:tangent;
           candidateRotation=Math.atan2(longAxis.z,longAxis.x);
         }
         const cc=Math.cos(candidateRotation),ss=Math.sin(candidateRotation),cu={x:cc,z:ss},cv={x:-ss,z:cc};
