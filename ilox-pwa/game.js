@@ -1370,9 +1370,9 @@ function createBuildPiece(record, options = {}) {
   if(kind==="stairs"){
     // Cinco peldaños sólidos con una superficie de apoyo continua para el personaje.
     for(let i=0;i<5;i++){
-      const tread=box(1.5,.16,.34,wood,0,.08+i*.3,-.58+i*.3);
+      const tread=box(1.5,.3,.34,wood,0,.15+i*.3,-.58+i*.3);
       tread.userData.stairTread=true;
-      box(1.5,.3,.12,darkWood,0,-.07+i*.3,-.73+i*.3);
+      box(1.5,.3,.12,darkWood,0,.15+i*.3,-.73+i*.3);
     }
     group.userData.isWalkableStair=true;
     group.userData.buildHeight=1.5;
