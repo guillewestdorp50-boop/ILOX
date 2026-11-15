@@ -125,7 +125,33 @@ function foundationHasDoor(foundation){
   }
   return buildRecords.some(record=>record.kind==="door"&&connected.has(foundationAt(record.x,record.z)));
 }
-function supportHeightAt(x,z,feet=Infinity,ignore=null){const f=foundationAt(x,z);let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.936:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);for(const g of buildGroups){if(g===ignore)continue;const kind=g.userData.buildRecord?.kind;if(!kind||kind==="water")continue;g.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(g);if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;}return top;}
+function stairSurfaceHeight(group,x,z,feet=Infinity){
+  const dx=x-group.position.x,dz=z-group.position.z,a=group.rotation.y||0;
+  const localX=dx*Math.cos(a)-dz*Math.sin(a),localZ=dx*Math.sin(a)+dz*Math.cos(a);
+  if(Math.abs(localX)>.79||localZ<-.79||localZ>.79)return null;
+  const rise=THREE.MathUtils.clamp((localZ+.75)/1.5,0,1)*1.5;
+  const surface=group.position.y+rise;
+  if(feet!==Infinity&&(feet<surface-.72||feet>surface+.38))return null;
+  return surface;
+}
+function supportHeightAt(x,z,feet=Infinity,ignore=null){
+  const f=foundationAt(x,z);
+  let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.936:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);
+  for(const g of buildGroups){
+    if(g===ignore)continue;
+    const kind=g.userData.buildRecord?.kind;
+    if(!kind||kind==="water")continue;
+    if(kind==="stairs"){
+      const stairTop=stairSurfaceHeight(g,x,z,feet);
+      if(stairTop!==null&&stairTop>top)top=stairTop;
+      continue;
+    }
+    g.updateMatrixWorld(true);
+    const b=new THREE.Box3().setFromObject(g);
+    if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;
+  }
+  return top;
+}
 function refreshTerrainSurface(){
   if(!terrainMesh)return;
   const a=terrainMesh.geometry.attributes.position;
@@ -1341,7 +1367,16 @@ function createBuildPiece(record, options = {}) {
     }
   }
   if(kind==="window"){box(.18,1.5,.16,wall,-.66,.75,0);box(.18,1.5,.16,wall,.66,.75,0);box(1.5,.18,.16,wall,0,1.41,0);box(1.5,.18,.16,wall,0,.09,0);box(1.25,1.15,.045,glass,0,.75,-.04);box(.06,1.2,.08,wood,0,.75,-.08);box(1.3,.06,.08,wood,0,.75,-.08);}
-  if(kind==="stairs"){for(let i=0;i<5;i++)box(1.5,.3,.3,wood,0,.15+i*.3,-.6+i*.3);}
+  if(kind==="stairs"){
+    // Cinco peldaños sólidos con una superficie de apoyo continua para el personaje.
+    for(let i=0;i<5;i++){
+      const tread=box(1.5,.16,.34,wood,0,.08+i*.3,-.58+i*.3);
+      tread.userData.stairTread=true;
+      box(1.5,.3,.12,darkWood,0,-.07+i*.3,-.73+i*.3);
+    }
+    group.userData.isWalkableStair=true;
+    group.userData.buildHeight=1.5;
+  }
   if(kind==="tree"){cyl(0,.68,0,.12,.2,1.35,darkWood);for(let i=0;i<10;i++){const ang=i*2.399;ball(Math.cos(ang)*.28,1.3+(i%3)*.22,Math.sin(ang)*.28,.48,.56,.48,mat([0x3e713d,0x4d8245,0x608b4b][i%3]));}}
   if(kind==="rock"){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(.68,1),mat(0x85877e));o.position.y=.48;o.scale.set(1.1,.7,.9);o.rotation.set(.2,.4,.1);o.castShadow=true;group.add(o);}
   if(kind==="water"){
@@ -2304,7 +2339,7 @@ function animate() {
         new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
         new THREE.Vector3(x+0.28, feet+PLAYER_HEIGHT, z+0.28)
       );
-      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","stairs","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]);
+      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"]); // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
       const playerSwimming=!!player.userData.isSwimming;
       const filledPoolAtCandidate=buildRecords.some(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(z-p.z)<(p.poolDepth||6)/2-.48);
       for (const g of buildGroups) {
