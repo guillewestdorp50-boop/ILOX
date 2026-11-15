@@ -364,11 +364,27 @@ async function loadRemoteAvatarModel(character, kind) {
     if (!remotePlayers.has(character.userData.remoteUserId) || character.userData.remoteModelToken !== token) return;
     const model = cloneSkeleton(gltf.scene);
     if (avatarType !== "soldier") model.rotation.y = Math.PI;
-    const bounds = new THREE.Box3().setFromObject(model);
+    // Normalización remota: medir con la escala original del GLB y volver
+    // a medir tras escalar, dejando los pies en el suelo.
+    model.scale.set(1,1,1);
+    model.updateMatrixWorld(true);
+    let bounds = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3(); bounds.getSize(size);
-    const scale = PLAYER_HEIGHT / Math.max(size.y, 0.001);
+    if (!Number.isFinite(size.y) || size.y < 0.0001) throw new Error("El modelo remoto no tiene una altura válida.");
+    const scale = PLAYER_HEIGHT / size.y;
     model.scale.setScalar(scale);
-    model.position.y = -bounds.min.y * scale;
+    model.updateMatrixWorld(true);
+    bounds = new THREE.Box3().setFromObject(model);
+    const center = new THREE.Vector3(); bounds.getCenter(center);
+    model.position.x -= center.x;
+    model.position.z -= center.z;
+    model.position.y -= bounds.min.y;
+    model.updateMatrixWorld(true);
+    const fittedBounds = new THREE.Box3().setFromObject(model);
+    const fittedSize = new THREE.Vector3(); fittedBounds.getSize(fittedSize);
+    if (!Number.isFinite(fittedSize.y) || fittedSize.y < 1.2 || fittedSize.y > 2.5) {
+      throw new Error("La escala final del avatar remoto quedó fuera del rango humano.");
+    }
     model.traverse(object => {
       if (!object.isMesh) return;
       object.castShadow = true; object.receiveShadow = true;
@@ -1252,7 +1268,12 @@ function updateRemotePlayer(data){
     avatar.userData.netTarget=target.clone();
     avatar.userData.remoteWalkPhase=0;
     remotePlayers.set(userId,avatar);
-  }else avatar.userData.netTarget.copy(target);
+  }else {
+    const previousTarget=avatar.userData.netTarget;
+    const displacement=previousTarget ? previousTarget.distanceTo(target) : 0;
+    avatar.userData.netTarget.copy(target);
+    if(displacement>0.025) avatar.userData.remoteMoving=true;
+  }
   avatar.userData.remoteLastSeen=Date.now();
   const remoteType = avatarKind.split(":")[0];
   const hasImportedModel = remoteType === "soldier" || !!HUMAN_AVATAR_MODELS[remoteType];
@@ -1261,7 +1282,8 @@ function updateRemotePlayer(data){
     loadRemoteAvatarModel(avatar, avatarKind);
   }
   avatar.userData.netRotation=Number(data.rotation)||0;
-  avatar.userData.remoteMoving=!!data.moving;
+  if(data.moving===true) avatar.userData.remoteMoving=true;
+  else if(!avatar.userData.remoteMoving) avatar.userData.remoteMoving=false;
   avatar.userData.remoteSwimming=!!data.swimming;
   avatar.userData.remoteJumping=!!data.jumping;
 }
