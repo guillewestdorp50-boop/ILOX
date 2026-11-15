@@ -1,0 +1,60 @@
+name: Publicar ILOX urbano-rural como PWA
+
+on:
+  push:
+    branches: [experiment/urban-rural-map]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'styles.css'
+      - 'manifest.webmanifest'
+      - '.github/workflows/deploy-urban-rural-pwa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-urban-rural-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener escenario experimental
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/urban-rural-map
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validar JavaScript
+        run: node --check app.js
+
+      - name: Preparar sitio PWA
+        run: |
+          test -s index.html
+          test -s styles.css
+          test -s manifest.webmanifest
+          mkdir -p _site
+          cp index.html styles.css app.js manifest.webmanifest _site/
+          touch _site/.nojekyll
+
+      - name: Subir sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: ilox-urban-rural-pwa
+          path: _site
+
+      - name: Publicar PWA experimental
+        id: deployment
+        uses: actions/deploy-pages@v4
