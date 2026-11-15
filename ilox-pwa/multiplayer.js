@@ -138,7 +138,7 @@ export async function saveStructure(worldId, userId, record) {
     const { data, error } = await client.from("multiplayer_structures")
       .insert(row).select("id,owner_id").single();
     if (error) {
-      if (error.code === "42501") throw new Error("Esta platea está protegida. Pedile permiso al propietario para construir allí.");
+      if (error.code === "42501") throw new Error(record.kind==="water" ? "El servidor rechazó el llenado. Verificá que la pileta esté guardada y vinculada a tu mundo." : "El servidor rechazó esta construcción por ubicación o permisos. Esto no significa necesariamente que la platea sea ajena.");
       throw error;
     }
     return data;
