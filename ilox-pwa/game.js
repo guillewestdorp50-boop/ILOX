@@ -1183,7 +1183,7 @@ function updateRemotePlayer(data){
   if(!data||!userId||userId===multiplayerUserId)return;
   const avatarKind=String(data.avatar||"boy:0");
   let avatar=remotePlayers.get(userId);
-  if(avatar&&avatar.userData.remoteAvatarSelection!==avatarKind){scene.remove(avatar);remotePlayers.delete(data.userId);avatar=null;}
+  if(avatar&&avatar.userData.remoteAvatarSelection!==avatarKind){scene.remove(avatar);remotePlayers.delete(userId);avatar=null;}
   const target=new THREE.Vector3(Number(data.x)||0,Number(data.y)||0,Number(data.z)||0);
   if(!avatar){
     avatar=makePlayer(avatarKind);
