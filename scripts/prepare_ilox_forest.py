@@ -6,6 +6,7 @@ root = Path(sys.argv[1])
 source = Path(__file__).resolve().parents[1] / "ilox-src"
 engine_path = root / "src/core/Engine.ts"
 audio_path = root / "src/audio/AudioSystem.ts"
+trees_path = root / "src/world/Trees.ts"
 
 def replace_once(path, old, new):
     value = path.read_text(encoding="utf-8")
@@ -46,6 +47,55 @@ replace_once(audio_path,
 replace_once(audio_path, "private readonly controller: FirstPersonController",
              "private readonly controller: ThirdPersonController")
 
+# Abrir cuatro praderas amplias entre masas de bosque. El núcleo de cada claro
+# queda libre de árboles y la densidad cae gradualmente en su borde, sin crear
+# cortes geométricos ni modificar el relieve, el pasto o los senderos.
+replace_once(trees_path,
+             "  const up = new THREE.Vector3(0, 1, 0);\n",
+             """  const up = new THREE.Vector3(0, 1, 0);
+
+  const clearings = [
+    { x: 0, z: 140, rx: 82, rz: 70, feather: 26 },
+    { x: 112, z: 10, rx: 70, rz: 56, feather: 24 },
+    { x: -145, z: 132, rx: 68, rz: 52, feather: 22 },
+    { x: 72, z: -148, rx: 58, rz: 46, feather: 20 }
+  ];
+
+  const meadowOpenness = (x: number, z: number): number => {
+    let openness = 0;
+    for (const clearing of clearings) {
+      const distance = Math.hypot(
+        (x - clearing.x) / clearing.rx,
+        (z - clearing.z) / clearing.rz
+      );
+      const edge = 1 + clearing.feather / Math.min(clearing.rx, clearing.rz);
+      const open = 1 - THREE.MathUtils.smoothstep(distance, 1, edge);
+      openness = Math.max(openness, open);
+    }
+    return openness;
+  };
+""")
+replace_once(trees_path,
+             "    if (Math.abs(x) > margin || Math.abs(z) > margin) return false;\n",
+             "    if (Math.abs(x) > margin || Math.abs(z) > margin) return false;\n    if (meadowOpenness(x, z) > 0.9) return false;\n")
+replace_once(trees_path,
+             """  // Árboles "héroe" que replican la composición de la referencia.
+  place(0, -22, 102, 1.65, 6); // gran árbol a la izquierda
+  place(1, 26, 52, 1.45, 6); // árbol medio a la derecha
+  place(3, -4, 62, 1.15, 6); // árbol seco al centro
+  place(2, 17, 118, 1.35, 6); // árbol cercano a la derecha del sendero
+""",
+             """  // Árboles de referencia ubicados en los bordes de las praderas,
+  // para enmarcar el paisaje sin encerrar al jugador al comenzar.
+  place(0, -110, 80, 1.65, 7);
+  place(1, 185, -20, 1.45, 7);
+  place(3, -220, -5, 1.15, 7);
+  place(2, 150, -220, 1.35, 7);
+""")
+replace_once(trees_path,
+             "    const density = fbm2(x * 0.008 + 50, z * 0.008 + 20, 3, 91);",
+             "    const density = fbm2(x * 0.008 + 50, z * 0.008 + 20, 3, 91) * (1 - meadowOpenness(x, z) * 0.96);")
+
 player_dir = root / "src/player"
 player_dir.mkdir(parents=True, exist_ok=True)
 shutil.copy2(source / "ILOXAvatar.ts", player_dir / "ILOXAvatar.ts")
@@ -60,4 +110,4 @@ for unused in ("efigie.bin", "crystal_a.bin", "crystal_b.bin"):
     if asset.exists():
         asset.unlink()
 
-print("The Forest integrado con el avatar ILOX animado y movimiento real en tercera persona.")
+print("The Forest integrado con el avatar ILOX animado, controles en tercera persona y cuatro praderas abiertas entre zonas de bosque.")
