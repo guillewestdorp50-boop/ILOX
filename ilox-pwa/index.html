@@ -5,23 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#241b50">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
-  <link rel="manifest" href="./manifest.webmanifest?v=ilox-adventure-icon-v87">
-  <link rel="icon" href="./icon.svg?v=ilox-adventure-icon-v87" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-adventure-icon-v87">
-  <link rel="stylesheet" href="./styles.css?v=ilox-adventure-icon-v87">
+  <link rel="manifest" href="./manifest.webmanifest?v=ilox-adventure-intro-v88">
+  <link rel="icon" href="./icon.svg?v=ilox-adventure-intro-v88" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-adventure-intro-v88">
+  <link rel="stylesheet" href="./styles.css?v=ilox-adventure-intro-v88">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
   <main id="game" aria-label="Mundo 3D de ILOX">
     <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p></div>
     <div class="hud hud-minimal"><button id="quick-save" class="quick-save-button" type="button" aria-label="Guardar ahora" title="Guardar ahora">💾</button><button id="fullscreen" class="icon-button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button></div>
+    <div id="welcome-scene" class="welcome-scene" aria-hidden="true">
+      <svg class="welcome-art" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="welcome-sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17123f"/><stop offset=".48" stop-color="#2849a4"/><stop offset="1" stop-color="#19a9bd"/></linearGradient>
+          <radialGradient id="welcome-glow"><stop stop-color="#ffdb86" stop-opacity=".95"/><stop offset=".35" stop-color="#ff9c72" stop-opacity=".36"/><stop offset="1" stop-color="#ff9c72" stop-opacity="0"/></radialGradient>
+          <linearGradient id="island-grass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b5ec75"/><stop offset="1" stop-color="#42b982"/></linearGradient>
+          <linearGradient id="island-rock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a70c9"/><stop offset="1" stop-color="#302d70"/></linearGradient>
+          <linearGradient id="portal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe58d"/><stop offset=".5" stop-color="#ff9a70"/><stop offset="1" stop-color="#8b75ff"/></linearGradient>
+          <filter id="soft-glow"><feGaussianBlur stdDeviation="18"/></filter>
+        </defs>
+        <rect width="1200" height="800" fill="url(#welcome-sky)"/>
+        <circle cx="860" cy="210" r="260" fill="url(#welcome-glow)"/>
+        <g class="welcome-stars" fill="#fff4c8">
+          <circle cx="120" cy="130" r="3"/><circle cx="250" cy="240" r="2"/><circle cx="390" cy="105" r="3"/><circle cx="570" cy="190" r="2"/><circle cx="1030" cy="100" r="3"/><circle cx="1110" cy="330" r="2"/><circle cx="180" cy="430" r="2"/><circle cx="960" cy="440" r="3"/><circle cx="700" cy="80" r="2"/><circle cx="470" cy="370" r="2"/>
+        </g>
+        <g class="welcome-cloud cloud-a" fill="#c3eaff" opacity=".48"><path d="M-80 330c25-42 83-43 111-8 18-60 101-68 133-17 50-8 80 52 49 89H-45c-37-12-52-37-35-64Z"/></g>
+        <g class="welcome-cloud cloud-b" fill="#e6d9ff" opacity=".38"><path d="M880 280c22-36 74-36 99-7 16-50 87-57 115-14 43-7 69 45 42 76H910c-32-10-45-32-30-55Z"/></g>
+        <g class="welcome-orbit"><ellipse cx="600" cy="410" rx="370" ry="112" fill="none" stroke="#9eeaff" stroke-opacity=".4" stroke-width="2" stroke-dasharray="8 18"/><circle cx="232" cy="410" r="10" fill="#ffe58d"/><circle cx="970" cy="410" r="7" fill="#ff9b80"/></g>
+        <g class="welcome-island">
+          <ellipse cx="600" cy="590" rx="310" ry="54" fill="#08153e" opacity=".38" filter="url(#soft-glow)"/>
+          <path d="M300 485Q385 420 480 455Q555 405 650 450Q755 410 855 480L820 570Q745 628 600 660Q450 630 345 570Z" fill="url(#island-rock)"/>
+          <path d="M300 485Q385 420 480 455Q555 405 650 450Q755 410 855 480Q790 525 690 532Q520 548 405 522Z" fill="url(#island-grass)"/>
+          <path d="M405 520q80 32 190 12t190-10" fill="none" stroke="#e5ff9a" stroke-width="9" stroke-linecap="round" opacity=".5"/>
+          <g fill="#ffe18b"><path d="M470 465l-12-38 18 16 15-28 5 43Z"/><path d="M735 455l-8-32 16 13 13-23 4 39Z"/></g>
+          <g fill="#2d805e"><path d="M390 462q-8-75 18-98 35 37 18 100Z"/><path d="M414 464q4-93 42-108 27 58-10 112Z"/><path d="M770 463q-2-74 31-95 29 53-3 99Z"/></g>
+          <g fill="#6b4b42"><path d="M403 474l12-54 12 54Z"/><path d="M790 474l10-47 12 47Z"/></g>
+          <g transform="translate(600 426)"><path d="M-48 58V-5a48 48 0 0 1 96 0v63" fill="none" stroke="#ffcf7c" stroke-width="12" stroke-linecap="round"/><path d="M-34 58V-5a34 34 0 0 1 68 0v63" fill="none" stroke="#fff2bf" stroke-width="3" opacity=".9"/><circle cy="-5" r="8" fill="#fff2bf"/></g>
+          <g fill="#fff2a8"><circle cx="520" cy="465" r="5"/><circle cx="682" cy="468" r="4"/><circle cx="560" cy="442" r="3"/></g>
+        </g>
+        <g class="welcome-fireflies" fill="#fff3a8"><circle cx="310" cy="360" r="4"/><circle cx="870" cy="360" r="5"/><circle cx="450" cy="300" r="3"/><circle cx="760" cy="320" r="3"/><circle cx="600" cy="250" r="4"/></g>
+      </svg>
+      <div class="welcome-vignette"></div>
+    </div>
     <div class="welcome" id="welcome">
       <div class="welcome-brand" aria-label="ILOX">ILOX<span>✦</span></div>
-      <span class="eyebrow">TU AVENTURA EMPIEZA ACÁ</span>
-      <h1>Un mundo nuevo<br><em>te está esperando.</em></h1>
-      <p>Explorá lugares sorprendentes, construí tu propio mundo y compartí aventuras a tu manera.</p>
-      <div class="welcome-tags" aria-hidden="true"><span>✦ EXPLORÁ</span><span>◆ CONSTRUÍ</span><span>♥ COMPARTÍ</span></div>
-      <button id="start" class="start-button">COMENZAR A EXPLORAR <span>➜</span></button>
+      <button id="start" class="start-button" type="button"><span>JUGAR</span><b aria-hidden="true">➜</b></button>
     </div>
     <section class="avatar-select hidden" id="avatar-select" aria-label="Elegí tu personaje">
       <span class="eyebrow">ANTES DE COMENZAR</span>
@@ -148,6 +177,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-adventure-icon-v87"></script>
+  <script type="module" src="./game.js?v=ilox-adventure-intro-v88"></script>
 </body>
 </html>
