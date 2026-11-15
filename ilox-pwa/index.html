@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-peer-sync-v76">
+  <link rel="stylesheet" href="./styles.css?v=ilox-mp-world-branches-v77">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -93,17 +93,27 @@
       <div class="door-pin-card multiplayer-card">
         <div class="door-pin-eyebrow">MUNDO COMPARTIDO · ILOX ONLINE</div>
         <h2 id="multiplayer-title">MULTIJUGADOR</h2>
-        <p id="multiplayer-status">Creá un mundo nuevo o ingresá el código de un compañero.</p>
+        <p id="multiplayer-status">Elegí si querés cargar un mundo guardado o crear uno nuevo.</p>
         <label class="mp-label" for="mp-display-name">TU NOMBRE EN EL JUEGO</label>
         <input id="mp-display-name" class="door-pin-input mp-text-input" maxlength="32" autocomplete="nickname" placeholder="Tu nombre">
-        <label class="mp-label" for="mp-world-name">NOMBRE DE LA PARTIDA</label>
-        <input id="mp-world-name" class="door-pin-input mp-text-input" maxlength="60" value="Nuestro mundo">
-        <button id="mp-create-world" class="door-pin-submit" type="button">CREAR MUNDO NUEVO</button>
-        <div class="mp-separator">TUS MUNDOS GUARDADOS</div>
-        <div id="mp-world-list" class="mp-world-list"><div class="mp-permission-empty">Cargando tus partidas…</div></div>
-        <div class="mp-separator">O ENTRAR A UNA PARTIDA EXISTENTE</div>
-        <input id="mp-invite-code" class="door-pin-input" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="one-time-code" placeholder="CÓDIGO DE 5 DÍGITOS">
-        <button id="mp-join-world" class="door-pin-secondary" type="button">UNIRME AL MUNDO</button>
+        <div id="mp-branches" class="mp-branches">
+          <button id="mp-branch-load" class="mp-branch-button" type="button"><strong>📂 CARGAR MUNDO</strong><small>Abrir una partida que ya existe</small></button>
+          <button id="mp-branch-create" class="mp-branch-button" type="button"><strong>🌱 CREAR MUNDO</strong><small>Comenzar una partida nueva</small></button>
+        </div>
+        <div id="mp-load-panel" class="mp-branch-panel hidden">
+          <button id="mp-back-branches-load" class="mp-back-branches" type="button">← VOLVER</button>
+          <div class="mp-separator">MUNDOS GUARDADOS</div>
+          <div id="mp-world-list" class="mp-world-list"><div class="mp-permission-empty">Buscando tus partidas…</div></div>
+          <div class="mp-separator">O ENTRAR CON UN CÓDIGO</div>
+          <input id="mp-invite-code" class="door-pin-input" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="one-time-code" placeholder="CÓDIGO DE 5 DÍGITOS">
+          <button id="mp-join-world" class="door-pin-secondary" type="button">UNIRME AL MUNDO</button>
+        </div>
+        <div id="mp-create-panel" class="mp-branch-panel hidden">
+          <button id="mp-back-branches-create" class="mp-back-branches" type="button">← VOLVER</button>
+          <label class="mp-label" for="mp-world-name">NOMBRE DEL MUNDO</label>
+          <input id="mp-world-name" class="door-pin-input mp-text-input" maxlength="60" value="Nuestro mundo" placeholder="Nombre de tu mundo">
+          <button id="mp-create-world" class="door-pin-submit" type="button">CREAR MUNDO NUEVO</button>
+        </div>
         <div id="mp-created-code" class="mp-created-code hidden">
           <span>CÓDIGO PARA COMPARTIR</span>
           <strong id="mp-code-value"></strong>
@@ -134,6 +144,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-peer-sync-v76"></script>
+  <script type="module" src="./game.js?v=ilox-mp-world-branches-v77"></script>
 </body>
 </html>
