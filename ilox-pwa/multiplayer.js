@@ -110,9 +110,11 @@ export async function revokeStructurePermission(structureId, userId) {
   if (error) throw error;
 }
 
-export function subscribeWorld(worldId, handlers = {}) {
+export async function subscribeWorld(worldId, handlers = {}) {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError || !user) throw userError || new Error("No hay una sesión activa.");
   const channel = client.channel("world:" + worldId, {
-    config: { private: true, presence: { key: "ilox-player" } }
+    config: { private: true, presence: { key: user.id } }
   });
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
@@ -121,7 +123,6 @@ export function subscribeWorld(worldId, handlers = {}) {
   return new Promise((resolve, reject) => {
     channel.subscribe(async status => {
       if (status === "SUBSCRIBED") {
-        const { data: { user } } = await client.auth.getUser();
         await channel.track({ user_id: user.id, joined_at: new Date().toISOString() });
         resolve({
           channel,
