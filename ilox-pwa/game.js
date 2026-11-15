@@ -34,7 +34,7 @@ const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
 let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null;
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
-let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0;
+let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const multiplayerChatSeen = new Set();
 let moveStickPointer = null;
@@ -1174,21 +1174,27 @@ async function syncMultiplayerStructures(){
     if(!failed)localStorage.setItem("ilox-mp-cache-"+activeMultiplayerWorldId,JSON.stringify(buildRecords.map(multiplayerPayload)));
   }
 }
+function removeRemotePlayer(userId){
+  const avatar=remotePlayers.get(userId);
+  if(avatar){scene.remove(avatar);remotePlayers.delete(userId);}
+}
 function updateRemotePlayer(data){
-  if(!data||!data.userId||data.userId===multiplayerUserId)return;
+  const userId=data?.userId||data?.user_id;
+  if(!data||!userId||userId===multiplayerUserId)return;
   const avatarKind=String(data.avatar||"boy:0");
-  let avatar=remotePlayers.get(data.userId);
+  let avatar=remotePlayers.get(userId);
   if(avatar&&avatar.userData.remoteAvatarSelection!==avatarKind){scene.remove(avatar);remotePlayers.delete(data.userId);avatar=null;}
   const target=new THREE.Vector3(Number(data.x)||0,Number(data.y)||0,Number(data.z)||0);
   if(!avatar){
     avatar=makePlayer(avatarKind);
     avatar.position.copy(target);
-    avatar.userData.remoteUserId=data.userId;
+    avatar.userData.remoteUserId=userId;
     avatar.userData.remoteAvatarSelection=avatarKind;
     avatar.userData.netTarget=target.clone();
     avatar.userData.remoteWalkPhase=0;
-    remotePlayers.set(data.userId,avatar);
+    remotePlayers.set(userId,avatar);
   }else avatar.userData.netTarget.copy(target);
+  avatar.userData.remoteLastSeen=Date.now();
   avatar.userData.netRotation=Number(data.rotation)||0;
   avatar.userData.remoteMoving=!!data.moving;
   avatar.userData.remoteSwimming=!!data.swimming;
@@ -1225,9 +1231,6 @@ function syncRemotePresence(state){
       updateRemotePlayer({userId:entry.user_id,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
     }
   }
-  for(const [id,avatar] of remotePlayers){
-    if(!seen.has(id)){scene.remove(avatar);remotePlayers.delete(id);}
-  }
 }
 async function enterMultiplayerWorld(worldId){
   if(activeMultiplayerWorldId){
@@ -1243,11 +1246,17 @@ async function enterMultiplayerWorld(worldId){
     const count=await loadMultiplayerStructures(worldId);
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
       onPlayerState:updateRemotePlayer,
+      onPlayerStateChange:payload=>{
+        if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
+        else updateRemotePlayer(payload.new);
+      },
       onWorldRefresh:()=>loadMultiplayerStructures(worldId).catch(error=>showToast("No se pudo actualizar el mundo compartido.")),
       onPresence:syncRemotePresence,
       onChatMessage:appendMultiplayerChatMessage
     });
     multiplayerUserId=multiplayerSession.userId;
+    const peerStates=await Multiplayer.getWorldPlayerStates(worldId);
+    for(const state of peerStates)updateRemotePlayer(state);
     document.querySelector("#mp-chat-toggle")?.classList.remove("hidden");
     document.querySelector("#mp-chat-panel")?.classList.add("hidden");
     await loadMultiplayerChat(worldId);
@@ -1844,7 +1853,8 @@ function animate() {
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
   }
-  for(const avatar of remotePlayers.values()){
+  for(const [remoteId,avatar] of remotePlayers){
+    if(Date.now()-(avatar.userData.remoteLastSeen||0)>8000){removeRemotePlayer(remoteId);continue;}
     const target=avatar.userData.netTarget;
     if(target)avatar.position.lerp(target,1-Math.exp(-delta*13));
     const targetRotation=avatar.userData.netRotation||0;
@@ -1915,10 +1925,10 @@ function animate() {
   updateBuildPlacementGuide();
   if(multiplayerSession&&player){
     const now=performance.now();
-    if(now-multiplayerLastBroadcast>120){
-      multiplayerLastBroadcast=now;
+    if(now-multiplayerLastDbState>250){
+      multiplayerLastDbState=now;
       const state={userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,moving:localMoving,swimming:!!player.userData.isSwimming,jumping:!playerGrounded};
-      multiplayerSession.sendPlayerState(state).catch(error=>console.warn("ILOX multiplayer: envío de posición falló",error));
+      multiplayerSession.sendPlayerState(state).catch(error=>console.warn("ILOX multiplayer: sincronización de jugador falló",error));
       if(now-multiplayerLastPresence>1000){multiplayerLastPresence=now;multiplayerSession.updatePresence(state).catch(error=>console.warn(error));}
     }
   }
