@@ -960,3 +960,22 @@ patch("src/player/Player.ts",
       }
     }""",
 "procedural moving celebratory arms during channel ride")
+
+
+# ILOX coastline repair: the upstream ocean is a camera-following polar surface.
+# Keep its FFT waves, surf and swash, but render it only where the generated
+# mainland heightfield is actually below sea level and inside the map's
+# north/south/west bounds. The east remains the sole open-ocean edge.
+# This is additive: no ocean geometry, wave simulation or terrain systems are removed.
+patch("src/water/Ocean.ts",
+"    m.opacityNode = float(1);\n    return m;",
+"""    const inMainlandFrame = xz.x.greaterThan(-HALF_WORLD + 1)
+      .and(xz.x.lessThan(HALF_WORLD + 1))
+      .and(xz.y.greaterThan(-HALF_WORLD + 1))
+      .and(xz.y.lessThan(HALF_WORLD + 1));
+    const openWater = inMainlandFrame.and(ground.lessThan(0.35));
+    m.opacityNode = select(openWater, float(1), float(0));
+    // Transparent clipped ocean must not write depth where its alpha is zero.
+    m.depthWrite = false;
+    return m;""",
+"clip camera-following ocean to real water cells and one-sided mainland frame")
