@@ -5,7 +5,7 @@ const playBtn = document.getElementById('play') as HTMLButtonElement;
 const loadFill = document.getElementById('loadfill')!;
 const loadText = document.getElementById('loadtext')!;
 const joystick = document.getElementById('joystick');
-const stick = document.getElementById('stick');
+const stick = document.getElementById('stick');\nconst sprintButton = document.getElementById('sprint-button');
 const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
 async function boot(): Promise<void> {
@@ -101,7 +101,7 @@ async function boot(): Promise<void> {
   };
   joystick?.addEventListener('pointerup', endJoystick);
   joystick?.addEventListener('pointercancel', endJoystick);
-  joystick?.addEventListener('lostpointercapture', endJoystick);
+  joystick?.addEventListener('lostpointercapture', endJoystick);\n\n  let sprintPointer: number | null = null;\n  const releaseSprint = (event: PointerEvent) => {\n    if (event.pointerId !== sprintPointer) return;\n    sprintPointer = null;\n    engine.setSprintInput(false);\n    sprintButton?.classList.remove('active');\n  };\n  sprintButton?.addEventListener('pointerdown', (event) => {\n    if (!document.body.classList.contains('playing')) return;\n    event.preventDefault();\n    sprintPointer = event.pointerId;\n    sprintButton.setPointerCapture(event.pointerId);\n    engine.setSprintInput(true);\n    sprintButton.classList.add('active');\n  });\n  sprintButton?.addEventListener('pointerup', releaseSprint);\n  sprintButton?.addEventListener('pointercancel', releaseSprint);\n  sprintButton?.addEventListener('lostpointercapture', releaseSprint);
 
   engine.start();
   (window as unknown as { __engine: Engine }).__engine = engine;
