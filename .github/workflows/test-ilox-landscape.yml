@@ -60,5 +60,6 @@ jobs:
           grep -q "orientation.*landscape" manifest.webmanifest
           grep -q "setSprintInput" ilox-src/main.ts
           grep -q "setSprintInput" ilox-src/ThirdPersonController.ts
+          grep -q "2 muestras simples" scripts/prepare_ilox_forest.py
           test ! -e PDA
           echo "ILOX landscape PWA and touch controls verified; PDA folder is absent from this branch."
