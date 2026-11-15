@@ -1250,7 +1250,9 @@ function updateRemotePlayer(data){
     remotePlayers.set(userId,avatar);
   }else avatar.userData.netTarget.copy(target);
   avatar.userData.remoteLastSeen=Date.now();
-  if (!avatar.userData.riggedAvatar && !avatar.userData.remoteModelLoading) {
+  const remoteType = avatarKind.split(":")[0];
+  const hasImportedModel = remoteType === "soldier" || !!HUMAN_AVATAR_MODELS[remoteType];
+  if (hasImportedModel && !avatar.userData.riggedAvatar && !avatar.userData.remoteModelLoading) {
     avatar.userData.remoteModelLoading = true;
     loadRemoteAvatarModel(avatar, avatarKind);
   }
