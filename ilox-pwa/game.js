@@ -15,6 +15,7 @@ const stick = document.querySelector("#stick");
 
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
+let selectedBlockColor = 0xff3030;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.48;
@@ -512,7 +513,7 @@ function init() {
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.105,12,10),handMat);
     hand.position.set(side*0.36,-0.56,-0.9); viewHands.add(hand);
   }
-  const heldBlock = new THREE.Mesh(new THREE.BoxGeometry(0.66,0.66,0.66),new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.85}));
+  const heldBlock = new THREE.Mesh(new THREE.BoxGeometry(0.66,0.66,0.66),new THREE.MeshStandardMaterial({color:selectedBlockColor,roughness:0.85}));
   heldBlock.position.set(0.02,-0.53,-0.82); heldBlock.rotation.set(0.18,0.25,0.12); viewHands.add(heldBlock);
   camera.add(viewHands); scene.add(camera);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
@@ -661,6 +662,14 @@ function addEvents() {
       buildPanel.classList.add("hidden");
     });
   });
+  document.querySelectorAll(".block-color").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedBlockColor = Number(button.dataset.color);
+      document.querySelectorAll(".block-color").forEach(item => item.classList.toggle("selected", item === button));
+      buildPanel.classList.add("hidden");
+      showToast("Color seleccionado");
+    });
+  });
   document.querySelector("#rotate-build").addEventListener("click", () => { buildRotation = (buildRotation + Math.PI/2) % (Math.PI*2); showToast("Pieza girada"); });
   document.querySelector("#fullscreen").addEventListener("click", async () => {
     try {
@@ -680,7 +689,7 @@ function createBuildPiece(record) {
   const addBox=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);};
   const {kind,x,z,rotation=0}=record;
   const baseY=Number.isFinite(record.y) ? record.y : terrainHeight(x,z);
-  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color||0xb88752,roughness:0.88}); addBox(1.5,1.5,1.5,blockMat,0,0.75,0); }
+  if(kind==="block") { const blockMat=new THREE.MeshStandardMaterial({color:record.color??0xff3030,roughness:0.88}); addBox(1.5,1.5,1.5,blockMat,0,0.75,0); }
   if(kind==="floor") addBox(4,0.22,4,wood,0,0.11,0);
   if(kind==="wall") addBox(4,3,0.2,wallMat,0,1.5,0);
   if(kind==="door") {
@@ -735,7 +744,7 @@ function placeBuildAtPointer(event) {
   const point=firstPiece && buildTool==="block" && (!terrainHit || firstPiece.distance<terrainHit.distance) ? firstPiece.point : terrainHit.point;
   const x=Math.round(point.x/grid)*grid,z=Math.round(point.z/grid)*grid;
   if(Math.abs(x)>worldSize/2-5||Math.abs(z)>worldSize/2-5)return;
-  const record={kind:buildTool,x,z,y:buildTool==="block"?baseY:undefined,rotation:buildRotation,color:0xb88752};
+  const record={kind:buildTool,x,z,y:buildTool==="block"?baseY:undefined,rotation:buildRotation,color:selectedBlockColor};
   buildRecords.push(record);createBuildPiece(record);persistBuilds();showToast("¡Pieza colocada!");
 }
 
