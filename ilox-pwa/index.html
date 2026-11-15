@@ -47,6 +47,7 @@
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
       <button id="build-toggle" class="menu-action" type="button">🧱 Construir</button>
       <button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button>
+      <button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button>
       <button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
       <button id="erase-parts" class="menu-action" type="button">⌫ Eliminar por partes</button>
     </section>
@@ -68,6 +69,20 @@
       <button id="jump-button" class="jump-button" type="button" aria-label="Saltar">⬆<small>SALTAR</small></button>
     </div>
     <div class="toast" id="toast" role="status"></div>
+    <section id="mp-permissions-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="mp-permissions-title">
+      <div class="door-pin-card multiplayer-card">
+        <div class="door-pin-eyebrow">PROPIEDAD Y COLABORACIÓN</div>
+        <h2 id="mp-permissions-title">PERMISOS</h2>
+        <p id="mp-permissions-status">Elegí una pieza tuya y autorizá a un compañero.</p>
+        <label class="mp-label" for="mp-permission-structure">TU CONSTRUCCIÓN</label>
+        <select id="mp-permission-structure" class="build-category"></select>
+        <label class="mp-label" for="mp-permission-player">JUGADOR</label>
+        <select id="mp-permission-player" class="build-category"></select>
+        <button id="mp-grant-permission" class="door-pin-submit" type="button">AUTORIZAR A MODIFICAR</button>
+        <div id="mp-permission-current" class="mp-permission-list"></div>
+        <button id="mp-permissions-close" class="door-pin-cancel" type="button">CERRAR</button>
+      </div>
+    </section>
     <section id="multiplayer-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="multiplayer-title">
       <div class="door-pin-card multiplayer-card">
         <div class="door-pin-eyebrow">MUNDO COMPARTIDO · ILOX ONLINE</div>
