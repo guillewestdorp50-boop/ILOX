@@ -170,3 +170,10 @@ h1 em{font-style:normal;color:#e8d29a}
 .mp-permission-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #ffffff2b;border-radius:8px;background:#ffffff0b;color:#f4f3e9;font-size:11px}
 .mp-permission-row button{border:1px solid #d9877d;border-radius:7px;background:#642f2b;color:#fff;padding:7px 9px;font-size:9px;font-weight:900}
 .mp-permission-empty{color:#c7d2c9;font-size:11px;line-height:1.45}
+
+
+.mp-world-list{display:flex;flex-direction:column;gap:7px;max-height:150px;overflow:auto}
+.mp-world-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:11px;border:1px solid #ffffff35;border-radius:9px;background:#ffffff12;color:#fff;text-align:left}
+.mp-world-row strong{display:block;font-size:12px}
+.mp-world-row small{display:block;margin-top:3px;color:#c7d2c9;font-size:9px}
+.mp-world-row span{font-size:10px;color:#e6d19b;font-weight:900}
