@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=ilox-camera-lock-v33">
+  <link rel="stylesheet" href="./styles.css?v=ilox-build-menu-v34">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -31,23 +31,26 @@
     </section>
     <section class="build-panel hidden" id="build-panel" aria-label="Herramientas de construcción">
       <div class="build-panel-title">CONSTRUIR TU MUNDO</div>
+      <label class="build-category-label" for="build-category">CATEGORÍA</label>
+      <select id="build-category" class="build-category">
+        <option value="block">Bloques y ladrillo visto</option><option value="nature">Naturaleza</option><option value="water">Agua</option>
+        <option value="structure">Estructuras</option><option value="furniture">Muebles y hogar</option><option value="farm">Campo y animales</option>
+      </select>
       <div class="block-palette" aria-label="Colores de bloques">
-        <span class="palette-label">COLOR</span>
-        <button class="block-color selected" data-color="16723968" style="--swatch:#ff3030" aria-label="Rojo"></button>
-        <button class="block-color" data-color="16776960" style="--swatch:#ffff00" aria-label="Amarillo"></button>
-        <button class="block-color" data-color="255" style="--swatch:#0000ff" aria-label="Azul"></button>
-        <button class="block-color" data-color="65280" style="--swatch:#00ff00" aria-label="Verde"></button>
+        <span class="palette-label">COLOR</span><button class="block-color selected" data-color="16723968" style="--swatch:#ff3030" aria-label="Rojo"></button>
+        <button class="block-color" data-color="16776960" style="--swatch:#ffff00" aria-label="Amarillo"></button><button class="block-color" data-color="255" style="--swatch:#0000ff" aria-label="Azul"></button><button class="block-color" data-color="65280" style="--swatch:#00ff00" aria-label="Verde"></button>
       </div>
-      <div class="build-tools">
-        <button class="build-tool selected" data-tool="block">🧱<small>BLOQUES</small></button>
-        <button class="build-tool" data-tool="erase">⌫<small>BORRAR</small></button>
-        <button class="build-tool" id="rotate-build">↻<small>GIRAR</small></button>
-      </div>
+      <div id="build-tools" class="build-tools"></div>
       <button id="view-toggle" class="view-toggle hidden">⬆ VISTA AÉREA</button>
-      <div class="build-help" id="build-help">Elegí bloques y tocá el terreno o una pieza para apilar.</div>
+      <div class="build-help" id="build-help">Elegí una pieza y tocá el terreno para colocarla.</div>
     </section>
-    <button id="build-toggle" class="build-toggle hidden">＋ CONSTRUIR</button>
-    <button id="materials-toggle" class="materials-toggle hidden">🧱 MATERIALES</button>
+    <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-expanded="false">☰ MENÚ</button>
+    <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
+      <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
+      <button id="build-toggle" class="menu-action" type="button">🧱 Construir</button>
+      <button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
+      <button id="erase-parts" class="menu-action" type="button">⌫ Eliminar por partes</button>
+    </section>
     <div id="camera-controls" class="camera-controls hidden" aria-label="Cámaras del personaje">
       <div class="camera-mode-group">
         <button class="camera-mode" data-camera="first" type="button">1ª PERSONA</button>
