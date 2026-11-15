@@ -14,6 +14,9 @@ const movePad = document.querySelector("#move-pad");
 const moveKnob = document.querySelector("#move-knob");
 const cameraControls = document.querySelector("#camera-controls");
 const cameraLockButton = document.querySelector("#camera-lock");
+const menuToggle = document.querySelector("#menu-toggle");
+const menuPanel = document.querySelector("#menu-panel");
+const buildPanel = document.querySelector("#build-panel");
 let moveStickPointer = null;
 let moveStick = { x: 0, y: 0 };
 
@@ -675,7 +678,7 @@ function addEvents() {
     if (e.pointerId === moveStickPointer) resetMoveStick();
   });
   game.addEventListener("pointerdown", e => {
-    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
+    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -739,17 +742,20 @@ function addEvents() {
     option.addEventListener("click", () => {
       selectedAvatar = option.dataset.avatar;
       document.querySelectorAll(".avatar-option").forEach(item => item.classList.toggle("selected", item === option));
-      enterWorldButton.innerHTML = "ENTRAR COMO " + option.querySelector("strong").textContent.toUpperCase() + " <span>→</span>";
+      enterWorldButton.innerHTML = (started ? "APLICAR " : "ENTRAR COMO ") + option.querySelector("strong").textContent.toUpperCase() + " <span>→</span>";
     });
   });
   enterWorldButton.addEventListener("click", () => {
+    const oldPosition=player?player.position.clone():new THREE.Vector3(0,terrainHeight(0,0),0);
+    const oldHeading=player?player.rotation.y:yaw;
     if (player) scene.remove(player);
     player = makePlayer(selectedAvatar);
+    player.position.copy(oldPosition);player.rotation.y=oldHeading;
     started = true;
     cameraControls.classList.remove("hidden");
     loadRiggedAvatar(selectedAvatar);
     avatarSelect.classList.add("hidden");
-    document.querySelector("#build-toggle").classList.remove("hidden");
+    menuToggle.classList.remove("hidden");
     hint.textContent = "Explorá y construí tu propio mundo";
     loadBuilds();
     showToast("¡Tu mundo, tus reglas!");
@@ -788,30 +794,53 @@ function addEvents() {
   });
   const buildToggle = document.querySelector("#build-toggle");
   const viewToggle = document.querySelector("#view-toggle");
-  const materialsToggle = document.querySelector("#materials-toggle");
-  materialsToggle.addEventListener("click", () => buildPanel.classList.toggle("hidden"));
-  viewToggle.addEventListener("click", () => { applyCameraMode(cameraMode === "first" ? "third" : "first"); cameraDistance = firstPersonBuild ? 0.08 : 9.5; });
-  const buildPanel = document.querySelector("#build-panel");
-  buildToggle.addEventListener("click", () => {
-    buildMode = !buildMode;
-    buildPanel.classList.toggle("hidden", !buildMode);
-    document.querySelector("#materials-toggle").classList.toggle("hidden",!buildMode);
-    buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    cameraDistance = cameraMode === "first" ? 0.08 : (cameraMode === "second" ? 3.0 : (buildMode ? 9.5 : 5.4));
-    if(buildMode && !firstPersonBuild) pitch = 0.48;
-    viewToggle.classList.toggle("hidden",!buildMode);
-    viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
-    document.querySelector("#build-help").textContent = buildMode ? "BLOQUES PEQUEÑOS · TOCÁ para colocar · Arrastrá para mover la cámara aérea." : "Explorá el mundo y construí con bloques.";
-    showToast(buildMode ? "Vista libre: arrastrá para mirar y tocá para construir" : "¡A explorar!");
+  const categorySelect = document.querySelector("#build-category");
+  const buildToolsHost = document.querySelector("#build-tools");
+  const toolCatalog = {
+    block:[["block","🧱","CUBO"],["brick","🧱","LADRILLO"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
+    nature:[["tree","🌳","ÁRBOL"],["rock","🪨","ROCA"],["erase","⌫","BORRAR"]],
+    water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
+    structure:[["floor","▰","PISO"],["wall","▥","PARED"],["stairs","🪜","ESCALERA"],["door","🚪","PUERTA"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
+    furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["erase","⌫","BORRAR"]]
+  };
+  function renderBuildTools(category="block"){
+    buildToolsHost.innerHTML="";
+    for(const [kind,emoji,label] of (toolCatalog[category]||toolCatalog.block)){
+      const button=document.createElement("button");button.type="button";button.className="build-tool"+(kind===buildTool?" selected":"");button.dataset.tool=kind;button.innerHTML=emoji+"<small>"+label+"</small>";
+      button.addEventListener("click",()=>{
+        if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
+        buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="water"?"Agua: solo en los sectores habilitados del valle central.":"Pieza seleccionada. Se coloca alineada a la cuadrícula.";
+        buildPanel.classList.add("hidden");
+      });buildToolsHost.appendChild(button);
+    }
+  }
+  renderBuildTools();
+  categorySelect.addEventListener("change",()=>renderBuildTools(categorySelect.value));
+  menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));});
+  document.querySelector("#change-avatar").addEventListener("click",()=>{
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");avatarSelect.classList.remove("hidden");
+    enterWorldButton.innerHTML="APLICAR PERSONAJE <span>→</span>";
+    document.querySelectorAll(".avatar-option").forEach(option=>option.classList.toggle("selected",option.dataset.avatar===selectedAvatar));
   });
-  document.querySelectorAll(".build-tool").forEach(button => {
-    if (!button.dataset.tool) return;
-    button.addEventListener("click", () => {
-      buildTool = button.dataset.tool;
-      document.querySelectorAll(".build-tool[data-tool]").forEach(item => item.classList.toggle("selected", item === button));
-      document.querySelector("#build-help").textContent = buildTool === "erase" ? "Tocá una construcción para borrarla." : "Bloque pequeño seleccionado. Tocá el terreno para colocarlo.";
-      buildPanel.classList.add("hidden");
-    });
+  document.querySelector("#erase-all").addEventListener("click",()=>{
+    if(!buildRecords.length){showToast("Todavía no hay construcciones para eliminar.");return;}
+    for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;persistBuilds();
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
+  });
+  document.querySelector("#erase-parts").addEventListener("click",()=>{
+    buildMode=true;buildTool="erase";buildPanel.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    renderBuildTools(categorySelect.value);showToast("Tocá cada pieza que quieras eliminar.");
+  });
+  viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
+  buildToggle.addEventListener("click",()=>{
+    buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(buildMode?9.5:5.4));
+    if(buildMode&&!firstPersonBuild)pitch=.48;viewToggle.classList.toggle("hidden",!buildMode);
+    viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
+    document.querySelector("#build-help").textContent=buildMode?"Elegí una categoría y una pieza. Tocá para colocar; todo encaja en cuadrícula.":"Explorá el mundo y construí.";
+    showToast(buildMode?"Modo construcción activado":"¡A explorar!");
   });
   document.querySelectorAll(".block-color").forEach(button => {
     button.addEventListener("click", () => {
