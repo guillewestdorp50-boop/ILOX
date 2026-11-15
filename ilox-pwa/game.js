@@ -701,9 +701,11 @@ function addEvents() {
     if (Math.hypot(e.clientX-lookStartX,e.clientY-lookStartY)>7) pointerDragged = true;
     lastLookX = e.clientX;
     lastLookY = e.clientY;
-    // Cámara orbital libre: arrastrar gira alrededor del personaje incluso al construir.
+    // Cámara libre compartida por primera, segunda, tercera persona y bloqueo.
+    // Arrastrar el dedo hacia arriba mira al suelo; hacia abajo, al cielo.
+    // El recorrido vertical llega casi al cenit/nadir, sin un techo artificial.
     yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0032, -1.45, 1.45);
+    pitch = THREE.MathUtils.clamp(pitch + dy * 0.0032, -1.56, 1.56);
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -769,7 +771,8 @@ function addEvents() {
     cameraMode = mode;
     firstPersonBuild = mode === "first";
     cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
-    pitch = 0;
+    // Conservamos el ángulo orbital al cambiar de cámara: las tres vistas
+    // y el bloqueo comparten exactamente el mismo control libre.
     document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
     const buildView = document.querySelector("#view-toggle");
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
@@ -1111,9 +1114,8 @@ function animate() {
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraMode === "second" ? cameraDistance : (buildMode ? cameraDistance : 5.4);
-  // Pitch expresa la dirección de la mirada: positivo = cielo, negativo = suelo.
-  // La cámara conserva su posición detrás del avatar; así puede mirar hacia arriba
-  // sin hundirse bajo el terreno ni alterar el joystick o el rumbo del jugador.
+  // Pitch orbital compartido: permite mirar desde el suelo hasta el cielo
+  // en primera, segunda y tercera persona, sin límite superior artificial.
   const cameraYaw = yaw;
   const targetX = focus.position.x + Math.sin(cameraYaw) * distance;
   const targetZ = focus.position.z + Math.cos(cameraYaw) * distance;
