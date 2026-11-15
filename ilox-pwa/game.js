@@ -1043,7 +1043,6 @@ function updateBuildPlacementGuide(){
   const poolTool=["pool-small","pool-large","pool-municipal"].includes(buildTool);
   if(buildTool==="platea"||buildTool==="water"||poolTool){x=Math.round(x/BLOCK_SIZE)*BLOCK_SIZE;z=Math.round(z/BLOCK_SIZE)*BLOCK_SIZE;}
   if(buildTool==="platea"){x=Math.round(x/6)*6;z=Math.round(z/6)*6;}
-  const [w,d]=buildTool==="door"&&doorOpening?[doorOpening.width,.16]:buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!poolTool&&pieceHit.face){
     const normal=pieceHit.object.localToWorld(pieceHit.face.normal.clone()).sub(pieceHit.object.getWorldPosition(new THREE.Vector3())).normalize();
     if(normal.y<.65){x=point.x+normal.x*.76;z=point.z+normal.z*.76;}
@@ -1051,6 +1050,7 @@ function updateBuildPlacementGuide(){
   const doorOpening=buildTool==="door"?findDoorOpening(x,z):null;
   if(buildTool==="door"&&!doorOpening){if(buildGuide)buildGuide.visible=false;return;}
   if(doorOpening){x=doorOpening.x;z=doorOpening.z;buildRotation=doorOpening.rotation;}
+  const [w,d]=buildTool==="door"&&doorOpening?[doorOpening.width,.16]:buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(buildTool);
   const valid=buildTool==="door"?!!doorOpening:buildTool==="platea"||poolTool||buildTool==="water"||foundationContainsFootprint(x,z,buildTool,buildRotation);
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
