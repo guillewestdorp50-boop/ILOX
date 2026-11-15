@@ -1093,11 +1093,14 @@ function addEvents() {
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
     structure:[["platea","▰","PLATEA"],["pool-small","🏊","PILETA CHICA"],["pool-large","🏊","PILETA GRANDE"],["pool-municipal","🏊","PILETA MUNICIPAL"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door-solid","🚪","PUERTA SÓLIDA"],["door-brick","🚪","PUERTA LADRILLO"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
-    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["fox","🦊","ZORRO REALISTA"],["person","🧓","ANCIANO 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
+    farmRealistic:[["fox","🦊","ZORRO REALISTA"],["person","🧓","ANCIANO 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
   };
+  const animalStyleSelect=document.querySelector("#animal-style-select");
   function renderBuildTools(category="block"){
     buildToolsHost.innerHTML="";
-    for(const [kind,emoji,label] of (toolCatalog[category]||toolCatalog.block)){
+    const selectedCatalog=category==="farm"&&animalStyleSelect?.value==="realistic"?"farmRealistic":category;
+    for(const [kind,emoji,label] of (toolCatalog[selectedCatalog]||toolCatalog.block)){
       const button=document.createElement("button");button.type="button";button.className="build-tool"+(kind===buildTool?" selected":"");button.dataset.tool=kind;button.innerHTML=emoji+"<small>"+label+"</small>";
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
@@ -1109,7 +1112,13 @@ function addEvents() {
     }
   }
   renderBuildTools();
-  categorySelect.addEventListener("change",()=>renderBuildTools(categorySelect.value));
+  categorySelect.addEventListener("change",()=>{
+    const isFarm=categorySelect.value==="farm";
+    if(animalStyleSelect)animalStyleSelect.classList.toggle("hidden",!isFarm);
+    document.querySelector("#animal-style-label")?.classList.toggle("hidden",!isFarm);
+    renderBuildTools(categorySelect.value);
+  });
+  animalStyleSelect?.addEventListener("change",()=>renderBuildTools("farm"));
   menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
