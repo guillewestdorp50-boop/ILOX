@@ -11,6 +11,9 @@ const startButton = document.querySelector("#start");
 const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
+const turnPad = document.querySelector("#turn-pad");
+const turnKnob = document.querySelector("#turn-knob");
+let turnPointer = null;
 const pressedMoveButtons = new Set();
 
 let scene, camera, renderer, player, clock, terrainMesh;
@@ -566,7 +569,7 @@ function addEvents() {
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   game.addEventListener("pointerdown", e => {
-    if (e.target.closest("button") || e.target.closest("#joystick") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
+    if (e.target.closest("button") || e.target.closest("#joystick") || e.target.closest("#turn-pad") || e.target.closest("#build-panel") || e.target.closest("#build-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -601,6 +604,41 @@ function addEvents() {
     e.preventDefault();
     cameraDistance = THREE.MathUtils.clamp(cameraDistance + Math.sign(e.deltaY)*0.9, buildMode?3.2:4.2, 20);
   }, {passive:false});
+  const updateTurnStick = e => {
+    const rect = turnPad.getBoundingClientRect();
+    const radius = rect.width * 0.34;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = (e.clientX - cx) / radius;
+    let dy = (e.clientY - cy) / radius;
+    const magnitude = Math.hypot(dx, dy);
+    if (magnitude > 1) { dx /= magnitude; dy /= magnitude; }
+    turnKnob.style.transform = `translate(calc(-50% + ${dx * radius}px), calc(-50% + ${dy * radius}px))`;
+    if (magnitude > 0.18) {
+      // El stick derecho orienta al personaje; el izquierdo conserva el control del avance.
+      playerHeading = Math.atan2(dx, -dy);
+      yaw = playerHeading;
+    }
+  };
+  turnPad.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    if (turnPointer !== null) return;
+    turnPointer = e.pointerId;
+    turnPad.setPointerCapture(e.pointerId);
+    updateTurnStick(e);
+  });
+  turnPad.addEventListener("pointermove", e => {
+    if (e.pointerId === turnPointer) { e.preventDefault(); updateTurnStick(e); }
+  });
+  const releaseTurnStick = e => {
+    if (e.pointerId !== turnPointer) return;
+    turnPointer = null;
+    turnKnob.style.transform = "translate(-50%, -50%)";
+  };
+  turnPad.addEventListener("pointerup", releaseTurnStick);
+  turnPad.addEventListener("pointercancel", releaseTurnStick);
+  turnPad.addEventListener("lostpointercapture", releaseTurnStick);
+
   movePad.querySelectorAll(".move-arrow").forEach(button => {
     const direction = button.dataset.move;
     const press = e => {
