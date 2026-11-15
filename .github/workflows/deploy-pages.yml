@@ -1,4 +1,4 @@
-name: Publicar ILOX — mundo natural realista
+name: Publicar ILOX — mundo natural y mapas experimentales
 
 on:
   push:
@@ -9,9 +9,13 @@ on:
       - 'LICENSE-Island.txt'
       - '.github/workflows/deploy-pages.yml'
   workflow_run:
-    workflows: ["Validar ILOX urbano-rural"]
+    workflows:
+      - "Validar ILOX urbano-rural"
+      - "Verificar ILOX The Forest con avatar en tercera persona"
     types: [completed]
-    branches: [experiment/urban-rural-map]
+    branches:
+      - experiment/urban-rural-map
+      - experiment/the-forest-third-person
   workflow_dispatch:
 
 permissions:
@@ -39,8 +43,23 @@ jobs:
       - name: Obtener prueba urbano-rural aislada
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || 'experiment/urban-rural-map' }}
+          ref: ${{ github.event.workflow_run.head_branch == 'experiment/urban-rural-map' && github.event.workflow_run.head_sha || 'experiment/urban-rural-map' }}
           path: urban-rural-source
+          persist-credentials: false
+
+      - name: Obtener adaptación ILOX The Forest
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch == 'experiment/the-forest-third-person' && github.event.workflow_run.head_sha || 'experiment/the-forest-third-person' }}
+          path: forest-preview-source
+          persist-credentials: false
+
+      - name: Obtener mundo The Forest original (MIT, commit fijado)
+        uses: actions/checkout@v4
+        with:
+          repository: jalexiscv/TheForest
+          ref: d343fe58a1bd6b72c4fadcc09eec332519ec41e1
+          path: forest-source
           persist-credentials: false
 
       - name: Obtener mundo Island (MIT, commit fijado)
@@ -63,15 +82,16 @@ jobs:
           cache: pnpm
           cache-dependency-path: island-source/pnpm-lock.yaml
 
-      - name: Instalar dependencias
+      - name: Instalar dependencias de Island
         working-directory: island-source
         run: pnpm install --frozen-lockfile
 
-      - name: Adaptar el mundo a ILOX
+      - name: Adaptar y compilar mundo estable
         run: |
           python3 scripts/prepare_ilox_island.py island-source
           cp manifest.webmanifest island-source/public/manifest.webmanifest
           cp LICENSE-Island.txt island-source/public/LICENSE-Island.txt
+        # La compilación y validación del mundo estable se realizan a continuación.
 
       - name: Regenerar terreno, río y cascada para el mapa de 2 millones de m²
         working-directory: island-source
@@ -93,6 +113,27 @@ jobs:
           test -s dist/assets/rocks/boulders.glb
           grep -q 'ILOX' dist/index.html
 
+      - name: Instalar dependencias de The Forest
+        working-directory: forest-source
+        run: npm ci
+
+      - name: Adaptar The Forest con el personaje ILOX
+        run: |
+          python3 forest-preview-source/scripts/prepare_ilox_forest.py forest-source
+          cp forest-preview-source/manifest.webmanifest forest-source/public/manifest.webmanifest
+          cp forest-preview-source/LICENSE-TheForest.txt forest-source/LICENSE-TheForest.txt
+
+      - name: Verificar y compilar mapa The Forest en tercera persona
+        working-directory: forest-source
+        run: |
+          npm run typecheck
+          npm run build
+          test -s dist/index.html
+          test -s dist/manifest.webmanifest
+          test -s dist/models/relief.bin
+          test -s dist/textures/rock_albedo.jpg
+          grep -q 'ILOX' dist/index.html
+
       - name: Validar escenario urbano-rural
         run: |
           node --check urban-rural-source/app.js
@@ -100,16 +141,18 @@ jobs:
           test -s urban-rural-source/styles.css
           test -s urban-rural-source/manifest.webmanifest
 
-      - name: Preparar sitio PWA estable y vista experimental
+      - name: Preparar PWA estable y vistas experimentales independientes
         run: |
           mkdir -p _site
           cp -R island-source/dist/. _site/
-          mkdir -p _site/urban-rural
+          mkdir -p _site/urban-rural _site/forest
           cp urban-rural-source/index.html urban-rural-source/styles.css urban-rural-source/app.js urban-rural-source/manifest.webmanifest _site/urban-rural/
-          touch _site/.nojekyll _site/urban-rural/.nojekyll
+          cp -R forest-source/dist/. _site/forest/
+          touch _site/.nojekyll _site/urban-rural/.nojekyll _site/forest/.nojekyll
           test -s _site/index.html
           test -s _site/urban-rural/index.html
-          test -s _site/urban-rural/app.js
+          test -s _site/forest/index.html
+          test -s _site/forest/assets/index-*.js
 
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v3
