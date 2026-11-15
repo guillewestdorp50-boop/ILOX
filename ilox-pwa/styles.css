@@ -85,3 +85,13 @@ h1 em{font-style:normal;color:#e8d29a}
 .avatar-option strong{font-size:11px}.avatar-option small{font-size:9px}
 .avatar-emoji{font-size:23px}
 @media(max-width:600px){.avatar-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.avatar-option{min-height:68px;padding:6px 2px}.avatar-option strong{font-size:10px}.avatar-select{top:50%;padding:13px}}
+
+/* Selector de cámaras y bloqueo seguro de movimiento para mirar el avatar */
+.camera-controls{position:absolute;z-index:5;top:calc(78px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;padding:8px;background:#10251fd9;border:1px solid #ffffff42;border-radius:13px;backdrop-filter:blur(10px);box-shadow:0 5px 18px #0006}
+.camera-controls.hidden{display:none}
+.camera-mode-group{display:flex;gap:4px}
+.camera-mode,.camera-lock{border:1px solid #ffffff45;border-radius:8px;background:#ffffff0d;color:#f4f3e9;padding:9px 11px;font-size:9px;font-weight:900;letter-spacing:.06em;white-space:nowrap}
+.camera-mode.selected{background:#e6d19b;color:#1b2d25;border-color:#e6d19b}
+.camera-lock{min-width:150px;background:#234536}
+.camera-lock.locked{background:#9a6330;border-color:#f2c17a;color:#fff4dd}
+@media(max-width:600px){.camera-controls{top:calc(70px + env(safe-area-inset-top));padding:6px;gap:5px}.camera-mode,.camera-lock{padding:8px 9px;font-size:8px}.camera-lock{min-width:138px}}
