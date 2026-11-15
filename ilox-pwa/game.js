@@ -14,7 +14,7 @@ const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
 
 let scene, camera, renderer, player, clock, terrainMesh;
-let buildMode = false, buildTool = "block", buildRotation = 0;
+let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = true, viewHands = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, pitch = 0.18;
@@ -502,6 +502,19 @@ function init() {
   makeSky();
   scene.fog = new THREE.Fog(0xb4c4b6, 145, 285);
   camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 280);
+  // Brazos y cubo sostenido en primera persona.
+  viewHands = new THREE.Group();
+  const sleeveMat = new THREE.MeshStandardMaterial({color:0x315a8c,roughness:0.9});
+  const handMat = new THREE.MeshStandardMaterial({color:0xd49a76,roughness:0.8});
+  for (const side of [-1,1]) {
+    const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.105,0.42,4,10),sleeveMat);
+    sleeve.position.set(side*0.34,-0.34,-0.62); sleeve.rotation.z = side===-1 ? -0.38 : 0.38; viewHands.add(sleeve);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.105,12,10),handMat);
+    hand.position.set(side*0.36,-0.56,-0.9); viewHands.add(hand);
+  }
+  const heldBlock = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.34,0.34),new THREE.MeshStandardMaterial({color:0xb88752,roughness:0.85}));
+  heldBlock.position.set(0.02,-0.53,-0.82); heldBlock.rotation.set(0.18,0.25,0.12); viewHands.add(heldBlock);
+  camera.add(viewHands); scene.add(camera);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
   renderer.setSize(innerWidth, innerHeight);
@@ -622,13 +635,17 @@ function addEvents() {
     showToast("¡Tu mundo, tus reglas!");
   });
   const buildToggle = document.querySelector("#build-toggle");
+  const viewToggle = document.querySelector("#view-toggle");
+  viewToggle.addEventListener("click", () => { firstPersonBuild = !firstPersonBuild; viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "👤 TERCERA PERSONA"; cameraDistance = firstPersonBuild ? 2.4 : 6.2; showToast(firstPersonBuild ? "Vista en primera persona" : "Vista en tercera persona"); });
   const buildPanel = document.querySelector("#build-panel");
   buildToggle.addEventListener("click", () => {
     buildMode = !buildMode;
     buildPanel.classList.toggle("hidden", !buildMode);
     buildToggle.textContent = buildMode ? "✓ TERMINAR" : "＋ CONSTRUIR";
-    cameraDistance = buildMode ? 10 : 6.8;
-    document.querySelector("#build-help").textContent = buildMode ? "ARRASTRÁ para girar la cámara · Pellizcá o usá rueda para alejar/acercar · TOCÁ para colocar bloques." : "Elegí una herramienta y tocá el terreno.";
+    cameraDistance = buildMode ? (firstPersonBuild ? 2.4 : 6.2) : 5.4;
+    viewToggle.classList.toggle("hidden",!buildMode);
+    viewToggle.textContent = firstPersonBuild ? "👁 PRIMERA PERSONA" : "👤 TERCERA PERSONA";
+    document.querySelector("#build-help").textContent = buildMode ? "TOCÁ para colocar un cubo · Arrastrá para mirar · Pellizcá para acercar o alejar." : "Explorá el mundo y construí con bloques.";
     showToast(buildMode ? "Vista libre: arrastrá para mirar y tocá para construir" : "¡A explorar!");
   });
   document.querySelectorAll(".build-tool").forEach(button => {
@@ -728,7 +745,7 @@ function updateJoystick(e) {
   if (length > max) { dx = dx / length * max; dy = dy / length * max; }
   stick.style.transform = `translate(${dx}px,${dy}px)`;
   moveX = dx / max;
-  moveZ = -dy / max;
+  moveZ = dy / max;
 }
 
 function animate() {
@@ -770,12 +787,21 @@ function animate() {
     if (moving) player.rotation.y = Math.atan2(dx, -dz);
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
-  const distance = buildMode ? cameraDistance : Math.max(cameraDistance, 6.8);
+  const firstPerson = buildMode && firstPersonBuild && player;
+  if (player) player.visible = !firstPerson;
+  if (viewHands) viewHands.visible = !!firstPerson && buildTool !== "erase";
+  const distance = buildMode ? cameraDistance : 5.4;
   const targetX = focus.position.x + Math.sin(yaw) * distance;
   const targetZ = focus.position.z + Math.cos(yaw) * distance;
   const targetY = focus.position.y + (buildMode ? 1.65 : 2.7) + pitch * (buildMode ? 5.2 : 4.5);
-  camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
-  camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
+  if (firstPerson) {
+    const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
+    camera.position.lerp(eye,1-Math.pow(0.001,delta));
+    camera.lookAt(eye.x-Math.sin(yaw)*10,eye.y+pitch*8,eye.z-Math.cos(yaw)*10);
+  } else {
+    camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
+    camera.lookAt(focus.position.x, focus.position.y + 1.35, focus.position.z);
+  }
   renderer.render(scene, camera);
 }
 
