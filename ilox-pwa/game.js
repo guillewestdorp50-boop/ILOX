@@ -916,7 +916,7 @@ function addEvents() {
   });
   document.querySelector("#mp-join-world")?.addEventListener("click",async()=>{
     const status=document.querySelector("#multiplayer-status"),name=document.querySelector("#mp-display-name").value.trim(),code=document.querySelector("#mp-invite-code").value.trim().toUpperCase();
-    if(!name||code.length!==8){status.textContent="Ingresá tu nombre y el código de 8 caracteres.";return;}
+    if(!name||code.length!==12){status.textContent="Ingresá tu nombre y el código de 12 caracteres.";return;}
     const button=document.querySelector("#mp-join-world");button.disabled=true;status.textContent="Buscando la partida…";
     try{
       localStorage.setItem("ilox-player-name",name);
