@@ -54,7 +54,10 @@ export async function saveStructure(worldId, userId, record) {
   if (!record.cloudId) {
     const { data, error } = await client.from("multiplayer_structures")
       .insert(row).select("id,owner_id").single();
-    if (error) throw error;
+    if (error) {
+      if (error.code === "42501") throw new Error("Esta platea está protegida. Pedile permiso al propietario para construir allí.");
+      throw error;
+    }
     return data;
   }
   const { data, error } = await client.from("multiplayer_structures")
