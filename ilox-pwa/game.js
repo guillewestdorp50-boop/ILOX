@@ -38,7 +38,7 @@ let cameraMode = "third", cameraLocked = false;
 const polyHavenLoader = new GLTFLoader();
 const avatarModelLoader = new GLTFLoader();
 const animalModelLoader = new GLTFLoader();
-const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb"};
+const ANIMAL_MODELS = {sheep:"https://gobkit.com/freebies/animal005/Lamb.glb",cow:"https://gobkit.com/freebies/animal005/HolsteinCow.glb",horse:"https://gobkit.com/freebies/animal012/PalominoHorse.glb",chicken:"https://gobkit.com/freebies/animal009/BrahmaChicken.glb",pig:"https://gobkit.com/freebies/animal005/Pig.glb",goat:"https://gobkit.com/freebies/animalB/Goat.glb"};
 const animalAssetPromises = new Map();
 // Modelo humanoide GLB con malla skinned, texturas PBR y clips Idle/Walk/Run.
 // Recurso de ejemplo oficial de Three.js (licencia MIT).
@@ -822,7 +822,7 @@ function addEvents() {
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
     structure:[["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door","🚪","PUERTA"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
-    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["erase","⌫","BORRAR"]]
+    farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"]]
   };
   function renderBuildTools(category="block"){
     buildToolsHost.innerHTML="";
@@ -907,7 +907,7 @@ function createBuildPiece(record) {
   if(kind==="sofa"){box(1.5,.42,.72,mat(0x547a74),0,.45,0);box(1.5,.72,.16,mat(0x547a74),0,.83,-.28);for(const sx of [-.68,.68])box(.16,.62,.72,mat(0x42635d),sx,.67,0);}
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.68,.68])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
-  if(["sheep","cow","horse","chicken"].includes(kind)) loadAnimalModel(group,kind);
+  if(["sheep","cow","horse","chicken","pig","goat"].includes(kind)) loadAnimalModel(group,kind);
 
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);return group;
 }
@@ -918,7 +918,7 @@ async function loadAnimalModel(group,kind){
     const gltf=await animalAssetPromises.get(url);if(!group.parent)return;
     const model=cloneSkeleton(gltf.scene);
     const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
-    const targetHeight={sheep:.78,cow:1.42,horse:1.62,chicken:.58}[kind]||1;
+    const targetHeight={sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62}[kind]||.7;
     const scale=targetHeight/Math.max(size.y,.001);model.scale.setScalar(scale);model.position.y=-bounds.min.y*scale;
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});group.add(model);
     const mixer=new THREE.AnimationMixer(model),actions={};
@@ -935,7 +935,7 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.78,cow:1.42,horse:1.62,chicken:.58};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&record.y>terrainHeight(record.x,record.z)+.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","floor","wall","door","window","roof","stairs","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){const heights={block:1.5,brick:1.5,wall:1.5,door:1.5,window:1.5,roof:1.5,stairs:1.5,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&record.y>terrainHeight(record.x,record.z)+.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 function placeBuildAtPointer(event){
