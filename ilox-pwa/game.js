@@ -29,7 +29,7 @@ let moveStick = { x: 0, y: 0 };
 let scene, camera, renderer, player, clock, terrainMesh;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
 let selectedBlockColor = 0xff3030;
-let buildGuide = null, buildPointer = null, pendingBuildPlacement = null, placementConfirm = null;
+let buildGuide = null, buildPointer = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0;
@@ -691,7 +691,6 @@ function addEvents() {
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if(pendingBuildPlacement)return;
     if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
@@ -703,7 +702,6 @@ function addEvents() {
   });
   game.addEventListener("pointermove", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if(pendingBuildPlacement)return;
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),1.2,40);return;}
     if (lookPointer !== e.pointerId || !started) return;
@@ -724,7 +722,7 @@ function addEvents() {
     if (started && !pointerDragged && activePointers.size===0) {
       if(buildMode){
         if(buildTool==="erase")placeBuildAtPointer(e);
-        else if(!pendingBuildPlacement)lockBuildPlacement(e);
+        else placeBuildAtPointer(e);
       } else toggleDoorAtPointer(e);
     }
     lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
@@ -845,7 +843,7 @@ function addEvents() {
       const button=document.createElement("button");button.type="button";button.className="build-tool"+(kind===buildTool?" selected":"");button.dataset.tool=kind;button.innerHTML=emoji+"<small>"+label+"</small>";
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
-        clearBuildPlacementLock();buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
+        buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
         document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":kind==="door"?"Puerta modular: 1 bloque de ancho por 2 de alto; el marco coincide con la segunda fila.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
       });buildToolsHost.appendChild(button);
@@ -871,7 +869,7 @@ function addEvents() {
   });
   viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
   buildToggle.addEventListener("click",()=>{
-    if(buildMode)clearBuildPlacementLock();buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");buildToggle.textContent=buildMode?"✓ TERMINAR":"🧱 Construir";
+    buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");buildToggle.textContent=buildMode?"✓ TERMINAR":"🧱 Construir";
     cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(buildMode?9.5:5.4));
     if(buildMode&&!firstPersonBuild)pitch=.48;viewToggle.classList.toggle("hidden",!buildMode);
     viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
@@ -1072,37 +1070,7 @@ function findDoorOpening(x,z){
   return best;
 }
 
-function clearBuildPlacementLock(){
-  pendingBuildPlacement=null;
-  if(placementConfirm)placementConfirm.remove();
-  placementConfirm=null;
-}
-function lockBuildPlacement(event){
-  if(!buildGuide||!buildGuide.visible||buildGuide.material.color.getHex()!==0x22ee66){
-    showToast("Buscá primero una guía verde válida.");return;
-  }
-  pendingBuildPlacement={x:event.clientX,y:event.clientY};
-  buildPointer={...pendingBuildPlacement};
-  if(!placementConfirm){
-    placementConfirm=document.createElement("div");
-    placementConfirm.id="ilox-placement-confirm";
-    placementConfirm.style.cssText="position:fixed;z-index:10020;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:rgba(12,20,16,.94);border:1px solid rgba(120,255,160,.55);box-shadow:0 4px 22px #0008;";
-    const cancel=document.createElement("button");cancel.type="button";cancel.textContent="CANCELAR";
-    cancel.style.cssText="border:0;border-radius:9px;padding:12px 15px;background:#39433d;color:#fff;font-weight:700;";
-    cancel.addEventListener("click",()=>{clearBuildPlacementLock();showToast("Ubicación liberada.");});
-    const confirm=document.createElement("button");confirm.type="button";confirm.textContent="✓ COLOCAR";
-    confirm.style.cssText="border:0;border-radius:9px;padding:12px 18px;background:#28b85a;color:#06140a;font-weight:900;";
-    confirm.addEventListener("click",()=>{
-      if(!pendingBuildPlacement)return;
-      const fixed={...pendingBuildPlacement};clearBuildPlacementLock();
-      placeBuildAtPointer({clientX:fixed.x,clientY:fixed.y});
-    });
-    placementConfirm.append(cancel,confirm);document.body.appendChild(placementConfirm);
-  }
-  showToast("Posición fijada. Confirmá COLOCAR sin mover la pieza.");
-}
 function updateBuildPlacementGuide(){
-  if(pendingBuildPlacement){if(buildGuide)buildGuide.visible=true;return;}
   if(!scene||!renderer||!camera||!buildMode||buildTool==="erase"||!buildPointer){if(buildGuide)buildGuide.visible=false;return;}
   const rect=renderer.domElement.getBoundingClientRect();
   if(buildPointer.x<rect.left||buildPointer.x>rect.right||buildPointer.y<rect.top||buildPointer.y>rect.bottom){if(buildGuide)buildGuide.visible=false;return;}
