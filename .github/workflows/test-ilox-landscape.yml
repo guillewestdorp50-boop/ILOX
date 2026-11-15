@@ -107,10 +107,12 @@ jobs:
         run: npm ci
       - name: Reconstruir el sitio estable sin modificarlo
         run: |
-          python3 stable/scripts/prepare_ilox_forest.py vendor/theforest
-          mkdir -p vendor/theforest/public
-          cp stable/manifest.webmanifest vendor/theforest/public/manifest.webmanifest
-          cp stable/LICENSE-TheForest.txt vendor/theforest/LICENSE-TheForest.txt
+          cd stable
+          python3 scripts/prepare_ilox_forest.py ../vendor/theforest
+          mkdir -p ../vendor/theforest/public
+          cp manifest.webmanifest ../vendor/theforest/public/manifest.webmanifest
+          cp LICENSE-TheForest.txt ../vendor/theforest/LICENSE-TheForest.txt
+          cd ..
           npm --prefix vendor/theforest run typecheck
           npm --prefix vendor/theforest run build
       - name: Integrar ILOX experimental en su ruta independiente
