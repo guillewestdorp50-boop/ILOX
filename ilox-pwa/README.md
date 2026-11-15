@@ -15,3 +15,5 @@ Inventory, multiplayer/friends, and construction editor are clearly marked as in
 
 ## Preview
 Published at `/ilox/` by the repository Pages workflow. The 3D world link opens `/forest/`.
+
+Preview shell revision: 1. Initial deployment validates the independent PWA route before user testing.
