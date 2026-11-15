@@ -1,4 +1,5 @@
 name: Publicar ILOX — mundo natural y mapas experimentales
+# El mapa Forest de prueba se toma de experiment/the-forest-third-person tras validar su compilación.
 
 on:
   push:
