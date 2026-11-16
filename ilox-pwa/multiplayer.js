@@ -239,6 +239,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "elevator_state" }, ({ payload }) => handlers.onElevatorState?.(payload))
+    .on("broadcast", { event: "elevator_door_state" }, ({ payload }) => handlers.onElevatorDoorState?.(payload))
     .on("broadcast", { event: "elevator_bot_state" }, ({ payload }) => handlers.onElevatorBotState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
@@ -271,6 +272,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
           },
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
           sendElevatorState: payload => channel.send({ type: "broadcast", event: "elevator_state", payload }),
+          sendElevatorDoorState: payload => channel.send({ type: "broadcast", event: "elevator_door_state", payload }),
           sendBotState: async payload => {
             const status = await channel.send({
               type: "broadcast", event: "elevator_bot_state",
