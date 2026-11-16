@@ -3611,7 +3611,7 @@ function findWalkerRoute(start,target){
   route.reverse();return route;
 }
 function selectWalkerElevator(origin){
-  const candidates=buildGroups.filter(g=>g.parent===scene&&g.visible&&g.userData.buildRecord?.kind==="elevator");
+  const candidates=buildGroups.filter(g=>g.parent===scene&&g.visible&&g.userData.buildRecord?.kind==="elevator"&&!g.userData.elevatorTravel&&elevatorLandingExists(g,g.userData.buildRecord?.currentFloor||1));
   candidates.sort((a,b)=>Math.hypot(a.position.x-origin.x,a.position.z-origin.z)-Math.hypot(b.position.x-origin.x,b.position.z-origin.z));
   return candidates[0]||null;
 }
@@ -3637,7 +3637,7 @@ function createWorldWalker(){
   const route=findWalkerRoute(start,destination);
   if(!route.length)return;
   const agent=new THREE.Group();agent.name="ilox-world-walker-v1";agent.position.copy(start);
-  agent.userData.walkerState="walking";agent.userData.walkerTarget=elevator;agent.userData.walkerRoute=route;agent.userData.walkerRouteIndex=Math.min(1,route.length-1);agent.userData.walkerDestination=destination.clone();agent.userData.walkerSpeed=2.15;
+  agent.userData.walkerState="approachDoor";agent.userData.walkerTarget=elevator;agent.userData.walkerRoute=route;agent.userData.walkerRouteIndex=Math.min(1,route.length-1);agent.userData.walkerDestination=destination.clone();agent.userData.walkerSpeed=2.15;
   scene.add(agent);worldWalker=agent;
   worldWalkerLoadPromise=worldWalkerLoader.loadAsync(WORLD_WALKER_MODEL_URL).then(gltf=>{
     if(agent.parent!==scene)return;
@@ -3649,8 +3649,10 @@ function createWorldWalker(){
     agent.add(model);agent.userData.walkerModel=model;
     const mixer=new THREE.AnimationMixer(model);let walk=null,idle=null;
     for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(name.includes("walk"))walk=mixer.clipAction(clip);else if(name.includes("idle"))idle=mixer.clipAction(clip);}
-    const action=walk||idle||(gltf.animations[0]?mixer.clipAction(gltf.animations[0]):null);
-    if(action){action.play();agent.userData.walkerAction=action;}
+    const fallback=gltf.animations[0]?mixer.clipAction(gltf.animations[0]):null;
+    const action=walk||idle||fallback;
+    if(action)action.play();
+    agent.userData.walkerActions={walk,idle,fallback,current:action};
     agent.userData.walkerMixer=mixer;
   }).catch(error=>{
     console.warn("ILOX: no se pudo cargar el modelo del caminante nuevo",error);
@@ -3658,38 +3660,58 @@ function createWorldWalker(){
   }).finally(()=>{worldWalkerLoadPromise=null;});
 }
 function updateWorldWalker(delta){
-  if(!worldWalker){
-    if(started&&player)createWorldWalker();
-    return;
-  }
-  const agent=worldWalker;
+  if(!worldWalker){if(started&&player)createWorldWalker();return;}
+  const agent=worldWalker,now=Date.now();
   agent.userData.walkerMixer?.update(delta);
-  if(agent.userData.walkerState!=="walking")return;
-  const route=agent.userData.walkerRoute||[];
-  let index=agent.userData.walkerRouteIndex||0;
-  const target=route[index];
-  if(!target){agent.userData.walkerState="arrived";return;}
-  const dx=target.x-agent.position.x,dz=target.z-agent.position.z,distance=Math.hypot(dx,dz);
-  if(distance<.18){
-    index++;agent.userData.walkerRouteIndex=index;
-    if(index>=route.length){agent.userData.walkerState="arrived";return;}
+  const elevator=agent.userData.walkerTarget;
+  if(!elevator||elevator.parent!==scene){agent.userData.walkerState="waitingElevator";return;}
+  const cabin=elevator.userData.elevatorCabin;if(!cabin)return;
+  const setMotion=moving=>{
+    const actions=agent.userData.walkerActions;if(!actions)return;
+    const next=moving?(actions.walk||actions.fallback||actions.idle):(actions.idle||actions.fallback||actions.walk);
+    if(next&&next!==actions.current){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
+  };
+  const moveRoute=()=>{
+    const route=agent.userData.walkerRoute||[];let index=agent.userData.walkerRouteIndex||0;
+    while(index<route.length&&Math.hypot(route[index].x-agent.position.x,route[index].z-agent.position.z)<.18)index++;
+    agent.userData.walkerRouteIndex=index;if(index>=route.length)return true;
+    const target=route[index],dx=target.x-agent.position.x,dz=target.z-agent.position.z,distance=Math.hypot(dx,dz);
+    if(distance<.0001)return false;
+    const step=Math.min(distance,agent.userData.walkerSpeed*delta),nx=agent.position.x+dx/distance*step,nz=agent.position.z+dz/distance*step;
+    if(walkerPositionBlocked(nx,nz)){
+      const destination=agent.userData.walkerDestination,retry=destination&&findWalkerRoute(agent.position,destination);
+      if(retry?.length){agent.userData.walkerRoute=retry;agent.userData.walkerRouteIndex=Math.min(1,retry.length-1);return false;}
+      agent.userData.walkerState="blocked";setMotion(false);return false;
+    }
+    agent.position.x=nx;agent.position.z=nz;agent.rotation.y=Math.atan2(dx,dz);setMotion(true);return false;
+  };
+  const phase=agent.userData.walkerState;
+  if(phase==="approachDoor"){if(moveRoute()){agent.userData.walkerState="waitingDoor";setMotion(false);}return;}
+  if(phase==="waitingDoor"){
+    const floor=elevator.userData.buildRecord?.currentFloor||1;
+    if(elevator.userData.elevatorTravel||!elevatorLandingExists(elevator,floor))return;
+    if(!elevator.userData.elevatorDoorOpen){setElevatorDoorState(elevator,true,false,false);return;}
+    if(Number(elevator.userData.elevatorDoorProgress||0)<.98)return;
+    const center=new THREE.Vector3(elevator.position.x,elevator.position.y+cabin.position.y+.16,elevator.position.z),route=findWalkerRoute(agent.position,center);
+    if(!route.length){agent.userData.walkerState="blocked";return;}
+    agent.userData.walkerDestination=center.clone();agent.userData.walkerRoute=route;agent.userData.walkerRouteIndex=Math.min(1,route.length-1);
+    agent.userData.walkerState="enteringCabin";elevator.userData.elevatorDoorCloseAt=now+1400;return;
+  }
+  if(phase==="enteringCabin"){
+    elevator.userData.elevatorDoorCloseAt=now+1400;
+    const center=new THREE.Vector3(elevator.position.x,elevator.position.y+cabin.position.y+.16,elevator.position.z);
+    if(moveRoute()){
+      agent.position.copy(center);agent.rotation.y=elevator.rotation.y||0;agent.userData.walkerState="centered";setMotion(false);
+      setElevatorDoorState(elevator,false,false,false);
+    }
     return;
   }
-  const step=Math.min(distance,agent.userData.walkerSpeed*delta),nx=agent.position.x+dx/distance*step,nz=agent.position.z+dz/distance*step;
-  if(walkerPositionBlocked(nx,nz)){
-    const elevator=selectWalkerElevator(agent.position);
-    if(elevator&&elevator===agent.userData.walkerTarget){
-      const rotation=elevator.rotation.y||0;
-      const destination=new THREE.Vector3(elevator.position.x+Math.sin(rotation)*3.9,0,elevator.position.z+Math.cos(rotation)*3.9);
-      const routeAgain=findWalkerRoute(agent.position,destination);
-      if(routeAgain.length){agent.userData.walkerRoute=routeAgain;agent.userData.walkerRouteIndex=Math.min(1,routeAgain.length-1);return;}
-    }
-    agent.userData.walkerState="blocked";return;
+  if(phase==="centered"){
+    agent.position.set(elevator.position.x,elevator.position.y+cabin.position.y+.16,elevator.position.z);
+    agent.rotation.y=elevator.rotation.y||0;setMotion(false);return;
   }
-  agent.position.set(nx,0,nz);
-  agent.rotation.y=Math.atan2(dx,dz);
+  if(phase==="blocked")setMotion(false);
 }
-
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
