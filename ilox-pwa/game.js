@@ -42,11 +42,12 @@ const doorPinHelp = document.querySelector("#door-pin-help");
 const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
 let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null, multiplayerWorldOwnerId = null;
+const multiplayerPresentUserIds=new Set();
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
-let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
+let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1,elevatorBoardedAt=0;
 let elevatorCanvas=null,elevatorKeypadOpen=false,elevatorFloorInput="";
 const elevatorCallButton=document.querySelector("#elevator-call-button");
 const elevatorDoorOpenButton=document.querySelector("#elevator-door-open-button");
@@ -2234,7 +2235,13 @@ function animateElevator(group,now=Date.now()){
     // No liberar el control al tocar el umbral: el jugador debe cruzar la puerta y quedar fuera de la cabina.
     const atDoor=player.position.z>group.position.z+3.35&&Math.abs(player.position.x-group.position.x)<2.2;
     const wantsExit=open&&doorProgress>=.98&&atDoor;
-    if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
+    if(wantsExit){
+      elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();
+      const passengerId=multiplayerUserId||"local";group.userData.elevatorPassengers?.delete(passengerId);
+      if(multiplayerSession)multiplayerSession.sendElevatorState({action:"passenger",x:group.userData.buildRecord.x,z:group.userData.buildRecord.z,passengerId,joined:false}).catch(error=>console.warn("ILOX elevator exit:",error));
+      const ordered=[...(group.userData.elevatorPassengers||new Map()).entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
+      group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
+    }
     else if(elevatorRiding){
       // La cabina acompaña la altura, pero el pasajero conserva el joystick y
       // puede caminar libremente dentro del espacio interior.
@@ -2344,14 +2351,24 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   if(elevatorRiding&&activeElevator===group)startIloxElevatorParty();
   rec.targetFloor=toFloor;
-  if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration}).catch(error=>console.warn("ILOX elevator sync:",error));
+  if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration,captainId:group.userData.elevatorCaptainId||null}).catch(error=>console.warn("ILOX elevator sync:",error));
   if(fromFloor===12&&toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
   return true;
 }
 function applyRemoteElevatorState(state){
   const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
   if(!group)return;
+  if(state.action==="passenger"){
+    const passengers=group.userData.elevatorPassengers||(group.userData.elevatorPassengers=new Map());
+    if(state.joined===false)passengers.delete(state.passengerId);
+    else passengers.set(state.passengerId,{joinedAt:Number(state.joinedAt)||Date.now()});
+    const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
+    group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
+    return;
+  }
   const rec=group.userData.buildRecord;
+  if(state.captainId)group.userData.elevatorCaptainId=state.captainId;
+  if(player&&Math.abs(player.position.x-group.position.x)<2.72&&Math.abs(player.position.z-group.position.z)<2.72&&Math.abs(player.position.y-(group.position.y+(group.userData.elevatorCabin?.position.y||.18)+.16))<1.5){activeElevator=group;elevatorRiding=true;playerVerticalVelocity=0;playerGrounded=true;}
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
   if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
@@ -2406,6 +2423,7 @@ function createElevatorCanvasControl(){
 }
 function openElevatorKeypad(group){
   if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;
+  if(multiplayerSession&&group.userData.elevatorCaptainId&&group.userData.elevatorCaptainId!==multiplayerUserId)return;
   const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));
   elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);elevatorFloorInput=String(elevatorSelectedFloor);
   elevatorKeypadOpen=true;if(elevatorCanvas){elevatorCanvas.style.setProperty("display","block","important");drawElevatorCanvas();}
@@ -2413,9 +2431,11 @@ function openElevatorKeypad(group){
 function closeElevatorKeypad(){elevatorKeypadOpen=false;if(elevatorCanvas)elevatorCanvas.style.setProperty("display","none","important");}
 function confirmElevatorTravel(group){
   if(!elevatorRiding||!group||activeElevator!==group)return false;
+  if(multiplayerSession&&group.userData.elevatorCaptainId!==multiplayerUserId){showToast("Solo quien entró primero puede elegir el destino.");return false;}
   const max=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)),target=Number(elevatorFloorInput);
   if(!Number.isInteger(target)||target<1||target>max){showToast("Elegí un piso válido entre 1 y "+max+".");return false;}
   elevatorSelectedFloor=target;
+  group.userData.elevatorCaptainId=multiplayerUserId||"local";
   const started=beginElevatorTravel(group,target);if(started)closeElevatorKeypad();else showToast("No se pudo iniciar el viaje.");return started;
 }
 function tryElevatorConsoleAtPointer(event){
@@ -2456,9 +2476,14 @@ function updateElevators(delta){
     if(d<5.5&&verticalGap<1.35&&score<nearestDistance){nearest=group;nearestFloor=floor;nearestDistance=score;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
     if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&elevatorLandingExists(group,group.userData.buildRecord?.currentFloor||1)&&d<2.65&&Math.abs(player.position.y-level)<.65){
-      activeElevator=group;elevatorRiding=true;
+      activeElevator=group;elevatorRiding=true;elevatorBoardedAt=Date.now();
       player.position.set(group.position.x,level,group.position.z);playerVerticalVelocity=0;playerGrounded=true;
-      openElevatorKeypad(group);
+      const passengers=group.userData.elevatorPassengers||(group.userData.elevatorPassengers=new Map());
+      const passengerId=multiplayerUserId||"local";passengers.set(passengerId,{joinedAt:elevatorBoardedAt});
+      const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
+      group.userData.elevatorCaptainId=ordered[0]?.[0]||passengerId;
+      if(multiplayerSession)multiplayerSession.sendElevatorState({action:"passenger",x:group.userData.buildRecord.x,z:group.userData.buildRecord.z,passengerId,joinedAt:elevatorBoardedAt,joined:true}).catch(error=>console.warn("ILOX elevator passenger:",error));
+      if(!multiplayerSession||group.userData.elevatorCaptainId===passengerId)openElevatorKeypad(group);
     }
   }
   if(!elevatorRiding){
@@ -2505,10 +2530,9 @@ function applyRemoteElevatorBotState(state){
 }
 function elevatorBotIsController(record){
   if(!multiplayerSession)return true;
-  // El propietario del mundo coordina al único bot compartido; no depende
-  // de quién haya construido el ascensor que el bot elija usar.
-  if(multiplayerWorldOwnerId)return multiplayerWorldOwnerId===multiplayerUserId;
-  return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
+  if(multiplayerWorldOwnerId&&multiplayerPresentUserIds.has(multiplayerWorldOwnerId))return multiplayerWorldOwnerId===multiplayerUserId;
+  const candidates=[...multiplayerPresentUserIds].sort();
+  return candidates.length?candidates[0]===multiplayerUserId:!!multiplayerWorldOwnerId&&multiplayerWorldOwnerId===multiplayerUserId;
 }
 function elevatorBotStepHeight(x,z,feet){
   let step=0;
@@ -2941,11 +2965,13 @@ function startMultiplayerFallbackSync(worldId){
   },500);
 }
 function syncRemotePresence(state){
-  const seen=new Set();
+  const seen=new Set();multiplayerPresentUserIds.clear();
   for(const entries of Object.values(state||{})){
     for(const entry of entries||[]){
       const userId=entry.user_id||entry.userId;
-      if(!userId||userId===multiplayerUserId)continue;
+      if(!userId)continue;
+      multiplayerPresentUserIds.add(userId);
+      if(userId===multiplayerUserId)continue;
       seen.add(userId);
       updateRemotePlayer({userId,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
     }
@@ -3013,7 +3039,7 @@ async function enterMultiplayerWorld(worldId){
     return count;
   }catch(error){
     stopMultiplayerFallbackSync();
-    activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;
+    activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();
     if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
     for(const avatar of remotePlayers.values())scene.remove(avatar);
     remotePlayers.clear();clearCurrentBuildWorld();loadBuilds();
@@ -3058,7 +3084,7 @@ async function leaveMultiplayerWorld(){
   }
   if(multiplayerSession){try{await multiplayerSession.close();}catch(error){console.warn(error);}multiplayerSession=null;}
   for(const avatar of remotePlayers.values())scene.remove(avatar);
-  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerCloudSnapshot.clear();
+  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();multiplayerCloudSnapshot.clear();
   clearCurrentBuildWorld();loadBuilds();
   document.querySelector("#mp-leave-world")?.classList.add("hidden");
   document.querySelector("#mp-chat-panel")?.classList.add("hidden");
