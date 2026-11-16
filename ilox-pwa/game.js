@@ -2513,7 +2513,7 @@ function placeBuildAtPointer(event){
     const wallTops=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2&&(Math.abs(Math.abs(item.x-roofArea.x)-roofArea.width/2)<1.1||Math.abs(Math.abs(item.z-roofArea.z)-roofArea.depth/2)<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5));
     if(wallTops.length)baseY=Math.max(baseY,...wallTops);
   }
-  const record={kind:isPoolTool?"pool":(buildTool==="roof-hole"?"roof":buildTool),x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:(roofArea?0:2.4)),rotation:buildRotation,color:selectedBlockColor};
+  const record={kind:isPoolTool?"pool":(buildTool==="roof-hole"?"roof":buildTool),x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||buildTool==="floor"||isPoolTool)?0:(roofArea?0:2.4)),rotation:buildRotation,color:selectedBlockColor};
   if(roofArea){record.roofWidth=roofArea.width;record.roofDepth=roofArea.depth;record.roofRevision="connected-plateas-v2";record.roofOpening=buildTool==="roof-hole";}
   if(isPoolTool){record.poolDesign=poolDesign;record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
