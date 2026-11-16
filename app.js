@@ -12,11 +12,28 @@ const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
+const jumpButton = document.querySelector("#jump-button");
+const runButton = document.querySelector("#run-button");
+const menuButton = document.querySelector("#menu-button");
+const gameMenu = document.querySelector("#game-menu");
+const menuTitle = document.querySelector("#menu-title");
+const menuRoot = document.querySelector("#menu-root");
+const menuSubpanel = document.querySelector("#menu-subpanel");
+const menuBack = document.querySelector("#menu-back");
+const cameraButton = document.querySelector("#camera-button");
 
 let scene, camera, renderer, player, clock;
 let started = false;
 let yaw = 0, pitch = 0.18;
 let moveX = 0, moveZ = 0;
+let jumpVelocity = 0, isGrounded = true, isRunning = false;
+let cameraMode = 0;
+const cameraModes = [
+  { name: "TERCERA PERSONA", distance: 8.5, height: 3.2, pitch: 0 },
+  { name: "CÁMARA CERCANA", distance: 5.3, height: 2.5, pitch: 0 },
+  { name: "CÁMARA LEJANA", distance: 12.5, height: 4.8, pitch: 0 },
+  { name: "VISTA ALTA", distance: 8.8, height: 7.5, pitch: 0.12 }
+];
 let joyPointer = null;
 const polyHavenLoader = new GLTFLoader();
 const proceduralTreeGroups = [];
@@ -504,6 +521,7 @@ function addEvents() {
   addEventListener("keydown", e => {
     keys.add(e.key.toLowerCase());
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.key === " " && started) triggerJump();
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   game.addEventListener("pointerdown", e => {
@@ -524,6 +542,23 @@ function addEvents() {
   });
   game.addEventListener("pointerup", e => { if (lookPointer === e.pointerId) lookPointer = null; });
   game.addEventListener("pointercancel", e => { if (lookPointer === e.pointerId) lookPointer = null; });
+  jumpButton.addEventListener("pointerdown", e => { e.preventDefault(); triggerJump(); });
+  runButton.addEventListener("pointerdown", e => { e.preventDefault(); isRunning = true; runButton.classList.add("active"); });
+  const releaseRun = () => { isRunning = false; runButton.classList.remove("active"); };
+  ["pointerup","pointercancel","pointerleave"].forEach(type => runButton.addEventListener(type, releaseRun));
+  cameraButton.addEventListener("click", () => {
+    cameraMode = (cameraMode + 1) % cameraModes.length;
+    showToast("Cámara: " + cameraModes[cameraMode].name);
+  });
+  menuButton.addEventListener("click", () => {
+    const opening = gameMenu.classList.contains("hidden");
+    gameMenu.classList.toggle("hidden", !opening);
+    menuButton.setAttribute("aria-expanded", String(opening));
+    if (opening) showMenuRoot();
+  });
+  document.querySelector("#menu-close").addEventListener("click", closeMenu);
+  menuBack.addEventListener("click", showMenuRoot);
+  menuRoot.querySelectorAll("[data-menu]").forEach(button => button.addEventListener("click", () => openMenuSection(button.dataset.menu)));
   joystick.addEventListener("pointerdown", e => {
     joyPointer = e.pointerId;
     joystick.setPointerCapture(e.pointerId);
@@ -563,6 +598,48 @@ function addEvents() {
   });
 }
 
+function triggerJump() {
+  if (!started || !isGrounded) return;
+  jumpVelocity = 8.2;
+  isGrounded = false;
+  jumpButton.classList.add("active");
+  setTimeout(() => jumpButton.classList.remove("active"), 180);
+}
+function closeMenu() {
+  gameMenu.classList.add("hidden");
+  menuButton.setAttribute("aria-expanded", "false");
+}
+function showMenuRoot() {
+  menuTitle.textContent = "MENÚ";
+  menuRoot.classList.remove("hidden");
+  menuSubpanel.classList.add("hidden");
+  menuBack.classList.add("hidden");
+}
+function openMenuSection(section) {
+  const sections = {
+    build: ["CONSTRUIR", [["🏠","CASAS"],["🛣️","CAMINOS"],["🌳","DECORACIÓN"],["⛰️","TERRENO"]]],
+    world: ["MUNDO", [["🗺️","MAPA"],["🌤️","ENTORNO"],["🚪","PORTALES"]]],
+    character: ["PERSONAJE", [["👕","VESTIMENTA"],["🧍","ASPECTO"]]],
+    settings: ["AJUSTES", [["🔊","SONIDO"],["🎮","CONTROLES"],["⛶","PANTALLA"]]]
+  };
+  const entry = sections[section];
+  if (!entry) return;
+  menuTitle.textContent = entry[0];
+  menuRoot.classList.add("hidden");
+  menuSubpanel.classList.remove("hidden");
+  menuBack.classList.remove("hidden");
+  menuSubpanel.replaceChildren();
+  entry[1].forEach(([icon,label]) => {
+    const button = document.createElement("button");
+    button.innerHTML = '<span class="menu-item-icon"></span><span></span><b>›</b>';
+    button.querySelector(".menu-item-icon").textContent = icon;
+    button.querySelectorAll("span")[1].textContent = label;
+    button.addEventListener("click", () => {
+      showToast(label + ": esta herramienta todavía no está conectada.");
+    });
+    menuSubpanel.append(button);
+  });
+}
 function updateJoystick(e) {
   const rect = joystick.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -589,18 +666,27 @@ function animate() {
     if (keys.has("d") || keys.has("arrowright")) strafe += 1;
     const length = Math.hypot(forward, strafe);
     if (length > 1) { forward /= length; strafe /= length; }
-    const speed = 7.2;
+    const speed = isRunning ? 11.2 : 7.2;
     const dx = (Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * speed * delta;
     const dz = (-Math.cos(yaw) * forward + Math.sin(yaw) * strafe) * speed * delta;
     player.position.x = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     player.position.z = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
-    player.position.y = terrainHeight(player.position.x, player.position.z);
+    const groundY = terrainHeight(player.position.x, player.position.z);
+    if (isGrounded && player.position.y < groundY) player.position.y = groundY;
+    if (!isGrounded) {
+      jumpVelocity -= 18 * delta;
+      player.position.y += jumpVelocity * delta;
+      if (player.position.y <= groundY) { player.position.y = groundY; jumpVelocity = 0; isGrounded = true; }
+    } else {
+      player.position.y = groundY;
+    }
     if (length > 0.08) player.rotation.y = Math.atan2(dx, dz);
   }
-  const distance = 8.5;
+  const mode = cameraModes[cameraMode];
+  const distance = mode.distance;
   const targetX = player.position.x + Math.sin(yaw) * distance;
   const targetZ = player.position.z + Math.cos(yaw) * distance;
-  const targetY = player.position.y + 3.2 + pitch * 5;
+  const targetY = player.position.y + mode.height + pitch * 5;
   camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 1 - Math.pow(0.001, delta));
   camera.lookAt(player.position.x, player.position.y + 1.35, player.position.z);
   renderer.render(scene, camera);
