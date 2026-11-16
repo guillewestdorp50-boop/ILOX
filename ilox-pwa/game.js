@@ -110,6 +110,7 @@ let lookPointer = null;
 let lastLookX = 0, lastLookY = 0, lookStartX = 0, lookStartY = 0, cameraDistance = 6.8, pointerDragged = false;
 const activePointers = new Map(); let pinchStartDistance = 0, pinchStartZoom = 10;
 const keys = new Set();
+let sprintHeld = false;
 const worldSize = 320;
 const BLOCK_SIZE=1.5,FOUNDATION_SIZE=6,PLAYER_HEIGHT=2.1;
 // Dependencias declarativas: cada componente indica qué estructura principal necesita.
@@ -1089,6 +1090,7 @@ function init() {
   renderer.toneMappingExposure = 1.18;
   game.insertBefore(renderer.domElement, game.firstChild);
   createJumpCanvasControl();
+  createRunCanvasControl();
   scene.add(new THREE.HemisphereLight(0xeaf3ed, 0x46533c, 1.8));
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
@@ -1160,6 +1162,67 @@ function createJumpCanvasControl(){
     activePointer=e.pointerId;pressed=true;
     try{canvas.setPointerCapture(e.pointerId);}catch{}
     draw();triggerJump();
+  });
+  canvas.addEventListener("pointerup",e=>{e.preventDefault();e.stopPropagation();release(e);});
+  canvas.addEventListener("pointercancel",e=>{e.preventDefault();e.stopPropagation();release(e);});
+  canvas.addEventListener("lostpointercapture",release);
+  canvas.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();});
+  addEventListener("blur",()=>release());
+  game.appendChild(canvas);draw();return canvas;
+}
+
+
+function createRunCanvasControl(){
+  const canvas=document.createElement("canvas");
+  canvas.id="ilox-run-canvas";
+  // Control diagonal al SALTAR: separado unos pocos píxeles y con tamaño blindado.
+  for(const [prop,value] of Object.entries({
+    position:"absolute",left:"auto",top:"auto",
+    right:"calc(max(12px, env(safe-area-inset-right)) + 52px)",
+    bottom:"calc(max(14px, env(safe-area-inset-bottom)) + 52px)",
+    width:"68px",height:"68px",minWidth:"68px",minHeight:"68px",
+    maxWidth:"68px",maxHeight:"68px",zIndex:"46",pointerEvents:"auto",
+    touchAction:"none",userSelect:"none"
+  })) canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.style.setProperty("width","68px","important");
+  canvas.style.setProperty("height","68px","important");
+  canvas.setAttribute("role","img");
+  canvas.setAttribute("aria-label","Mantener presionado para correr");
+  canvas.width=224;canvas.height=224;
+  const ctx=canvas.getContext("2d");
+  let pressed=false,activePointer=null;
+  const draw=()=>{
+    if(!ctx)return;
+    ctx.clearRect(0,0,224,224);
+    const cx=112,cy=112,r=98;
+    ctx.save();
+    ctx.shadowColor=pressed?"#42f5a2":"#000000a8";
+    ctx.shadowBlur=pressed?24:16;ctx.shadowOffsetY=pressed?3:7;
+    const fill=ctx.createRadialGradient(78,62,8,112,112,r);
+    if(pressed){fill.addColorStop(0,"#b8ffda");fill.addColorStop(.58,"#12b978");fill.addColorStop(1,"#075c42");}
+    else{fill.addColorStop(0,"#aaffd1");fill.addColorStop(.52,"#16a66d");fill.addColorStop(1,"#07583d");}
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.lineWidth=7;ctx.strokeStyle="#d8ffeb";ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,r-12,Math.PI*1.08,Math.PI*1.92);ctx.strokeStyle="#ffffff65";ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="900 67px system-ui, sans-serif";ctx.fillText("»",cx,cy-13);
+    ctx.font="1000 22px system-ui, sans-serif";ctx.letterSpacing="1.5px";ctx.fillText("CORRER",cx,cy+58);
+    ctx.restore();
+  };
+  const release=e=>{
+    if(e&&activePointer!==null&&e.pointerId!==activePointer)return;
+    activePointer=null;pressed=false;sprintHeld=false;draw();
+  };
+  canvas.addEventListener("pointerdown",e=>{
+    e.preventDefault();e.stopPropagation();
+    if(!started||activePointer!==null||e.button!==0)return;
+    const rect=canvas.getBoundingClientRect();
+    const x=(e.clientX-rect.left)/rect.width*224-112;
+    const y=(e.clientY-rect.top)/rect.height*224-112;
+    if(Math.hypot(x,y)>101)return;
+    activePointer=e.pointerId;pressed=true;sprintHeld=true;
+    try{canvas.setPointerCapture(e.pointerId);}catch{}
+    draw();
   });
   canvas.addEventListener("pointerup",e=>{e.preventDefault();e.stopPropagation();release(e);});
   canvas.addEventListener("pointercancel",e=>{e.preventDefault();e.stopPropagation();release(e);});
@@ -3327,7 +3390,7 @@ function animate() {
     localMoving = inputLength > 0.08;
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const swimming = !!player?.userData.isSwimming;
-    const speed = swimming ? 2.2 : 7.2;
+    const speed = swimming ? 2.2 : (sprintHeld || keys.has("shift") ? 10.8 : 7.2);
     const cameraYaw = yaw;
     const dx = (-Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
     const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
