@@ -90,3 +90,5 @@ jobs:
 
 # Trigger a single clean V104 build with the 6 × 6 elevator platform and the new HUD.
 # Version guard checks versionCode 104.
+
+# Reconstrucción solicitada: generar un APK Android nuevo para probarlo con el detector local.
