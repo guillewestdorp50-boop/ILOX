@@ -2954,9 +2954,37 @@ function updateBuildPlacementGuide(){
   buildGuide.visible=true;
 }
 
-function placeBuildAtPointer(event){
+async function placeBuildAtPointer(event){
   const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
-  if(buildTool==="erase"){const hits=raycaster.intersectObjects(buildGroups,true);if(!hits.length){showToast("Tocá una construcción para borrarla.");return;}let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);if(idx>=0){buildRecords.splice(idx,1);scene.remove(root);const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);if(rec.kind==="elevator")rebuildElevatorOpenings();refreshTerrainSurface();persistBuilds();showToast("Pieza eliminada");}return;}
+  if(buildTool==="erase"){
+    const hits=raycaster.intersectObjects(buildGroups,true);
+    if(!hits.length){showToast("Tocá una construcción para borrar una sola pieza.");return;}
+    let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;
+    const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);
+    if(idx<0){showToast("No se pudo identificar esa pieza.");return;}
+    if(activeMultiplayerWorldId&&multiplayerSyncing){showToast("Esperá a que termine el guardado compartido y volvé a borrar.");return;}
+    if(activeMultiplayerWorldId&&rec.cloudId){
+      if(multiplayerSyncTimer){clearTimeout(multiplayerSyncTimer);multiplayerSyncTimer=null;}
+      try{
+        await Multiplayer.deleteStructure(activeMultiplayerWorldId,rec.cloudId);
+        multiplayerCloudSnapshot.delete(rec.cloudId);
+        buildRecords.splice(idx,1);scene.remove(root);
+        const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);
+        if(rec.kind==="elevator")rebuildElevatorOpenings();
+        refreshTerrainSurface();flushLocalBuildSave();
+        if(multiplayerSession)await multiplayerSession.sendWorldRefresh();
+        scheduleMultiplayerSync();
+        showToast("Pieza eliminada del mundo compartido.");
+      }catch(error){showToast(error.message||"No se pudo eliminar esta pieza del mundo compartido.");}
+      return;
+    }
+    buildRecords.splice(idx,1);scene.remove(root);
+    const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);
+    if(rec.kind==="elevator")rebuildElevatorOpenings();
+    refreshTerrainSurface();persistBuilds();
+    showToast(activeMultiplayerWorldId?"Pieza local eliminada; se sincronizará el cambio.":"Pieza eliminada.");
+    return;
+  }
   if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
