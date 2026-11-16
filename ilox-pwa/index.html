@@ -32,7 +32,7 @@
       const runChecks = async () => {
         const checks = {};
         checks.webgl = (() => { try { const canvas=document.createElement("canvas"); return !!(window.WebGL2RenderingContext && canvas.getContext("webgl2")) || !!canvas.getContext("webgl"); } catch(e) { return false; } })();
-        checks.gameModule = await fetch("./game.js?v=ilox-living-entities-no-foundation-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
+        checks.gameModule = await fetch("./game.js?v=ilox-nightclub-universal-creature-dance-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
@@ -320,6 +320,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-living-entities-no-foundation-20261116"></script>
+  <script type="module" src="./game.js?v=ilox-nightclub-universal-creature-dance-20261116"></script>
 </body>
 </html>
