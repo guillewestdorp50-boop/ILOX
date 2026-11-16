@@ -2633,6 +2633,7 @@ function updateBuildGravity(delta){
   for(const group of buildGroups){
     const record=group.userData.buildRecord;if(!record||record.kind==="water")continue;
     if(record.kind==="platea"||record.kind==="pool"||record.kind==="elevator")continue;
+    if(record.kind==="roof"&&roofHasFourWalls(connectedPlateaFootprint(foundationAt(record.x,record.z))))continue;
     let supportY=supportHeightAt(group.position.x,group.position.z,group.position.y,group);
     for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
     if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;persistBuilds();}}
