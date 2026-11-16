@@ -2245,10 +2245,10 @@ function roofHasFourWalls(area){
   const supports=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-area.x)<=area.width/2+0.2&&Math.abs(item.z-area.z)<=area.depth/2+0.2);
   const tol=1.1;
   const sides=[
-    supports.some(item=>Math.abs(Math.abs(item.x-area.x)-area.width/2)<tol),
-    supports.some(item=>Math.abs(Math.abs(item.z-area.z)-area.depth/2)<tol),
-    supports.some(item=>Math.abs(Math.abs(item.x-area.x)-area.width/2)<tol&&Math.abs(item.z-area.z)<=area.depth/2),
-    supports.some(item=>Math.abs(Math.abs(item.z-area.z)-area.depth/2)<tol&&Math.abs(item.x-area.x)<=area.width/2)
+    supports.some(item=>Math.abs(item.x-(area.x-area.width/2))<tol&&Math.abs(item.z-area.z)<=area.depth/2),
+    supports.some(item=>Math.abs(item.x-(area.x+area.width/2))<tol&&Math.abs(item.z-area.z)<=area.depth/2),
+    supports.some(item=>Math.abs(item.z-(area.z-area.depth/2))<tol&&Math.abs(item.x-area.x)<=area.width/2),
+    supports.some(item=>Math.abs(item.z-(area.z+area.depth/2))<tol&&Math.abs(item.x-area.x)<=area.width/2)
   ];
   return sides.every(Boolean);
 }
