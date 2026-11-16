@@ -2364,7 +2364,7 @@ function applyRemoteElevatorState(state){
     else passengers.set(state.passengerId,{joinedAt:Number(state.joinedAt)||Date.now()});
     const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
     group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
-    if(elevatorRiding&&activeElevator===group&&group.userData.elevatorCaptainId===multiplayerUserId&&!group.userData.elevatorTravel)openElevatorKeypad(group);
+    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel){if(group.userData.elevatorCaptainId===multiplayerUserId)openElevatorKeypad(group);else closeElevatorKeypad();}
     return;
   }
   const rec=group.userData.buildRecord;
