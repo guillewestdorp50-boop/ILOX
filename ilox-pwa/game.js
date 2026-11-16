@@ -1441,7 +1441,8 @@ function createBuildPiece(record, options = {}) {
     for(const sx of [-2.92,2.92])for(const sz of [-2.92,2.92]){
       box(.16,shaftHeight,.16,steel,sx,shaftHeight/2,sz);box(.08,shaftHeight,.08,dark,sx*.94,shaftHeight/2,sz*.94);
     }
-    box(6,.16,.16,steel,0,shaftHeight,0);box(.16,.16,6,steel,0,shaftHeight,0);
+    for(const sx of [-2.92,2.92])box(.16,.16,6,steel,sx,shaftHeight,0);
+    for(const sz of [-2.92,2.92])box(6,.16,.16,steel,0,shaftHeight,sz);
     const cabin=new THREE.Group();cabin.name="ilox-elevator-cabin";
     const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(6,.16,6),cabinMat);cabinFloor.position.y=.08;cabinFloor.userData.elevatorFloor=true;cabin.add(cabinFloor);
     for(const sx of [-2.92,2.92]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,5.84),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
