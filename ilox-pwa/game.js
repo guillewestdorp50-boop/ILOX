@@ -1816,8 +1816,8 @@ function iloxSnare(t){
 }
 function iloxHat(t,open=false){
   const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),g=iloxElevatorAudio.createGain();
-  src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=7200;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(open?.075:.035,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+(open?.19:.045));
-  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+(open?.2:.05));
+  src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=7200;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(open ? 0.075 : 0.035,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+(open ? 0.19 : 0.045));
+  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+(open ? 0.2 : 0.05));
 }
 function iloxGuitar(t,root){
   const chord=[root,root*1.5,root*2],mix=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
