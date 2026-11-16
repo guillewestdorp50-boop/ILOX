@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=ilox-v104-five-controls">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
-  <link rel="stylesheet" href="./styles.css?v=ilox-v104-bottom-dock-controls-b">
+  <link rel="stylesheet" href="./styles.css?v=ilox-v104-bottom-dock-joystick">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -109,6 +109,7 @@
         <button id="fullscreen" class="hud-action hud-fullscreen" type="button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button>
         <button id="jump-button" class="hud-action hud-jump" type="button" aria-label="Saltar" title="Saltar">⬆</button>
       </div>
+      <div class="touch-ui" id="touch-ui"><div class="move-pad" id="move-pad" aria-label="Joystick de movimiento"><div class="move-ring"></div><div class="move-knob" id="move-knob"></div></div></div>
     </div>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
@@ -117,7 +118,6 @@
       <div class="camera-free-vertical"><button id="camera-free-up" type="button" aria-label="Elevar cámara">↑</button><button id="camera-free-down" type="button" aria-label="Bajar cámara">↓</button></div>
       <div id="camera-free-pad" class="camera-free-pad" aria-label="Desplazar cámara"><div class="camera-free-ring"></div><div id="camera-free-knob" class="camera-free-knob"></div></div>
     </div>
-    <div class="touch-ui" id="touch-ui"><div class="move-pad" id="move-pad" aria-label="Joystick de movimiento"><div class="move-ring"></div><div class="move-knob" id="move-knob"></div></div></div>
     <section id="mp-chat-panel" class="mp-chat-panel hidden" aria-label="Chat del mundo compartido">
       <header class="mp-chat-header"><strong>CHAT DEL MUNDO</strong><button id="mp-chat-close" type="button" aria-label="Cerrar chat">×</button></header>
       <div id="mp-chat-messages" class="mp-chat-messages" aria-live="polite"><p class="mp-chat-empty">Todavía no hay mensajes. ¡Saludá a tu compañero!</p></div>
@@ -207,6 +207,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-v104-bottom-dock-controls-bc"></script>
+  <script type="module" src="./game.js?v=ilox-v104-bottom-dock-joystick"></script>
 </body>
 </html>
