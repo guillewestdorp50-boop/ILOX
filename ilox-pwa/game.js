@@ -2644,25 +2644,25 @@ function updateElevatorBot(delta){
       elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
       elevatorBot.userData.elevatorBotInitialized=true;
     }
-    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35));
+    setElevatorBotPhase("approach",group,group.localToWorld(new THREE.Vector3(-4.5,.34,4.35)));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
-  const floorOneY=group.position.y+.34;
-  const floorY=group.position.y+cabin.position.y+.16;
+  // Anclar los puntos a las transformaciones reales del ascensor: así el bot
+  // entra por la puerta correcta y viaja pegado a la cabina, incluso si el
+  // ascensor está rotado o cambia de altura durante el recorrido.
+  const inside=cabin.localToWorld(new THREE.Vector3(0,.16,.75));
+  const outside=group.localToWorld(new THREE.Vector3(0,.34,4.35));
   const botTopFloor=Math.max(2,Number(group.userData.iloxBotTopFloor)||12);
-  // Marca de embarque: centrada en el ancho y 0,75 m hacia dentro desde la puerta, lejos de los vidrios. El bot debe caminar hasta aquí antes de activar el viaje.
-  const inside=new THREE.Vector3(group.position.x,floorY,group.position.z+.75);
-  const outside=new THREE.Vector3(group.position.x,floorOneY,group.position.z+4.35);
   if(elevatorBotPhase==="approach"){
-    elevatorBotTarget.set(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35);
+    elevatorBotTarget.copy(group.localToWorld(new THREE.Vector3(-4.5,.34,4.35)));
     if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
   }else if(elevatorBotPhase==="approachFront"){
-    elevatorBotTarget=outside;
+    elevatorBotTarget.copy(outside);
     if(elevatorBot.position.distanceTo(outside)<.35&&!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))beginElevatorTravel(group,1,Date.now(),true);
     if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&!group.userData.elevatorTravel&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
     elevatorBotTarget=inside;
-    if(Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.62&&Math.abs(elevatorBot.position.y-floorY)<1.5&&elevatorLandingExists(group,1)){
+    if(Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.62&&Math.abs(elevatorBot.position.y-inside.y)<1.5&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
       setElevatorBotPhase("boardedWait",group,inside);
       elevatorBotWaitUntil=Date.now()+1100;
@@ -2670,17 +2670,24 @@ function updateElevatorBot(delta){
   }else if(elevatorBotPhase==="boardedWait"){
     // Permanecer quieto en el centro de la cabina para que el sensor de ocupación
     // registre al pasajero antes de solicitar el viaje.
-    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    // La espera de embarque es sobre el piso real de la cabina, no sobre una
+    // coordenada aproximada del mundo.
+    elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
+    elevatorBot.position.copy(elevatorBotTarget);
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
-    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true)){setElevatorBotPhase("waitingTop",group,inside);elevatorBotWaitUntil=0;}
   }else if(elevatorBotPhase==="waitingTop"){
-    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    // Seguir el centro de la cabina en cada frame mientras sube.
+    elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
+    elevatorBot.position.copy(elevatorBotTarget);
     if((record.currentFloor||1)===botTopFloor&&!group.userData.elevatorTravel){
       if(!elevatorBotWaitUntil)elevatorBotWaitUntil=Date.now()+6500;
       if(Date.now()>=elevatorBotWaitUntil&&beginElevatorTravel(group,1,Date.now(),true))setElevatorBotPhase("rideDown",group,inside);
     }
   }else if(elevatorBotPhase==="rideDown"){
-    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    // Seguir la misma referencia local durante todo el descenso.
+    elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
+    elevatorBot.position.copy(elevatorBotTarget);
     if((record.currentFloor||1)===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
   }else if(elevatorBotPhase==="exit"){
     elevatorBotTarget=outside;
