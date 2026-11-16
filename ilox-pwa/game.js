@@ -1118,7 +1118,7 @@ function createJumpCanvasControl(){
     position:"absolute",left:"auto",top:"auto",right:"max(12px, env(safe-area-inset-right))",
     bottom:"max(14px, env(safe-area-inset-bottom))",width:"68px",height:"68px",
     minWidth:"68px",minHeight:"68px",maxWidth:"68px",maxHeight:"68px",
-    zIndex:"46",display:"none",pointerEvents:"auto",touchAction:"none",
+    zIndex:"46",pointerEvents:"auto",touchAction:"none",
     userSelect:"none",webkitUserSelect:"none"
   })) canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
   canvas.style.setProperty("width","68px","important");
