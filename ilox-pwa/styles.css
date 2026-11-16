@@ -650,3 +650,16 @@ body{background:#201747;color:#fff}
  .hud-controls{gap:5px}.hud-action,.camera-menu-toggle{width:50px;height:55px;min-width:50px;max-width:50px;flex-basis:50px}
  .right-play-controls .hud-action{width:49px;height:54px;min-width:49px;max-width:49px;flex-basis:49px}
 }
+
+
+/* ILOX · mando compacto de ascensor: visor + teclado numérico vertical. */
+.elevator-keypad{width:min(312px,calc(100vw - 28px));max-height:calc(82dvh - env(safe-area-inset-top));overflow:hidden;z-index:60;}
+.elevator-keypad-card{padding:14px;border:2px solid #75d8c5;background:linear-gradient(155deg,#183b35f5,#091d1af7);box-shadow:0 14px 36px #000c,inset 0 1px 0 #ffffff30;}
+.elevator-keypad-card header{font-size:12px;}
+.elevator-display{min-height:58px;padding:8px 14px;background:linear-gradient(180deg,#071510,#102a20);border:2px solid #6fe0b5;box-shadow:inset 0 0 16px #35d69a22;}
+.elevator-display strong{font-size:32px;color:#a6ffd7;text-shadow:0 0 12px #39e5a0a0;}
+.elevator-keypad .elevator-keys{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:8px!important;max-height:min(38dvh,270px)!important;overflow-y:auto!important;overflow-x:hidden!important;padding:3px 3px 7px;}
+.elevator-keypad .elevator-key{min-height:50px!important;height:50px;border:1px solid #8ce9cb;background:linear-gradient(155deg,#327b67,#174638);border-radius:11px;font-size:21px;font-weight:1000;box-shadow:inset 0 2px 0 #ffffff35,0 4px 0 #061a13,0 5px 10px #0006;}
+.elevator-keypad .elevator-key.selected{background:linear-gradient(155deg,#e0fff1,#8ee9c4);color:#073324;border-color:#fff;box-shadow:0 0 0 2px #7df0c0,0 4px 0 #164c38;}
+.elevator-keypad .elevator-ok{min-height:48px;margin-top:10px;border:1px solid #d2ffeb;background:linear-gradient(145deg,#8dffd0,#2fc88e);color:#063523;font-size:14px;font-weight:1000;box-shadow:0 4px 0 #126544,0 8px 16px #0007;}
+@media(max-width:390px){.elevator-keypad{width:min(300px,calc(100vw - 24px));}.elevator-keypad .elevator-keys{gap:6px!important;max-height:34dvh!important;}.elevator-keypad .elevator-key{min-height:46px!important;height:46px;font-size:19px;}}
