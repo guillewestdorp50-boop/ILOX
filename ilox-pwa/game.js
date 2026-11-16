@@ -1849,10 +1849,13 @@ function startIloxElevatorParty(){
     const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return;
     if(!iloxElevatorAudio)iloxElevatorAudio=new AudioClass();
     if(!iloxElevatorMaster){iloxElevatorMaster=iloxElevatorAudio.createGain();iloxElevatorMaster.gain.value=0;iloxElevatorMaster.connect(iloxElevatorAudio.destination);}
+    // Primero limpiar cualquier reproducción anterior; después abrir el bus maestro.
+    // Si se invierte el orden, el fade-out de limpieza deja la nueva canción silenciada.
+    stopIloxElevatorParty(false);iloxElevatorBeat=0;
     iloxElevatorMaster.gain.cancelScheduledValues(iloxElevatorAudio.currentTime);
+    iloxElevatorMaster.gain.setValueAtTime(0,iloxElevatorAudio.currentTime);
     iloxElevatorMaster.gain.setTargetAtTime(.82,iloxElevatorAudio.currentTime,.035);
     if(iloxElevatorAudio.state==="suspended")iloxElevatorAudio.resume().catch(()=>{});
-    stopIloxElevatorParty(false);iloxElevatorBeat=0;
     if(player){player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;}
     // Pop-funk bailable original: bajo sincopado, batería firme, palmas, guitarra cortada y metales brillantes.
     const bpm=116,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[220,261.63,293.66,196];
