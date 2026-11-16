@@ -12,8 +12,6 @@ const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const joystick = document.querySelector("#joystick");
 const stick = document.querySelector("#stick");
-const jumpButton = document.querySelector("#jump-button");
-const runButton = document.querySelector("#run-button");
 const menuButton = document.querySelector("#menu-button");
 const gameMenu = document.querySelector("#game-menu");
 const menuTitle = document.querySelector("#menu-title");
@@ -26,7 +24,7 @@ let scene, camera, renderer, player, clock;
 let started = false;
 let yaw = 0, pitch = 0.18;
 let moveX = 0, moveZ = 0;
-let jumpVelocity = 0, isGrounded = true, isRunning = false;
+let jumpVelocity = 0, isGrounded = true;
 let cameraMode = 0;
 const cameraModes = [
   { name: "TERCERA PERSONA", distance: 8.5, height: 3.2, pitch: 0 },
@@ -542,10 +540,6 @@ function addEvents() {
   });
   game.addEventListener("pointerup", e => { if (lookPointer === e.pointerId) lookPointer = null; });
   game.addEventListener("pointercancel", e => { if (lookPointer === e.pointerId) lookPointer = null; });
-  jumpButton.addEventListener("pointerdown", e => { e.preventDefault(); triggerJump(); });
-  runButton.addEventListener("pointerdown", e => { e.preventDefault(); isRunning = true; runButton.classList.add("active"); });
-  const releaseRun = () => { isRunning = false; runButton.classList.remove("active"); };
-  ["pointerup","pointercancel","pointerleave"].forEach(type => runButton.addEventListener(type, releaseRun));
   cameraButton.addEventListener("click", () => {
     cameraMode = (cameraMode + 1) % cameraModes.length;
     showToast("Cámara: " + cameraModes[cameraMode].name);
@@ -602,8 +596,6 @@ function triggerJump() {
   if (!started || !isGrounded) return;
   jumpVelocity = 8.2;
   isGrounded = false;
-  jumpButton.classList.add("active");
-  setTimeout(() => jumpButton.classList.remove("active"), 180);
 }
 function closeMenu() {
   gameMenu.classList.add("hidden");
@@ -666,7 +658,7 @@ function animate() {
     if (keys.has("d") || keys.has("arrowright")) strafe += 1;
     const length = Math.hypot(forward, strafe);
     if (length > 1) { forward /= length; strafe /= length; }
-    const speed = isRunning ? 11.2 : 7.2;
+    const speed = 7.2;
     const dx = (Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * speed * delta;
     const dz = (-Math.cos(yaw) * forward + Math.sin(yaw) * strafe) * speed * delta;
     player.position.x = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
