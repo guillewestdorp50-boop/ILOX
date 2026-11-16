@@ -672,3 +672,12 @@ body{background:#201747;color:#fff}
 .camera-free-quick small{font-size:7px;font-weight:800;letter-spacing:.08em}
 .camera-free-quick.active{background:#e6d19b;color:#1b2d25;border-color:#fff}
 @media(max-width:600px){.camera-free-quick{width:36px;height:34px}}
+
+
+/* ILOX: salto independiente, cuadrado rojo luminoso en la esquina inferior derecha. */
+#jump-button.jump-float{position:fixed;z-index:46;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:68px;height:68px;min-width:68px;max-width:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;border:3px solid #ffd0d0;border-radius:14px;background:linear-gradient(145deg,#ff7777 0%,#f01828 52%,#9d0017 100%);color:#fff;font-size:29px;font-weight:1000;line-height:1;text-shadow:0 2px 4px #65000b;box-shadow:0 0 8px #ff273c,0 0 18px #ff152fbb,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;touch-action:none;pointer-events:auto;}
+#jump-button.jump-float small{display:block!important;font-size:9px;line-height:1;font-weight:1000;letter-spacing:.12em;color:#fff;}
+#jump-button.jump-float:active{transform:translateY(4px);filter:brightness(1.25);box-shadow:0 0 12px #ff273c,0 0 22px #ff152f,0 1px 0 #650014,inset 0 3px 6px #ffffff8c;}
+#game:not(.playing) #jump-button.jump-float{display:none!important;}
+@media(max-width:600px){#jump-button.jump-float{right:12px;bottom:calc(14px + env(safe-area-inset-bottom));width:64px;height:64px;min-width:64px;max-width:64px;border-radius:13px;font-size:27px;}}
+@media(prefers-reduced-motion:no-preference){#jump-button.jump-float{animation:ilox-jump-glow 1.6s ease-in-out infinite alternate;}@keyframes ilox-jump-glow{from{filter:brightness(1);box-shadow:0 0 7px #ff273c,0 0 14px #ff152f99,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;}to{filter:brightness(1.22);box-shadow:0 0 12px #ff273c,0 0 26px #ff152fdd,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;}}}
