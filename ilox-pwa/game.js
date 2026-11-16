@@ -41,10 +41,10 @@ jumpButton.type = "button";
 jumpButton.setAttribute("aria-label", "Saltar");
 jumpButton.title = "Saltar";
 jumpButton.innerHTML = "⬆<small>SALTAR</small>";
-const joystickControls = document.querySelector("#hud-dock #touch-ui");
-if (!joystickControls) throw new Error("No se encontró el contenedor del joystick analógico");
-joystickControls.appendChild(jumpButton);
+const rightPlayControls = document.querySelector("#hud-dock .right-play-controls");
+if (!rightPlayControls) throw new Error("No se encontró la botonera derecha de acciones");
 const runButton = document.querySelector("#run-button");
+rightPlayControls.insertBefore(jumpButton, runButton);
 let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
 const hudBuildButton = document.querySelector("#hud-build");
@@ -1141,11 +1141,27 @@ function addEvents() {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
-  jumpButton.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();triggerJump();});
   const stopTouchSprint=()=>{touchSprintActive=false;runButton?.classList.remove("pressed");};
-  runButton?.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(!started)return;touchSprintActive=true;runButton.classList.add("pressed");runButton.setPointerCapture?.(e.pointerId);});
-  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>runButton?.addEventListener(type,stopTouchSprint));
-  addEventListener("blur",stopTouchSprint);
+  const stopJumpPress=()=>jumpButton.classList.remove("pressed");
+  [jumpButton,runButton].forEach(button=>button?.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();}));
+  const startTouchAction=(event,action)=>{
+    if(event.button!==0||!event.isPrimary)return;
+    event.preventDefault();event.stopPropagation();
+    if(!started)return;
+    action();
+    try{event.currentTarget.setPointerCapture(event.pointerId);}catch{}
+  };
+  jumpButton.addEventListener("pointerdown",event=>startTouchAction(event,()=>{
+    jumpButton.classList.add("pressed");triggerJump();
+  }));
+  runButton?.addEventListener("pointerdown",event=>startTouchAction(event,()=>{
+    touchSprintActive=true;runButton.classList.add("pressed");
+  }));
+  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>{
+    runButton?.addEventListener(type,stopTouchSprint);
+    jumpButton.addEventListener(type,stopJumpPress);
+  });
+  addEventListener("blur",()=>{stopTouchSprint();stopJumpPress();});
   movePad.addEventListener("pointerdown", e => {
     if (!started || cameraLocked || e.button !== 0 || moveStickPointer !== null) return;
     e.preventDefault();
