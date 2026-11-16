@@ -1,5 +1,5 @@
 /* ILOX PWA: actualización automática de la aplicación y caché de respaldo offline. */
-const CACHE = "ilox-pwa-network-first-20261116-v4";
+const CACHE = "ilox-pwa-network-first-20261116-v5";
 const CORE = [
   "./",
   "./index.html",
