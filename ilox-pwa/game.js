@@ -20,6 +20,7 @@ const hudDock=document.querySelector("#hud-dock");
 const hudDockToggle=document.querySelector("#hud-dock-toggle");
 const cameraLockButton = document.querySelector("#camera-lock");
 const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
+const cameraFreeQuickButton = document.querySelector("#camera-free-quick");
 const cameraModePanel = document.querySelector("#camera-mode-panel");
 const cameraFreeControls = document.querySelector("#camera-free-controls");
 const cameraFreePad = document.querySelector("#camera-free-pad");
