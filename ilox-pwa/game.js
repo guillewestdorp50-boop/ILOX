@@ -1776,11 +1776,6 @@ function animateElevator(group,now=Date.now()){
     const landingSlide=landingProgress*2.9;
     landing.left.position.x=-1.45-landingSlide;landing.right.position.x=1.45+landingSlide;
   }
-  if(group.userData.elevatorPendingTravel&&doorProgress<=0.001&&!group.userData.elevatorDoorAnimation&&!group.userData.elevatorTravel){
-    const pending=group.userData.elevatorPendingTravel;
-    group.userData.elevatorPendingTravel=null;
-    beginElevatorTravel(group,pending.targetFloor,Date.now(),pending.broadcast);
-  }
   if(elevatorRiding&&activeElevator===group&&player){
     const wantsExit=open&&doorProgress>=.98&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
     if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
@@ -1789,19 +1784,19 @@ function animateElevator(group,now=Date.now()){
 }
 function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=true){
   const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
-  const fromFloor=rec.currentFloor||1,toFloor=THREE.MathUtils.clamp(Math.round(targetFloor),1,rec.floorCount||40);
-  if(group.userData.elevatorPendingTravel)return false;
-  if(fromFloor!==toFloor&&(group.userData.elevatorDoorOpen||Number(group.userData.elevatorDoorProgress||0)>.001)){
-    group.userData.elevatorPendingTravel={targetFloor:toFloor,broadcast};
-    setElevatorDoorState(group,false,broadcast,false);
-    return true;
-  }
+  const floorCount=Math.max(1,Math.min(40,Number(rec.floorCount)||40));
+  const fromFloor=THREE.MathUtils.clamp(Math.round(Number(rec.currentFloor)||1),1,floorCount);
+  const toFloor=THREE.MathUtils.clamp(Math.round(Number(targetFloor)||1),1,floorCount);
   if(fromFloor===toFloor){
     const opened=setElevatorDoorState(group,true,broadcast,false);
     if(!opened)showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
     return opened;
   }
-  setElevatorDoorState(group,false,broadcast,false);
+  // Cerrar las puertas y comenzar el desplazamiento en la misma operación.
+  // No esperar a un estado pendiente: ese segundo paso podía quedar bloqueado
+  // por la animación de las hojas y dejar inmóvil tanto al jugador como al bot.
+  group.userData.elevatorPendingTravel=null;
+  if(!setElevatorDoorState(group,false,broadcast,false))return false;
   const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   rec.targetFloor=toFloor;
