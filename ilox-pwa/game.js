@@ -2240,6 +2240,18 @@ function connectedPlateaFootprint(seed){
   const minZ=Math.min(...component.map(p=>p.z)),maxZ=Math.max(...component.map(p=>p.z));
   return {x:(minX+maxX)/2,z:(minZ+maxZ)/2,width:maxX-minX+6,depth:maxZ-minZ+6,foundation:seed,component};
 }
+function roofHasFourWalls(area){
+  if(!area)return false;
+  const supports=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-area.x)<=area.width/2+0.2&&Math.abs(item.z-area.z)<=area.depth/2+0.2);
+  const tol=1.1;
+  const sides=[
+    supports.some(item=>Math.abs(Math.abs(item.x-area.x)-area.width/2)<tol),
+    supports.some(item=>Math.abs(Math.abs(item.z-area.z)-area.depth/2)<tol),
+    supports.some(item=>Math.abs(Math.abs(item.x-area.x)-area.width/2)<tol&&Math.abs(item.z-area.z)<=area.depth/2),
+    supports.some(item=>Math.abs(Math.abs(item.z-area.z)-area.depth/2)<tol&&Math.abs(item.x-area.x)<=area.width/2)
+  ];
+  return sides.every(Boolean);
+}
 function buildFootprint(kind){
   const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],elevator:[3.2,3.2],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,4.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
   return sizes[kind]||[1.5,1.5];
@@ -2392,7 +2404,8 @@ function updateBuildPlacementGuide(){
   const needsDoor=["block","brick","wall"].includes(buildTool);
   const doorReady=foundationHasDoor(activeFoundation);
   const roofAligned=!!roofArea&&Math.abs(x-roofArea.x)<.9&&Math.abs(z-roofArea.z)<.9;
-  const valid=buildTool==="platea"||poolTool||buildTool==="water"||((buildTool==="roof"||buildTool==="roof-hole")?roofAligned:(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
+  const roofSupported=roofHasFourWalls(roofArea);
+  const valid=buildTool==="platea"||poolTool||buildTool==="water"||((buildTool==="roof"||buildTool==="roof-hole")?(roofAligned&&roofSupported):(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
@@ -2464,6 +2477,7 @@ function placeBuildAtPointer(event){
     if(buildTool==="roof"||buildTool==="roof-hole"){
       const area=connectedPlateaFootprint(currentFoundation);
       if(!area){showToast("No se encontró una superficie de plateas conectadas.");return;}
+      if(!roofHasFourWalls(area)){showToast("El techo necesita paredes de apoyo en los cuatro lados.");return;}
       x=area.x;z=area.z;
     }else if(!foundationContainsFootprint(x,z,buildTool,buildRotation)){showToast("La pieza debe quedar completamente dentro de la platea.");return;}
   }
@@ -2492,7 +2506,7 @@ function placeBuildAtPointer(event){
   const roofArea=(buildTool==="roof"||buildTool==="roof-hole")?connectedPlateaFootprint(foundationAt(x,z)):null;
   if(roofArea){
     x=roofArea.x;z=roofArea.z;
-    const wallTops=buildRecords.filter(item=>["wall","block","brick","door"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2).map(item=>(item.y||0)+(item.kind==="door"?3:1.5));
+    const wallTops=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2&&(Math.abs(Math.abs(item.x-roofArea.x)-roofArea.width/2)<1.1||Math.abs(Math.abs(item.z-roofArea.z)-roofArea.depth/2)<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5));
     if(wallTops.length)baseY=Math.max(baseY,...wallTops);
   }
   const record={kind:isPoolTool?"pool":(buildTool==="roof-hole"?"roof":buildTool),x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:(roofArea?0:2.4)),rotation:buildRotation,color:selectedBlockColor};
