@@ -1465,14 +1465,14 @@ function createBuildPiece(record, options = {}) {
       const lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=1.8;
       if(!elevator||(Math.abs(lx)<rw/2+half&&Math.abs(lz)<rd/2+half))opening={left:lx-half,right:lx+half,back:lz-half,front:lz+half};
     }
-    if(!opening){const roofPiece=box(rw,.16,rd,roofMat,0,1.42,0);roofPiece.rotation.z=-.12;}
+    if(!opening){const roofPiece=box(rw,.16,rd,roofMat,0,.08,0);roofPiece.rotation.z=-.12;}
     else{
       const L=-rw/2,R=rw/2,B=-rd/2,F=rd/2,hl=Math.max(L,opening.left),hr=Math.min(R,opening.right),hb=Math.max(B,opening.back),hf=Math.min(F,opening.front);
-      if(hl>L)box(hl-L,.16,rd,roofMat,(L+hl)/2,1.42,0);
-      if(R>hr)box(R-hr,.16,rd,roofMat,(hr+R)/2,1.42,0);
+      if(hl>L)box(hl-L,.16,rd,roofMat,(L+hl)/2,.08,0);
+      if(R>hr)box(R-hr,.16,rd,roofMat,(hr+R)/2,.08,0);
       if(hf>hb&&hr>hl){
-        if(hb>B)box(hr-hl,.16,hb-B,roofMat,(hl+hr)/2,1.42,(B+hb)/2);
-        if(F>hf)box(hr-hl,.16,F-hf,roofMat,(hl+hr)/2,1.42,(hf+F)/2);
+        if(hb>B)box(hr-hl,.16,hb-B,roofMat,(hl+hr)/2,.08,(B+hb)/2);
+        if(F>hf)box(hr-hl,.16,F-hf,roofMat,(hl+hr)/2,.08,(hf+F)/2);
       }
     }
   }
@@ -1606,25 +1606,34 @@ function persistBuilds(){
   if(activeMultiplayerWorldId)scheduleMultiplayerSync();
   return true;
 }
+function migrateConnectedRoofs(){
+  let changed=false;const seen=new Set();
+  for(const record of [...buildRecords]){
+    if(record.kind!=="roof")continue;
+    const area=connectedPlateaFootprint(foundationAt(record.x,record.z));if(!area)continue;
+    const key=[area.x,area.z,area.width,area.depth].map(v=>Math.round(v*100)/100).join(":");
+    if(seen.has(key)){
+      const group=buildGroups.find(item=>item.userData.buildRecord===record);
+      if(group){scene.remove(group);const index=buildGroups.indexOf(group);if(index>=0)buildGroups.splice(index,1);}
+      const index=buildRecords.indexOf(record);if(index>=0)buildRecords.splice(index,1);
+      changed=true;continue;
+    }
+    seen.add(key);
+    if(record.roofRevision!=="connected-plateas-v2"||Math.abs((record.roofWidth||1.5)-area.width)>.01||Math.abs((record.roofDepth||1.5)-area.depth)>.01||Math.abs(record.x-area.x)>.01||Math.abs(record.z-area.z)>.01){
+      record.x=area.x;record.z=area.z;record.roofWidth=area.width;record.roofDepth=area.depth;record.roofRevision="connected-plateas-v2";
+      const old=buildGroups.find(group=>group.userData.buildRecord===record);
+      if(old){scene.remove(old);const index=buildGroups.indexOf(old);if(index>=0)buildGroups.splice(index,1);}
+      createBuildPiece(record);changed=true;
+    }
+  }
+  return changed;
+}
 function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
     if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","elevator","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,elevator:120,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62,fox:.9,person:1.75,robot:1.8,trex:3.2};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
-     // Migra techos antiguos al tamaño real de todas las plateas conectadas.
-     let roofsMigrated=false;
-     for(const record of buildRecords){
-       if(record.kind!=="roof")continue;
-       const area=connectedPlateaFootprint(foundationAt(record.x,record.z));
-       if(!area)continue;
-       const changed=record.roofRevision!=="connected-plateas-v1"||Math.abs((record.roofWidth||1.5)-area.width)>.01||Math.abs((record.roofDepth||1.5)-area.depth)>.01;
-       if(!changed)continue;
-       record.x=area.x;record.z=area.z;record.roofWidth=area.width;record.roofDepth=area.depth;record.roofRevision="connected-plateas-v1";
-       const old=buildGroups.find(group=>group.userData.buildRecord===record);
-       if(old){scene.remove(old);const index=buildGroups.indexOf(old);if(index>=0)buildGroups.splice(index,1);}
-       createBuildPiece(record);roofsMigrated=true;
-     }
-     if(roofsMigrated)flushLocalBuildSave();
+     if(migrateConnectedRoofs())flushLocalBuildSave();
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
@@ -1722,6 +1731,7 @@ async function loadMultiplayerStructures(worldId){
     buildRecords.push(record);createBuildPiece(record);
     multiplayerCloudSnapshot.set(row.id,multiplayerFingerprint(record));
   }
+  migrateConnectedRoofs();
   refreshTerrainSurface();
   return rows.length;
 }
@@ -1974,6 +1984,7 @@ async function enterMultiplayerWorld(worldId){
       onChatMessage:row=>appendMultiplayerChatMessage(row,true)
     });
     multiplayerUserId=multiplayerSession.userId;
+    scheduleMultiplayerSync();
     const peerStates=await Multiplayer.getWorldPlayerStates(worldId);
     for(const state of peerStates)updateRemotePlayer(state);
     document.querySelector("#mp-chat-toggle")?.classList.remove("hidden");
