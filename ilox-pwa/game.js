@@ -1118,8 +1118,8 @@ function createMenuCanvasControl(){
   const canvas=menuToggle;
   canvas.id="ilox-menu-canvas";
   for(const [prop,value] of Object.entries({
-    position:"absolute",left:"auto",top:"calc(max(16px, env(safe-area-inset-top)) + 8px)",
-    right:"calc(max(16px, env(safe-area-inset-right)) + 8px)",
+    position:"absolute",right:"auto",top:"calc(max(16px, env(safe-area-inset-top)) + 8px)",
+    left:"calc(max(16px, env(safe-area-inset-left)) + 8px)",
     width:"76px",height:"68px",minWidth:"76px",minHeight:"68px",
     maxWidth:"76px",maxHeight:"68px",zIndex:"48",pointerEvents:"auto",
     touchAction:"none",userSelect:"none",webkitUserSelect:"none"

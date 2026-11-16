@@ -327,8 +327,8 @@ body{background:#201747;color:#fff}
 }
 
 
-/* ILOX v95: versión visible desde la pantalla de inicio. */
-.welcome-version{position:absolute;z-index:5;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));padding:7px 11px;border:1px solid #ffffff55;border-radius:999px;background:#17123fcc;color:#fff8e8;font:800 11px/1 system-ui,sans-serif;letter-spacing:.12em;text-shadow:0 1px 5px #0008;box-shadow:0 4px 18px #080d3c66;pointer-events:none}
+/* La versión del juego se consulta al final del menú principal. */
+.menu-version{margin-top:5px;padding:9px 8px 3px;border-top:1px solid #ffffff25;color:#b9c9bd;text-align:center;font:800 10px/1.2 system-ui,sans-serif;letter-spacing:.16em;opacity:.82}
 
 /* Acciones separadas para entrar o eliminar mundos guardados. */
 .mp-world-row{display:flex;align-items:stretch;gap:7px}
