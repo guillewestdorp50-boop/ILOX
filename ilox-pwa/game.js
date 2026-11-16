@@ -50,7 +50,7 @@ let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplaye
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
-let elevatorCanvas=null,elevatorKeypadOpen=false;
+let elevatorCanvas=null,elevatorKeypadOpen=false,elevatorFloorInput="";
 const elevatorCallButton=document.querySelector("#elevator-call-button");
 const elevatorDoorOpenButton=document.querySelector("#elevator-door-open-button");
 const elevatorDoorCloseButton=document.querySelector("#elevator-door-close-button");
@@ -2263,38 +2263,60 @@ function drawElevatorCanvas(){
   ctx.clearRect(0,0,600,880);
   const count=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
   const rounded=(x,y,w,h,r,fill,stroke,line=1)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}};
-  ctx.save();const panel=ctx.createLinearGradient(0,0,600,880);panel.addColorStop(0,"#183d35f7");panel.addColorStop(1,"#071d18f7");
-  ctx.shadowColor="#000b";ctx.shadowBlur=30;ctx.shadowOffsetY=12;rounded(12,12,576,856,30,panel,"#75d8c5",5);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-  ctx.fillStyle="#effff8";ctx.font="1000 31px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("MANDO DEL ASCENSOR",42,65);
-  rounded(505,34,58,58,14,"#ffffff20","#ffffff70",2);ctx.fillStyle="#fff";ctx.font="bold 48px system-ui";ctx.textAlign="center";ctx.fillText("×",534,64);
-  ctx.fillStyle="#a9d7cc";ctx.font="600 20px system-ui";ctx.textAlign="left";ctx.fillText("ELEGÍ EL PISO DE DESTINO",42,132);
-  rounded(32,160,536,66,12,"#061710","#70bca8",3);ctx.fillStyle="#9bbab1";ctx.font="800 17px system-ui";ctx.fillText("DESTINO",54,193);
-  ctx.fillStyle="#a6ffd7";ctx.textAlign="right";ctx.font="1000 38px system-ui";ctx.fillText(String(elevatorSelectedFloor).padStart(2,"0"),545,194);
-  for(let floor=1;floor<=40;floor++){const col=(floor-1)%5,row=Math.floor((floor-1)/5),x=30+col*108,y=250+row*64,selected=floor===elevatorSelectedFloor,disabled=floor>count;
-    rounded(x+5,y+4,98,56,11,disabled?"#263b36":selected?"#dfffee":"#245b4c",selected?"#fff":"#83cdb4",selected?4:2);
-    ctx.fillStyle=disabled?"#73847e":selected?"#073324":"#fff";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText(String(floor),x+54,y+33);}
-  rounded(32,790,536,64,14,"#8dffd0","#d2ffeb",3);ctx.fillStyle="#063523";ctx.textAlign="center";ctx.font="1000 24px system-ui";ctx.fillText("VIAJAR AL PISO "+elevatorSelectedFloor,300,823);ctx.restore();
+  ctx.save();
+  const bg=ctx.createLinearGradient(0,0,600,880);bg.addColorStop(0,"#142d36");bg.addColorStop(.52,"#0b2029");bg.addColorStop(1,"#07151e");
+  ctx.shadowColor="#000c";ctx.shadowBlur=34;ctx.shadowOffsetY=14;rounded(12,12,576,856,34,bg,"#6de4c3",4);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.fillStyle="#a7f5dc";ctx.font="800 16px system-ui";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("ILOX  /  ELEVADOR",42,56);
+  ctx.fillStyle="#f2fff9";ctx.font="1000 29px system-ui";ctx.fillText("SELECCIONÁ TU PISO",42,100);
+  rounded(505,34,58,58,16,"#ffffff12","#8cbdb4",2);ctx.fillStyle="#effff8";ctx.font="bold 44px system-ui";ctx.textAlign="center";ctx.fillText("×",534,63);
+  rounded(32,142,536,112,18,"#041117","#4b9888",3);
+  ctx.fillStyle="#8cbdb4";ctx.textAlign="left";ctx.font="800 15px system-ui";ctx.fillText("PISO DE DESTINO",55,172);
+  const entered=elevatorFloorInput||"—";ctx.fillStyle="#9dffd8";ctx.textAlign="right";ctx.font="1000 57px ui-monospace,monospace";ctx.fillText(entered,545,215);
+  ctx.fillStyle="#86a9a4";ctx.textAlign="left";ctx.font="600 14px system-ui";ctx.fillText("DISPONIBLES: 1 — "+count,42,278);
+  const keys=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]];
+  for(let row=0;row<4;row++)for(let col=0;col<3;col++){
+    const label=keys[row][col],x=32+col*181,y=300+row*105;
+    const special=label==="C"||label==="⌫";
+    const fill=special?"#1c3b43":"#173b43",stroke=special?"#5faaa0":"#5bd2b0";
+    rounded(x,y,172,88,17,fill,stroke,2);
+    ctx.fillStyle=special?"#b8e6d9":"#f3fff9";ctx.textAlign="center";ctx.font=special?"900 29px system-ui":"1000 38px system-ui";ctx.fillText(label,x+86,y+45);
+  }
+  rounded(32,742,536,94,19,"#79f0bd","#c6ffe5",3);
+  ctx.shadowColor="#56e8ac";ctx.shadowBlur=18;ctx.fillStyle="#052c25";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText("CONFIRMAR VIAJE  ›",300,790);ctx.shadowBlur=0;
+  ctx.restore();
 }
 function createElevatorCanvasControl(){
   const canvas=document.createElement("canvas");canvas.id="ilox-elevator-canvas";
-  for(const [prop,value] of Object.entries({position:"absolute",left:"50%",top:"50%",right:"auto",bottom:"auto",transform:"translate(-50%,-50%)",width:"min(300px, calc(100vw - 24px))",height:"min(440px, calc(100dvh - 28px))",maxWidth:"300px",maxHeight:"440px",zIndex:"65",pointerEvents:"auto",touchAction:"none",display:"none",userSelect:"none"}))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
-  canvas.width=600;canvas.height=880;canvas.setAttribute("role","img");canvas.setAttribute("aria-label","Mando gráfico del ascensor: elegir piso del 1 al 40");
-  canvas.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(!elevatorKeypadOpen||!started)return;
+  for(const [prop,value] of Object.entries({position:"absolute",left:"50%",top:"50%",right:"auto",bottom:"auto",transform:"translate(-50%,-50%)",width:"min(300px, calc(100vw - 24px))",height:"min(440px, calc(100dvh - 28px))",maxWidth:"300px",maxHeight:"440px",zIndex:"65",pointerEvents:"auto",touchAction:"none",display:"none",userSelect:"none",webkitUserSelect:"none"}))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.width=600;canvas.height=880;canvas.setAttribute("role","img");canvas.setAttribute("aria-label","Botonera gráfica del ascensor con números del cero al nueve");
+  canvas.addEventListener("pointerdown",e=>{
+    e.preventDefault();e.stopPropagation();if(!elevatorKeypadOpen||!started)return;
     const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*880;
-    if(x>=495&&y<=105){closeElevatorKeypad();return;}if(y>=780&&y<=865){confirmElevatorTravel(activeElevator);return;}
-    if(x>=30&&x<570&&y>=250&&y<762){const col=Math.max(0,Math.min(4,Math.floor((x-30)/108))),row=Math.max(0,Math.min(7,Math.floor((y-250)/64))),floor=row*5+col+1,max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));if(floor<=max){elevatorSelectedFloor=floor;drawElevatorCanvas();}}
+    if(x>=495&&y<=105){closeElevatorKeypad();return;}
+    if(y>=742&&y<=840){confirmElevatorTravel(activeElevator);return;}
+    if(y>=300&&y<720&&x>=32&&x<568){
+      const col=Math.max(0,Math.min(2,Math.floor((x-32)/181))),row=Math.max(0,Math.min(3,Math.floor((y-300)/105))),key=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]][row][col];
+      const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
+      if(key==="C")elevatorFloorInput="";
+      else if(key==="⌫")elevatorFloorInput=elevatorFloorInput.slice(0,-1);
+      else if(elevatorFloorInput.length<2){const next=(elevatorFloorInput+key).replace(/^0+(?=\d)/,"");const n=Number(next);if(next&&n<=max)elevatorFloorInput=next;}
+      elevatorSelectedFloor=Number(elevatorFloorInput)||0;drawElevatorCanvas();
+    }
   });
   canvas.addEventListener("contextmenu",e=>e.preventDefault());game.appendChild(canvas);elevatorCanvas=canvas;return canvas;
 }
 function openElevatorKeypad(group){
   if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;
-  const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);
+  const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));
+  elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);elevatorFloorInput=String(elevatorSelectedFloor);
   elevatorKeypadOpen=true;if(elevatorCanvas){elevatorCanvas.style.setProperty("display","block","important");drawElevatorCanvas();}
 }
 function closeElevatorKeypad(){elevatorKeypadOpen=false;if(elevatorCanvas)elevatorCanvas.style.setProperty("display","none","important");}
 function confirmElevatorTravel(group){
   if(!elevatorRiding||!group||activeElevator!==group)return false;
-  const target=THREE.MathUtils.clamp(Math.round(elevatorSelectedFloor||1),1,Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)));
+  const max=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)),target=Number(elevatorFloorInput);
+  if(!Number.isInteger(target)||target<1||target>max){showToast("Elegí un piso válido entre 1 y "+max+".");return false;}
+  elevatorSelectedFloor=target;
   const started=beginElevatorTravel(group,target);if(started)closeElevatorKeypad();else showToast("No se pudo iniciar el viaje.");return started;
 }
 function tryElevatorConsoleAtPointer(event){
