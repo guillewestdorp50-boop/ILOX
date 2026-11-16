@@ -480,3 +480,126 @@ body{background:#201747;color:#fff}
 
 /* Ajuste táctil y escritorio del joystick integrado. */
 .hud-dock{grid-template-columns:82px minmax(0,1fr)}.hud-controls{max-width:calc(100vw - 90px)}#touch-ui{display:none;width:78px;height:66px}.move-pad{width:62px;height:62px}.move-knob{width:30px;height:30px}@media(pointer:coarse){#touch-ui{display:block}}@media(pointer:fine){#touch-ui{display:none}}@media(max-width:600px){.hud-dock{grid-template-columns:82px minmax(0,1fr)}.hud-controls{max-width:calc(100vw - 90px)}#touch-ui{width:78px;height:66px}.move-pad{width:62px;height:62px}.move-knob{width:30px;height:30px}}
+
+
+/* ILOX V104 — botonera 3D definitiva inspirada en la referencia aprobada. */
+.hud-dock{
+  left:0;right:0;bottom:calc(5px + env(safe-area-inset-bottom));
+  transform:none;width:100%;max-width:100%;
+  display:grid;grid-template-columns:104px minmax(0,1fr);
+  grid-template-rows:30px auto;gap:3px;align-items:end;justify-items:center;
+  padding:0 7px;pointer-events:none;
+}
+.hud-dock-toggle{
+  grid-column:2;grid-row:1;justify-self:center;
+  width:66px;height:30px;border:2px solid #9eeaff;border-bottom:0;
+  border-radius:15px 15px 0 0;
+  background:linear-gradient(180deg,#26d8ff 0%,#0868db 65%,#073a9d 100%);
+  color:#fff;font-size:24px;line-height:24px;
+  text-shadow:0 1px 4px #00336d;
+  box-shadow:0 -3px 12px #00aaff99, inset 0 2px 4px #ffffff88;
+  pointer-events:auto;
+}
+.hud-controls{
+  grid-column:2;grid-row:2;justify-self:stretch;
+  position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;
+  width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;scrollbar-width:none;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  border:3px solid #8ceaff;border-bottom:0;border-radius:22px 22px 0 0;
+  background:linear-gradient(180deg,#203c72f5 0%,#0b1b3cfb 55%,#061027ff 100%);
+  box-shadow:0 -5px 0 #07132d,0 -8px 24px #000b,inset 0 3px 8px #ffffff38;
+  pointer-events:auto;
+}
+.hud-controls::-webkit-scrollbar{display:none}
+.hud-action,.hud-dock #door-rotate-control,.hud-dock #elevator-call-button,
+.hud-dock #mp-chat-toggle,.hud-dock #jump-button,.hud-dock #run-button,
+.hud-dock #quick-save,.hud-dock #fullscreen{
+  position:relative;top:auto;right:auto;bottom:auto;left:auto;transform:none;
+  flex:0 0 58px;width:58px;height:66px;min-width:58px;max-width:58px;
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid #d8f7ff;border-radius:17px;
+  color:#fff;font-size:30px;font-weight:1000;line-height:1;
+  padding:0;text-shadow:0 2px 3px #00152e;
+  box-shadow:0 7px 0 #07132d,0 10px 13px #0009,inset 0 3px 5px #ffffffa0,inset 0 -5px 8px #0005;
+  transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;
+  touch-action:manipulation;
+}
+.hud-action:active,.hud-action.pressed{
+  transform:translateY(5px);
+  box-shadow:0 2px 0 #07132d,0 4px 8px #0008,inset 0 3px 8px #ffffff70;
+  filter:brightness(1.2);
+}
+.hud-menu{border-color:#fff0a6;background:linear-gradient(145deg,#fff34d 0%,#ffae00 58%,#d96a00 100%);color:#392047}
+.hud-camera{border-color:#a9eaff;background:linear-gradient(145deg,#43d9ff 0%,#087eea 55%,#073caa 100%)}
+.hud-build{border-color:#f1c5ff;background:linear-gradient(145deg,#e879ff 0%,#a52aff 55%,#5810b9 100%)}
+.hud-delete{border-color:#ffc0c0;background:linear-gradient(145deg,#ff7568 0%,#ef2020 55%,#a90024 100%)}
+.hud-confirm{border-color:#fff0ad;background:linear-gradient(145deg,#ffe95a 0%,#ffad00 55%,#cf5900 100%);color:#fff}
+.hud-confirm:disabled{opacity:.48;filter:saturate(.55)}
+.hud-rotate{border-color:#a8ffd0;background:linear-gradient(145deg,#4effa0,#00a95d 58%,#006b43)}
+.hud-elevator{border-color:#b9d5ff;background:linear-gradient(145deg,#5eb9ff,#1469e8 58%,#073b9c)}
+.hud-chat{border-color:#b4ffe0;background:linear-gradient(145deg,#5cffb3,#05b96a 58%,#087446)}
+.hud-save{border-color:#b6d8ff;background:linear-gradient(145deg,#71c5ff,#176be8 58%,#083b9d)}
+.hud-fullscreen{border-color:#e8c4ff;background:linear-gradient(145deg,#e77aff,#8a31ed 58%,#4a0e9f)}
+.hud-jump{border-color:#b9edff;background:linear-gradient(145deg,#58eaff,#008bdb 58%,#07509d);color:#fff}
+.hud-run{border-color:#b8ffd0;background:linear-gradient(145deg,#7dff75,#13c941 58%,#087d36);color:#fff}
+.hud-dock #door-rotate-control.hidden,.hud-dock #elevator-call-button.hidden,
+.hud-dock #mp-chat-toggle.hidden{display:none!important}
+.hud-dock #door-rotate-control small,.hud-dock #elevator-call-button small,
+.hud-dock .hud-action small{display:none!important}
+.camera-controls{position:relative;z-index:auto;top:auto;right:auto;left:auto;bottom:auto;transform:none;display:flex;align-items:center;padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none}
+.camera-menu-toggle{width:58px;height:66px;min-width:58px;border-radius:17px;padding:0}
+.camera-menu-toggle svg{width:32px;height:28px}
+.camera-mode-panel{position:absolute;bottom:76px;top:auto;left:0;right:auto;display:grid;grid-template-columns:repeat(3,42px);gap:6px;padding:9px;border:2px solid #8ceaff;border-radius:14px;background:#101b48f5;box-shadow:0 8px 18px #0009}
+.camera-mode-panel.hidden{display:none!important}
+.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:42px;height:42px;border:2px solid #75bfff;border-radius:10px;background:#164c9b;color:#fff;font-size:19px;padding:0}
+.camera-mode-panel .camera-mode.selected{background:#ffe36e;color:#39205f}
+.camera-mode-panel .camera-lock{background:#8b36d8;border-color:#d8a8ff}
+#touch-ui{
+  grid-column:1;grid-row:1 / span 2;position:relative;inset:auto;
+  z-index:42;width:98px;height:96px;align-self:end;display:none;
+  pointer-events:none;
+}
+.move-pad{position:relative;left:auto;bottom:auto;width:92px;height:92px;margin:0 auto;pointer-events:auto}
+.move-ring{
+  border:3px solid #8ceaff;
+  background:radial-gradient(circle,#1675d9 0%,#082d71 68%,#04143d 100%);
+  box-shadow:0 5px 0 #06132e,0 7px 16px #0009,inset 0 0 0 7px #ffffff20,inset 0 3px 8px #ffffff55;
+}
+.move-knob{
+  width:42px;height:42px;border:3px solid #d8f7ff;
+  background:linear-gradient(145deg,#55edff,#0877ef 60%,#073d9d);
+  box-shadow:0 4px 0 #05265f,0 6px 12px #0009,inset 0 2px 5px #ffffffaa;
+}
+#menu-panel{bottom:calc(112px + env(safe-area-inset-bottom));top:auto;left:50%;transform:translateX(-50%);z-index:44}
+#build-panel{bottom:calc(112px + env(safe-area-inset-bottom));z-index:44}
+.camera-free-controls{right:12px;bottom:calc(112px + env(safe-area-inset-bottom));z-index:43}
+.elevator-keypad{top:50%;left:50%;right:auto;transform:translate(-50%,-50%);width:min(300px,calc(100vw - 28px));z-index:50}
+.elevator-keypad-card{border:2px solid #8ceaff;border-radius:18px;background:linear-gradient(160deg,#173b75f5,#07152ffb);box-shadow:0 10px 0 #06132d,0 16px 34px #000b,inset 0 2px 8px #ffffff35}
+.elevator-display{border:2px solid #50e6a2;background:#031b20;box-shadow:inset 0 0 16px #00d68b55}
+.elevator-display strong{color:#55ffae;text-shadow:0 0 12px #00ff99}
+.elevator-key{min-height:46px;border:2px solid #9beaff;border-radius:10px;background:linear-gradient(145deg,#267fe8,#0a368d);box-shadow:0 3px 0 #061b50;font-size:18px}
+.elevator-key.selected{background:linear-gradient(145deg,#fff16b,#ffad00);color:#31204a;border-color:#fff}
+.elevator-ok{border:2px solid #c5ffe1;border-radius:11px;background:linear-gradient(145deg,#55ffb0,#00a85b);box-shadow:0 4px 0 #07552f;color:#063c26;font-size:14px}
+@media(pointer:coarse){#touch-ui{display:block}}
+@media(max-width:600px){
+  .hud-dock{grid-template-columns:86px minmax(0,1fr);grid-template-rows:27px auto;gap:3px;padding:0 3px}
+  .hud-controls{gap:7px;padding:8px 9px calc(9px + env(safe-area-inset-bottom));max-width:100%}
+  .hud-action,.hud-dock #door-rotate-control,.hud-dock #elevator-call-button,
+  .hud-dock #mp-chat-toggle,.hud-dock #jump-button,.hud-dock #run-button,
+  .hud-dock #quick-save,.hud-dock #fullscreen{
+    flex-basis:54px;width:54px;height:60px;min-width:54px;max-width:54px;font-size:27px;border-radius:15px
+  }
+  .camera-menu-toggle{width:54px;height:60px;min-width:54px}
+  #touch-ui{width:82px;height:82px}
+  .move-pad{width:78px;height:78px}
+  .move-knob{width:36px;height:36px}
+  .hud-dock-toggle{width:60px;height:27px}
+  #menu-panel,#build-panel{bottom:calc(105px + env(safe-area-inset-bottom))}
+  .camera-free-controls{bottom:calc(105px + env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:no-preference){
+  .hud-action:not(:active):not(.pressed){animation:hud-button-glow 3.2s ease-in-out infinite alternate}
+  @keyframes hud-button-glow{from{filter:brightness(1)}to{filter:brightness(1.12)}}
+}
