@@ -3570,6 +3570,126 @@ function updateBuildGravity(delta){
     else if(group.position.y<supportY-.015){group.position.y=supportY;group.userData.vy=0;record.y=supportY;updateBuildSpatialGroup(group);}
   }
 }
+
+/* Agente caminante autónomo ILOX: implementación nueva e independiente. */
+let worldWalker=null,worldWalkerLoadPromise=null;
+const worldWalkerLoader=new GLTFLoader();
+const WORLD_WALKER_MODEL_URL=ANIMAL_MODELS.robot;
+const WALKER_CELL=.75;
+function walkerPositionBlocked(x,z){
+  const body=new THREE.Box3(new THREE.Vector3(x-.31,.06,z-.31),new THREE.Vector3(x+.31,1.78,z+.31));
+  for(const group of getNearbyBuildGroups(x,z,.48)){
+    const kind=group.userData.buildRecord?.kind;
+    if(!group.visible||!SOLID_BUILD_KINDS.has(kind)||kind==="elevator"||kind==="floor"||kind==="platea"||kind==="roof")continue;
+    group.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(group);
+    if(!bounds.isEmpty()&&bounds.max.y>.06&&bounds.min.y<1.78&&body.intersectsBox(bounds))return true;
+  }
+  return false;
+}
+function walkerGridKey(ix,iz){return ix+","+iz;}
+function findWalkerRoute(start,target){
+  const toGrid=v=>Math.round(v/WALKER_CELL),sx=toGrid(start.x),sz=toGrid(start.z),gx=toGrid(target.x),gz=toGrid(target.z);
+  const minX=Math.min(sx,gx)-28,maxX=Math.max(sx,gx)+28,minZ=Math.min(sz,gz)-28,maxZ=Math.max(sz,gz)+28;
+  const queue=[[sx,sz]],cameFrom=new Map([[walkerGridKey(sx,sz),null]]),directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  let found=null,head=0;
+  while(head<queue.length&&head<9000){
+    const [ix,iz]=queue[head++],key=walkerGridKey(ix,iz);
+    if(Math.hypot(ix-gx,iz-gz)<=1.05){found=key;break;}
+    for(const [dx,dz] of directions){
+      const nx=ix+dx,nz=iz+dz,nkey=walkerGridKey(nx,nz);
+      if(nx<minX||nx>maxX||nz<minZ||nz>maxZ||cameFrom.has(nkey))continue;
+      const x=nx*WALKER_CELL,z=nz*WALKER_CELL;
+      if(walkerPositionBlocked(x,z))continue;
+      if(dx&&dz&&(walkerPositionBlocked((ix+dx)*WALKER_CELL,iz*WALKER_CELL)||walkerPositionBlocked(ix*WALKER_CELL,(iz+dz)*WALKER_CELL)))continue;
+      cameFrom.set(nkey,key);queue.push([nx,nz]);
+    }
+  }
+  if(!found)return [];
+  const route=[];
+  for(let key=found;key;key=cameFrom.get(key)){const [ix,iz]=key.split(",").map(Number);route.push(new THREE.Vector3(ix*WALKER_CELL,0,iz*WALKER_CELL));}
+  route.reverse();return route;
+}
+function selectWalkerElevator(origin){
+  const candidates=buildGroups.filter(g=>g.parent===scene&&g.visible&&g.userData.buildRecord?.kind==="elevator");
+  candidates.sort((a,b)=>Math.hypot(a.position.x-origin.x,a.position.z-origin.z)-Math.hypot(b.position.x-origin.x,b.position.z-origin.z));
+  return candidates[0]||null;
+}
+function createWorldWalker(){
+  if(worldWalker||worldWalkerLoadPromise||!scene||!player)return;
+  const elevator=selectWalkerElevator(player.position);
+  if(!elevator)return;
+  const rotation=elevator.rotation.y||0;
+  const destination=new THREE.Vector3(
+    elevator.position.x+Math.sin(rotation)*3.9,
+    0,
+    elevator.position.z+Math.cos(rotation)*3.9
+  );
+  const start=new THREE.Vector3(player.position.x-6,0,player.position.z-6);
+  if(walkerPositionBlocked(start.x,start.z)){
+    let placed=false;
+    for(let radius=1;radius<=8&&!placed;radius++)for(let step=0;step<16&&!placed;step++){
+      const angle=step*Math.PI/8,x=start.x+Math.cos(angle)*radius,z=start.z+Math.sin(angle)*radius;
+      if(!walkerPositionBlocked(x,z)){start.set(x,0,z);placed=true;}
+    }
+    if(!placed)return;
+  }
+  const route=findWalkerRoute(start,destination);
+  if(!route.length)return;
+  const agent=new THREE.Group();agent.name="ilox-world-walker-v1";agent.position.copy(start);
+  agent.userData.walkerState="walking";agent.userData.walkerTarget=elevator;agent.userData.walkerRoute=route;agent.userData.walkerRouteIndex=Math.min(1,route.length-1);agent.userData.walkerDestination=destination.clone();agent.userData.walkerSpeed=2.15;
+  scene.add(agent);worldWalker=agent;
+  worldWalkerLoadPromise=worldWalkerLoader.loadAsync(WORLD_WALKER_MODEL_URL).then(gltf=>{
+    if(agent.parent!==scene)return;
+    const model=cloneSkeleton(gltf.scene);model.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
+    if(!Number.isFinite(size.y)||size.y<.01)throw new Error("Modelo caminante sin altura válida");
+    model.scale.setScalar(1.82/size.y);model.position.y=-bounds.min.y*model.scale.y;
+    model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+    agent.add(model);agent.userData.walkerModel=model;
+    const mixer=new THREE.AnimationMixer(model);let walk=null,idle=null;
+    for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(name.includes("walk"))walk=mixer.clipAction(clip);else if(name.includes("idle"))idle=mixer.clipAction(clip);}
+    const action=walk||idle||(gltf.animations[0]?mixer.clipAction(gltf.animations[0]):null);
+    if(action){action.play();agent.userData.walkerAction=action;}
+    agent.userData.walkerMixer=mixer;
+  }).catch(error=>{
+    console.warn("ILOX: no se pudo cargar el modelo del caminante nuevo",error);
+    if(agent.parent===scene)scene.remove(agent);worldWalker=null;
+  }).finally(()=>{worldWalkerLoadPromise=null;});
+}
+function updateWorldWalker(delta){
+  if(!worldWalker){
+    if(started&&player)createWorldWalker();
+    return;
+  }
+  const agent=worldWalker;
+  agent.userData.walkerMixer?.update(delta);
+  if(agent.userData.walkerState!=="walking")return;
+  const route=agent.userData.walkerRoute||[];
+  let index=agent.userData.walkerRouteIndex||0;
+  const target=route[index];
+  if(!target){agent.userData.walkerState="arrived";return;}
+  const dx=target.x-agent.position.x,dz=target.z-agent.position.z,distance=Math.hypot(dx,dz);
+  if(distance<.18){
+    index++;agent.userData.walkerRouteIndex=index;
+    if(index>=route.length){agent.userData.walkerState="arrived";return;}
+    return;
+  }
+  const step=Math.min(distance,agent.userData.walkerSpeed*delta),nx=agent.position.x+dx/distance*step,nz=agent.position.z+dz/distance*step;
+  if(walkerPositionBlocked(nx,nz)){
+    const elevator=selectWalkerElevator(agent.position);
+    if(elevator&&elevator===agent.userData.walkerTarget){
+      const rotation=elevator.rotation.y||0;
+      const destination=new THREE.Vector3(elevator.position.x+Math.sin(rotation)*3.9,0,elevator.position.z+Math.cos(rotation)*3.9);
+      const routeAgain=findWalkerRoute(agent.position,destination);
+      if(routeAgain.length){agent.userData.walkerRoute=routeAgain;agent.userData.walkerRouteIndex=Math.min(1,routeAgain.length-1);return;}
+    }
+    agent.userData.walkerState="blocked";return;
+  }
+  agent.position.set(nx,0,nz);
+  agent.rotation.y=Math.atan2(dx,dz);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
@@ -3818,6 +3938,7 @@ function animate() {
       }
     }
   }
+  updateWorldWalker(delta);
   if(started&&player)updateElevators(delta);
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
