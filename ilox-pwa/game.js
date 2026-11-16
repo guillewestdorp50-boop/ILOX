@@ -996,11 +996,8 @@ function addEvents() {
     // Arrastrar el dedo hacia arriba mira al cielo; hacia abajo, al suelo.
     // Giro horizontal completo y vertical casi de cenit a nadir, en las tres vistas.
     if(cameraFreeMode&&cameraFreePosition&&activePointers.size===1){
-      const rightX=Math.cos(cameraFreeYaw),rightZ=-Math.sin(cameraFreeYaw);
-      const speed=Math.max(0.012,cameraFreeZoom*0.0018);
-      cameraFreePosition.x+=(-rightX*dx+Math.sin(cameraFreeYaw)*dy)*speed;
-      cameraFreePosition.z+=(-rightZ*dx+Math.cos(cameraFreeYaw)*dy)*speed;
-      cameraFreePosition.y=THREE.MathUtils.clamp(cameraFreePosition.y+dy*speed*.7,0,180);
+      cameraFreeYaw -= dx * 0.0048;
+      cameraFreePitch = THREE.MathUtils.clamp(cameraFreePitch - dy * 0.0048, -1.48, 1.48);
     }else if(!cameraFreeMode){
       yaw -= dx * 0.0048;
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
@@ -1130,8 +1127,18 @@ function addEvents() {
     cameraMode = mode;
     cameraFreeMode = mode === "free";
     if(enteringFree){
-      cameraFreePosition = camera.position.clone();
-      cameraFreeYaw = yaw; cameraFreePitch = pitch;
+      if(player){
+        cameraFreePosition = new THREE.Vector3(
+          player.position.x - Math.sin(yaw)*5.2,
+          player.position.y + 2.6,
+          player.position.z - Math.cos(yaw)*5.2
+        );
+        cameraFreeYaw = yaw + Math.PI;
+        cameraFreePitch = -0.08;
+      }else{
+        cameraFreePosition = camera.position.clone();
+        cameraFreeYaw = yaw; cameraFreePitch = pitch;
+      }
     }
     if(!cameraFreeMode)cameraFreeVertical=0;
     if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode||cameraControls.classList.contains("hidden"));
