@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-v110-physics-diagnostics-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-v112-elevator-passengers-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -2230,6 +2230,13 @@ function updateElevatorCargo(group,offset){
   }
 }
 function passengersCount(group){return group.userData.elevatorPassengers?.size||0;}
+function broadcastElevatorPassenger(group,passengerId,joined,joinedAt=Date.now()){
+  const rec=group?.userData?.buildRecord;
+  if(!rec||!multiplayerSession||!passengerId)return;
+  multiplayerSession.sendElevatorState({
+    action:"passenger",x:rec.x,z:rec.z,passengerId,joined:!!joined,joinedAt
+  }).catch(error=>console.warn("ILOX elevator passenger sync:",error));
+}
 function elevatorSweepBlocker(group,fromOffset,toOffset){
   if(Math.abs(toOffset-fromOffset)<.0001||!player)return null;
   const floorBottom=group.position.y+.18+Math.min(fromOffset,toOffset);
@@ -2321,6 +2328,7 @@ function animateElevator(group,now=Date.now()){
     if(wantsExit){
       elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();
       const passengerId=multiplayerUserId||"local";group.userData.elevatorPassengers?.delete(passengerId);
+      broadcastElevatorPassenger(group,passengerId,false,now);
       if(multiplayerSession)multiplayerSession.updatePresence({userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,elevatorX:null,elevatorZ:null,elevatorJoinedAt:null}).catch(error=>console.warn("ILOX elevator presence:",error));
       const ordered=[...(group.userData.elevatorPassengers||new Map()).entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
       group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
@@ -2430,7 +2438,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   // por la animación de las hojas y dejar inmóvil tanto al jugador como al bot.
   group.userData.elevatorPendingTravel=null;
   if(!setElevatorDoorState(group,false,broadcast,false))return false;
-  const duration=Math.max(900,Math.abs(toFloor-fromFloor)*700);
+  const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
   prepareElevatorCargo(group,fromFloor);
   group.userData.elevatorLastSafeOffset=(fromFloor-1)*3;
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
@@ -2574,6 +2582,7 @@ function updateElevators(delta){
       const passengerId=multiplayerUserId||"local";passengers.set(passengerId,{joinedAt:elevatorBoardedAt});
       const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
       group.userData.elevatorCaptainId=ordered[0]?.[0]||passengerId;
+      broadcastElevatorPassenger(group,passengerId,true,elevatorBoardedAt);
       if(multiplayerSession){
         multiplayerSession.updatePresence({userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,elevatorX:group.userData.buildRecord.x,elevatorZ:group.userData.buildRecord.z,elevatorJoinedAt:elevatorBoardedAt}).catch(error=>console.warn("ILOX elevator presence:",error));
       }
