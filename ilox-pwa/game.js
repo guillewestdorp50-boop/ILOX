@@ -1122,7 +1122,7 @@ function addEvents() {
       cameraFreeYaw = yaw; cameraFreePitch = pitch;
     }
     if(!cameraFreeMode)cameraFreeVertical=0;
-    if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);
+    if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode||cameraControls.classList.contains("hidden"));
     if(cameraFreeMode){cameraFreePosition ||= camera.position.clone();}
     else cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
     // Conservamos el ángulo orbital al cambiar de cámara: las tres vistas
@@ -1285,7 +1285,7 @@ function addEvents() {
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
   });
-  function setHudDockOpen(open){cameraControls.classList.toggle("hidden",!open);hudDockToggle.setAttribute("aria-expanded",String(open));hudDockToggle.setAttribute("aria-label",open?"Ocultar controles":"Desplegar controles");hudDockToggle.textContent=open?"⌄":"⌃";if(!open)cameraModePanel.classList.add("hidden");}
+  function setHudDockOpen(open){cameraControls.classList.toggle("hidden",!open);if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode||!open);hudDockToggle.setAttribute("aria-expanded",String(open));hudDockToggle.setAttribute("aria-label",open?"Ocultar controles":"Desplegar controles");hudDockToggle.textContent=open?"⌄":"⌃";if(!open)cameraModePanel.classList.add("hidden");}
   hudDockToggle.addEventListener("click",()=>setHudDockOpen(cameraControls.classList.contains("hidden")));
   function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
     buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
