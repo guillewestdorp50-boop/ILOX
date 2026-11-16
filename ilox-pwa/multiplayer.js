@@ -238,6 +238,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
   });
   channel
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
+    .on("broadcast", { event: "elevator_state" }, ({ payload }) => handlers.onElevatorState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
     .on("broadcast", { event: "chat_message" }, ({ payload }) => handlers.onChatMessage?.(payload?.message || payload))
@@ -268,6 +269,7 @@ export async function subscribeWorld(worldId, handlers = {}) {
             }
           },
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
+          sendElevatorState: payload => channel.send({ type: "broadcast", event: "elevator_state", payload }),
           sendChatMessage: async (message, displayName) => {
             const row = await sendWorldChatMessage(worldId, message, displayName);
             const status = await channel.send({
