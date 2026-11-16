@@ -18,10 +18,7 @@ const moveKnob = document.querySelector("#move-knob");
 const cameraControls = document.querySelector("#hud-controls");
 const hudDock=document.querySelector("#hud-dock");
 const hudDockToggle=document.querySelector("#hud-dock-toggle");
-const cameraLockButton = document.querySelector("#camera-lock");
-const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
-const cameraFreeQuickButton = document.querySelector("#camera-free-quick");
-const cameraModePanel = document.querySelector("#camera-mode-panel");
+let cameraViewCanvas=null,cameraFreeCanvas=null,cameraCanvasRefresh=()=>{};
 const cameraFreeControls = document.querySelector("#camera-free-controls");
 const cameraFreePad = document.querySelector("#camera-free-pad");
 const cameraFreeKnob = document.querySelector("#camera-free-knob");
@@ -1156,6 +1153,59 @@ function createMenuCanvasControl(){
   game.appendChild(canvas);draw();return canvas;
 }
 
+function createCameraCanvasControls(){
+  const makeCanvas=(id,right,label,icon)=>{
+    const canvas=document.createElement("canvas");
+    canvas.id=id;
+    for(const [prop,value] of Object.entries({
+      position:"absolute",right,top:"calc(max(16px, env(safe-area-inset-top)) + 8px)",
+      left:"auto",width:"76px",height:"68px",minWidth:"76px",minHeight:"68px",
+      maxWidth:"76px",maxHeight:"68px",zIndex:"49",pointerEvents:"auto",
+      touchAction:"none",userSelect:"none",webkitUserSelect:"none"
+    }))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+    canvas.width=304;canvas.height=272;
+    canvas.setAttribute("role","button");
+    canvas.setAttribute("aria-label",label);
+    canvas.setAttribute("tabindex","0");
+    const ctx=canvas.getContext("2d");
+    const rounded=(x,y,w,h,r)=>{
+      ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+    };
+    canvas.drawState=(title,detail,active)=>{
+      if(!ctx)return;
+      ctx.clearRect(0,0,304,272);ctx.save();
+      ctx.shadowColor="#000000a8";ctx.shadowBlur=22;ctx.shadowOffsetY=9;
+      const fill=ctx.createLinearGradient(24,18,280,250);
+      fill.addColorStop(0,active?"#fff4b5":"#ffe9a0");
+      fill.addColorStop(.48,active?"#ffc64a":"#ffbd36");
+      fill.addColorStop(1,"#e87512");
+      rounded(18,14,268,244,42);ctx.fillStyle=fill;ctx.fill();
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.lineWidth=active?11:8;
+      ctx.strokeStyle=active?"#fffdf0":"#fff1c2";ctx.stroke();
+      ctx.fillStyle="#4a2b12";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.font="900 92px system-ui,sans-serif";ctx.fillText(icon,152,94);
+      ctx.font="1000 37px system-ui,sans-serif";ctx.fillText(title,152,174);
+      ctx.font="900 21px system-ui,sans-serif";ctx.fillText(detail,152,220);
+      ctx.restore();
+    };
+    canvas.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();});
+    canvas.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();});
+    game.appendChild(canvas);
+    return canvas;
+  };
+  cameraViewCanvas=makeCanvas("ilox-camera-view-canvas","calc(max(16px, env(safe-area-inset-right)) + 92px)","Cambiar entre primera, segunda y tercera persona","◉");
+  cameraFreeCanvas=makeCanvas("ilox-camera-free-canvas","calc(max(16px, env(safe-area-inset-right)) + 8px)","Activar o desactivar cámara libre","✥");
+  cameraCanvasRefresh=()=>{
+    const labels={first:"1ª PERSONA",second:"2ª PERSONA",third:"3ª PERSONA"};
+    cameraViewCanvas?.drawState("VISTA",labels[cameraMode]||"CAMBIAR",cameraMode!=="free");
+    cameraFreeCanvas?.drawState("LIBRE",cameraFreeMode?"ACTIVA":"INDEPENDIENTE",cameraFreeMode);
+    cameraFreeCanvas?.setAttribute("aria-pressed",String(cameraFreeMode));
+    cameraViewCanvas?.setAttribute("aria-label","Cambiar vista. Actual: "+(labels[cameraMode]||"cámara libre"));
+  };
+  cameraCanvasRefresh();
+}
 function createJumpCanvasControl(){
   const canvas=document.createElement("canvas");
   canvas.id="ilox-jump-canvas";
@@ -1511,48 +1561,22 @@ function addEvents() {
     else cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
     // Conservamos el ángulo orbital al cambiar de cámara: las tres vistas
     // y el bloqueo comparten exactamente el mismo control libre.
-    document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
-    cameraFreeQuickButton?.classList.toggle("active",cameraFreeMode);
-    cameraFreeQuickButton?.setAttribute("aria-pressed",String(cameraFreeMode));
+    cameraCanvasRefresh?.();
     const buildView = document.querySelector("#view-toggle");
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
-  cameraFreeQuickButton?.addEventListener("click",()=>{
-    const nextMode=cameraFreeMode?"third":"free";
-    applyCameraMode(nextMode);
-    cameraModePanel.classList.add("hidden");
-    cameraFreeQuickButton.setAttribute("aria-pressed",String(nextMode==="free"));
-    cameraFreeQuickButton.classList.toggle("active",nextMode==="free");
-  });
-  cameraMenuToggle.addEventListener("click",()=>{
-     const modes=["first","second","third","free"];
-     const current=modes.indexOf(cameraMode);
-     applyCameraMode(modes[(current+1)%modes.length]);
-     cameraModePanel.classList.add("hidden");
-     showToast("Cámara: "+(cameraMode==="first"?"primera persona":cameraMode==="second"?"cercana":cameraMode==="third"?"tercera persona":"libre"));
-   });
-  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");setHudDockOpen(false);}));
-  cameraLockButton.addEventListener("click", () => {
-    cameraLocked = !cameraLocked;
-    game.classList.toggle("camera-locked", cameraLocked);
-    if (cameraLocked) {
-      if (cameraMode === "first") applyCameraMode("second");
-      if (cameraFreeMode) applyCameraMode("third");
-      resetMoveStick();
-      keys.clear();
-      yaw += Math.PI;
-      cameraLockButton.textContent = "🔒";
-      cameraLockButton.classList.add("locked");
-      cameraLockButton.setAttribute("aria-pressed","true");
-      showToast("Movimiento bloqueado: arrastrá para ver la cara del personaje");
-    } else {
-      cameraLockButton.textContent = "🔓";
-      cameraLockButton.classList.remove("locked");
-      cameraLockButton.setAttribute("aria-pressed","false");
-      showToast("Movimiento desbloqueado");
-    }
-    setHudDockOpen(false);
+  const bindCameraCanvas=(canvas,handler)=>{
+    canvas?.addEventListener("pointerup",e=>{
+      e.preventDefault();e.stopPropagation();
+      if(started)handler();
+    });
+  };
+  bindCameraCanvas(cameraFreeCanvas,()=>applyCameraMode(cameraFreeMode?"third":"free"));
+  bindCameraCanvas(cameraViewCanvas,()=>{
+    const modes=["first","second","third"];
+    const current=modes.indexOf(cameraMode);
+    applyCameraMode(modes[(current+1)%modes.length]);
   });
   const viewToggle = document.querySelector("#view-toggle");
   const categorySelect = document.querySelector("#build-category");
@@ -1712,7 +1736,7 @@ function addEvents() {
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");showToast("Se eliminaron todas las construcciones.");
   });
-  function setHudDockOpen(open){cameraControls.classList.remove("hidden");if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);hudDockToggle?.setAttribute("aria-expanded","true");hudDockToggle?.setAttribute("aria-label","Controles siempre visibles");if(!open)cameraModePanel.classList.add("hidden");}
+  function setHudDockOpen(open){cameraControls.classList.remove("hidden");if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);hudDockToggle?.setAttribute("aria-expanded","true");hudDockToggle?.setAttribute("aria-label","Controles siempre visibles");}
   if(hudDockToggle)hudDockToggle.classList.add("hidden");
   function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
     buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
