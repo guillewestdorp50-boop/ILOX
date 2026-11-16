@@ -1138,7 +1138,13 @@ function addEvents() {
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
-  cameraMenuToggle.addEventListener("click",()=>cameraModePanel.classList.toggle("hidden"));
+  cameraMenuToggle.addEventListener("click",()=>{
+     const modes=["first","second","third","free"];
+     const current=modes.indexOf(cameraMode);
+     applyCameraMode(modes[(current+1)%modes.length]);
+     cameraModePanel.classList.add("hidden");
+     showToast("Cámara: "+(cameraMode==="first"?"primera persona":cameraMode==="second"?"cercana":cameraMode==="third"?"tercera persona":"libre"));
+   });
   document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");setHudDockOpen(false);}));
   cameraLockButton.addEventListener("click", () => {
     cameraLocked = !cameraLocked;
@@ -1200,6 +1206,7 @@ function addEvents() {
   });
   animalStyleSelect?.addEventListener("change",()=>renderBuildTools("farm"));
   menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));setHudDockOpen(false);});
+   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");}});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
   document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
@@ -1292,8 +1299,8 @@ function addEvents() {
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
   });
-  function setHudDockOpen(open){cameraControls.classList.toggle("hidden",!open);if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode||!open);hudDockToggle.setAttribute("aria-expanded",String(open));hudDockToggle.setAttribute("aria-label",open?"Ocultar controles":"Desplegar controles");hudDockToggle.textContent=open?"⌄":"⌃";if(!open)cameraModePanel.classList.add("hidden");}
-  hudDockToggle.addEventListener("click",()=>setHudDockOpen(cameraControls.classList.contains("hidden")));
+  function setHudDockOpen(open){cameraControls.classList.remove("hidden");if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);hudDockToggle?.setAttribute("aria-expanded","true");hudDockToggle?.setAttribute("aria-label","Controles siempre visibles");if(!open)cameraModePanel.classList.add("hidden");}
+  if(hudDockToggle)hudDockToggle.classList.add("hidden");
   function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
     buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
     buildPanel.classList.toggle("hidden",!enabled||!showPanel);doorRotateControl?.classList.add("hidden");
