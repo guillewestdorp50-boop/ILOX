@@ -43,6 +43,7 @@ let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgai
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
+let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -1144,7 +1145,7 @@ function addEvents() {
     block:[["block","🧱","CUBO"],["brick","🧱","LADRILLO"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     nature:[["tree","🌳","ÁRBOL"],["rock","🪨","ROCA"],["erase","⌫","BORRAR"]],
     water:[["water","🌊","AGUA"],["erase","⌫","BORRAR"]],
-    structure:[["platea","▰","PLATEA"],["pool-small","🏊","PILETA CHICA"],["pool-large","🏊","PILETA GRANDE"],["pool-municipal","🏊","PILETA MUNICIPAL"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["door-solid","🚪","PUERTA SÓLIDA"],["door-brick","🚪","PUERTA LADRILLO"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
+    structure:[["platea","▰","PLATEA"],["pool-small","🏊","PILETA CHICA"],["pool-large","🏊","PILETA GRANDE"],["pool-municipal","🏊","PILETA MUNICIPAL"],["floor","▰","PISO"],["wall","▥","PARED"],["roof","🏠","TECHO"],["stairs","🪜","ESCALERA"],["elevator","🛗","ASCENSOR"],["door-solid","🚪","PUERTA SÓLIDA"],["door-brick","🚪","PUERTA LADRILLO"],["window","▣","VENTANA"],["gate","🚧","PORTÓN"],["fence","🪵","TRANQUERA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     furniture:[["chair","🪑","SILLA"],["table","🪵","MESA"],["bed","🛏️","CAMA"],["sofa","🛋️","SOFÁ"],["lamp","💡","LÁMPARA"],["erase","⌫","BORRAR"]],
     farm:[["pen","🐑","CORRAL"],["sheep","🐑","OVEJA"],["cow","🐄","VACA"],["horse","🐎","CABALLO"],["chicken","🐔","GALLINA"],["pig","🐖","CHANCHO"],["goat","🐐","CABRA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     farmRealistic:[["fox","🦊","ZORRO REALISTA"],["person","🧓","ANCIANO 3D"],["robot","🤖","ROBOT 3D"],["trex","🦖","T-REX REALISTA"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]]
@@ -1404,6 +1405,29 @@ function createBuildPiece(record, options = {}) {
     group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
   }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
+  if(kind==="elevator"){
+    const shaftHeight=Math.max(3,Math.min(60,(record.floorCount||20)*3));
+    const steel=mat(0x56636b,.42,.72),glassPanel=mat(0x78c9d8,.22,.25),cabinMat=mat(0x9ba8aa,.48,.48),dark=mat(0x25343b,.6,.35);
+    // Guías verticales y cuatro montantes dejan el hueco central libre.
+    for(const sx of [-1.55,1.55])for(const sz of [-1.55,1.55]){
+      box(.16,shaftHeight,.16,steel,sx,shaftHeight/2,sz);
+      box(.08,shaftHeight,.08,dark,sx*.72,shaftHeight/2,sz*.72);
+    }
+    box(3.25,.16,.16,steel,0,shaftHeight,0);
+    const cabin=new THREE.Group();cabin.name="ilox-elevator-cabin";
+    const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(2.55,.16,2.55),cabinMat);cabinFloor.position.y=.08;cabin.add(cabinFloor);
+    for(const sx of [-1.22,1.22]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,2.5),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
+    const back=new THREE.Mesh(new THREE.BoxGeometry(2.5,2.65,.08),glassPanel);back.position.set(0,1.4,-1.22);cabin.add(back);
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(2.55,.12,2.55),cabinMat);roof.position.y=2.75;cabin.add(roof);
+    const doorL=new THREE.Mesh(new THREE.BoxGeometry(1.22,2.55,.08),steel),doorR=doorL.clone();
+    doorL.position.set(-.61,1.36,1.22);doorR.position.set(.61,1.36,1.22);cabin.add(doorL,doorR);
+    cabin.userData.doorLeft=doorL;cabin.userData.doorRight=doorR;
+    cabin.position.y=.18;group.add(cabin);
+    group.userData.elevatorCabin=cabin;group.userData.elevatorDoorOpen=true;
+    group.userData.buildHeight=shaftHeight;
+    group.userData.elevatorFloorCount=record.floorCount||20;
+    group.userData.elevatorCurrentFloor=record.currentFloor||1;
+  }
   if(kind==="roof"){const roofPiece=box(record.roofWidth||1.5,.16,record.roofDepth||1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
   if(kind==="door"){
@@ -2071,7 +2095,7 @@ function connectedPlateaFootprint(seed){
   return {x:(minX+maxX)/2,z:(minZ+maxZ)/2,width:maxX-minX+6,depth:maxZ-minZ+6,foundation:seed,component};
 }
 function buildFootprint(kind){
-  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
+  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],elevator:[3.2,3.2],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
   return sizes[kind]||[1.5,1.5];
 }
 function snapDoorToPlateaGrid(x,z,rotation=0){
@@ -2427,7 +2451,7 @@ function resetMoveStick() {
 function updateBuildGravity(delta){
   for(const group of buildGroups){
     const record=group.userData.buildRecord;if(!record||record.kind==="water")continue;
-    if(record.kind==="platea"||record.kind==="pool")continue;
+    if(record.kind==="platea"||record.kind==="pool"||record.kind==="elevator")continue;
     let supportY=supportHeightAt(group.position.x,group.position.z,group.position.y,group);
     for(const other of buildGroups){if(other===group)continue;if(Math.abs(other.position.x-group.position.x)>.2||Math.abs(other.position.z-group.position.z)>.2)continue;const top=other.position.y+(other.userData.buildHeight||1.5);if(top<=group.position.y+.12&&top>supportY)supportY=top;}
     if(group.position.y>supportY+.015){group.userData.vy=(group.userData.vy||0)-18*delta;group.position.y+=group.userData.vy*delta;if(group.position.y<=supportY){group.position.y=supportY;group.userData.vy=0;record.y=supportY;persistBuilds();}}
