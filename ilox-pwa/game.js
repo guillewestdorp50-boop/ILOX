@@ -27,6 +27,8 @@ const cameraFreeKnob = document.querySelector("#camera-free-knob");
 const cameraFreeUp = document.querySelector("#camera-free-up");
 const cameraFreeDown = document.querySelector("#camera-free-down");
 const jumpButton = document.querySelector("#jump-button");
+const runButton = document.querySelector("#run-button");
+let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
 const hudBuildButton = document.querySelector("#hud-build");
 const hudConfirmButton = document.querySelector("#hud-confirm");
@@ -912,6 +914,10 @@ function addEvents() {
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   jumpButton.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();triggerJump();});
+  const stopTouchSprint=()=>{touchSprintActive=false;runButton?.classList.remove("pressed");};
+  runButton?.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(!started)return;touchSprintActive=true;runButton.classList.add("pressed");runButton.setPointerCapture?.(e.pointerId);});
+  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>runButton?.addEventListener(type,stopTouchSprint));
+  addEventListener("blur",stopTouchSprint);
   movePad.addEventListener("pointerdown", e => {
     if (!started || cameraLocked || e.button !== 0 || moveStickPointer !== null) return;
     e.preventDefault();
@@ -2717,7 +2723,9 @@ function animate() {
     const inputLength = Math.hypot(forward, strafe);
     localMoving = inputLength > 0.08;
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
-    const speed = player?.userData.isSwimming ? 2.2 : 7.2;
+    const swimming = !!player?.userData.isSwimming;
+    const sprinting = !swimming && (touchSprintActive || keys.has("shift"));
+    const speed = swimming ? 2.2 : (sprinting ? 11.2 : 7.2);
     const cameraYaw = yaw;
     const dx = (-Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
     const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
