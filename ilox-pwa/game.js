@@ -1374,7 +1374,17 @@ function createBuildPiece(record, options = {}) {
     if(kind==="brick"){const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;const ctx=canvas.getContext("2d");ctx.fillStyle="#9d5946";ctx.fillRect(0,0,256,256);ctx.strokeStyle="#e5b49b";ctx.lineWidth=5;for(let row=0;row<6;row++){const yy=row*43;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(256,yy);ctx.stroke();const off=row%2?0:64;for(let col=-1;col<4;col++){ctx.beginPath();ctx.moveTo(off+col*128,yy);ctx.lineTo(off+col*128,yy+43);ctx.stroke();}}const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;material=new THREE.MeshStandardMaterial({map:texture,roughness:.95});}
     box(1.5,1.5,1.5,material,0,.75,0);
   }
-  if(kind==="platea"){const slab=mat(0xb8b9b3,.88);box(6,.3,6,slab,0,.15,0);group.userData.isFoundation=true;group.userData.buildHeight=.3;}
+  if(kind==="platea"){
+    const slab=mat(0xb8b9b3,.88),elevator=buildRecords.find(e=>e.kind==="elevator"&&baseY>e.y+.5);
+    if(elevator&&Math.abs(x-elevator.x)<4.7&&Math.abs(z-elevator.z)<4.7){
+      const dx=elevator.x-x,dz=elevator.z-z,a=rotation||0,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=1.62,L=-3,R=3,B=-3,F=3;
+      const hl=Math.max(L,lx-half),hr=Math.min(R,lx+half),hb=Math.max(B,lz-half),hf=Math.min(F,lz+half);
+      if(hl>L)box(hl-L,.3,6,slab,(L+hl)/2,.15,0);
+      if(R>hr)box(R-hr,.3,6,slab,(hr+R)/2,.15,0);
+      if(hf>hb&&hr>hl){if(hb>B)box(hr-hl,.3,hb-B,slab,(hl+hr)/2,.15,(B+hb)/2);if(F>hf)box(hr-hl,.3,F-hf,slab,(hl+hr)/2,.15,(hf+F)/2);}
+    }else box(6,.3,6,slab,0,.15,0);
+    group.userData.isFoundation=true;group.userData.buildHeight=.3;
+  }
   if(kind==="pool"){
     const design=POOL_DESIGNS[record.poolDesign]||POOL_DESIGNS.small;
     const w=record.poolWidth||design.width,d=record.poolDepth||design.depth,depth=2;
@@ -1605,7 +1615,7 @@ function loadBuilds() {
 }
 
 function rebuildElevatorOpenings(){
-  const targets=buildGroups.filter(g=>["floor","roof"].includes(g.userData.buildRecord?.kind));
+  const targets=buildGroups.filter(g=>["platea","floor","roof"].includes(g.userData.buildRecord?.kind));
   for(const old of targets){
     const record=old.userData.buildRecord,index=buildGroups.indexOf(old);
     scene.remove(old);if(index>=0)buildGroups.splice(index,1);
