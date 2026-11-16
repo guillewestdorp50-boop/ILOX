@@ -663,3 +663,6 @@ body{background:#201747;color:#fff}
 .elevator-keypad .elevator-key.selected{background:linear-gradient(155deg,#e0fff1,#8ee9c4);color:#073324;border-color:#fff;box-shadow:0 0 0 2px #7df0c0,0 4px 0 #164c38;}
 .elevator-keypad .elevator-ok{min-height:48px;margin-top:10px;border:1px solid #d2ffeb;background:linear-gradient(145deg,#8dffd0,#2fc88e);color:#063523;font-size:14px;font-weight:1000;box-shadow:0 4px 0 #126544,0 8px 16px #0007;}
 @media(max-width:390px){.elevator-keypad{width:min(300px,calc(100vw - 24px));}.elevator-keypad .elevator-keys{gap:6px!important;max-height:34dvh!important;}.elevator-keypad .elevator-key{min-height:46px!important;height:46px;font-size:19px;}}
+
+/* ILOX: el viaje se confirma desde el botón verde de la consola. */
+#elevator-ok,.elevator-keypad .elevator-ok{display:none!important;visibility:hidden!important;pointer-events:none!important}
