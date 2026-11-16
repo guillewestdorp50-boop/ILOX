@@ -194,6 +194,25 @@ function refreshTerrainSurface(){
   a.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();
 }
 
+function backupIloxLocalData(){
+  const backupKey="ilox-safety-backup-20261116";
+  try{
+    if(localStorage.getItem(backupKey))return true;
+    const entries={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key&&key.startsWith("ilox-")&&!key.startsWith("ilox-safety-backup-"))entries[key]=localStorage.getItem(key);
+    }
+    const snapshot={format:"ILOX_LOCAL_BACKUP",version:1,createdAt:new Date().toISOString(),entries};
+    localStorage.setItem(backupKey,JSON.stringify(snapshot));
+    console.info("ILOX: copia de seguridad local creada antes de actualizar el mundo.",Object.keys(entries).length,"registros.");
+    return true;
+  }catch(error){
+    console.warn("ILOX: no se pudo crear la copia automática completa; no se modificaron los datos guardados.",error);
+    return false;
+  }
+}
+
 function terrainHeight(x, z) {
   // Planicie uniforme: misma cota desde el centro hasta los cuatro bordes del mapa.
   return 0;
@@ -743,11 +762,12 @@ function makeFantasyWorld() {
 }
 
 function makeRiver() {
+  // Arroyo escénico en el borde occidental: mantiene libre la gran zona central de construcción.
   const positions = [], uvs = [], indices = [], steps = 180;
   for (let i = 0; i <= steps; i++) {
     const z = -worldSize / 2 + (i / steps) * worldSize;
-    const x = Math.sin(z * .025) * 17 + Math.sin(z * .061) * 5 - 15;
-    const width = 3.1 + Math.sin(i * .16) * .75;
+    const x = -132 + Math.sin(z * .025) * 5.5 + Math.sin(z * .061) * 2.2;
+    const width = 2.7 + Math.sin(i * .16) * .45;
     const y = terrainHeight(x, z) + .22;
     positions.push(x-width,y,z,x+width,y,z); uvs.push(0,i/steps*18,1,i/steps*18);
     if (i < steps) { const a=i*2; indices.push(a,a+2,a+1,a+1,a+2,a+3); }
@@ -782,13 +802,32 @@ function makeMeadowDetails() {
   const grass=new THREE.InstancedMesh(bladeGeometry,bladeMaterial,520);
   const dummy=new THREE.Object3D();
   for(let i=0;i<520;i++){
-    const x=(random()-.5)*190,z=(random()-.5)*190;
-    if(Math.hypot(x,z)<7) { dummy.position.set(0,-100,0); }
-    else { dummy.position.set(x,terrainHeight(x,z)+.18,z); }
+    const x=(random()-.5)*290,z=(random()-.5)*290;
+    const riverX=-132+Math.sin(z*.025)*5.5+Math.sin(z*.061)*2.2;
+    if(Math.hypot(x,z)<82||Math.abs(x-riverX)<7) dummy.position.set(0,-100,0);
+    else dummy.position.set(x,terrainHeight(x,z)+.18,z);
     const scale=.45+random()*.9;
     dummy.scale.set(scale,scale,scale); dummy.rotation.y=random()*Math.PI*2; dummy.updateMatrix(); grass.setMatrixAt(i,dummy.matrix);
   }
   grass.instanceMatrix.needsUpdate=true; scene.add(grass);
+}
+function makeNaturePerimeter(){
+  // Naturaleza determinista y periférica: no modifica la cota del terreno ni la zona central de obras.
+  const random=seededRandom(20261116);
+  for(let i=0;i<42;i++){
+    const angle=random()*Math.PI*2,radius=86+random()*55;
+    const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
+    const riverX=-132+Math.sin(z*.025)*5.5+Math.sin(z*.061)*2.2;
+    if(Math.abs(x-riverX)<11)continue;
+    makeTree(x,z,.72+random()*.65,random);
+  }
+  for(let i=0;i<30;i++){
+    const angle=random()*Math.PI*2,radius=82+random()*58;
+    const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
+    const riverX=-132+Math.sin(z*.025)*5.5+Math.sin(z*.061)*2.2;
+    if(Math.abs(x-riverX)<9)continue;
+    makeRock(x,z,.35+random()*1.1,random);
+  }
 }
 function makePlayer(kind = "explorer:0") {
   const group = new THREE.Group();
@@ -1056,10 +1095,14 @@ function init() {
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
   scene.add(sun);
-  // Escenario limpio: sin montañas, árboles, plantas ni rocas decorativas atravesables.
-  // El terreno queda libre para construir; la naturaleza se agrega desde las herramientas
-  // del jugador, con las colisiones del sistema de construcción.
+  // Respaldo local previo a cualquier actualización visual del mundo.
+  backupIloxLocalData();
+  // Entorno natural V102 adaptado: la llanura central y la cota de las construcciones se conservan.
+  makeDistantMountains();
   makeTerrain();
+  makeMeadowDetails();
+  makeRiver();
+  makeNaturePerimeter();
   makeIloxNightclub();
   clock = new THREE.Clock();
   camera.position.set(0, terrainHeight(0,0) + 4.1, 8.5);
