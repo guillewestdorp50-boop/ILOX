@@ -686,7 +686,7 @@ body{background:#201747;color:#fff}
  
 }
 @media(max-width:390px){
- .hud-dock{grid-template-columns:116px minmax(0,1fr) 104px}
+ .hud-dock{grid-template-columns:116px minmax(0,1fr)}
 }
 
 
