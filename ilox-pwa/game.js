@@ -2609,7 +2609,10 @@ function updateElevatorBot(delta){
     return;
   }
   if(!elevatorBotElevator){
-    elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+    if(!elevatorBot.userData.elevatorBotInitialized){
+      elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+      elevatorBot.userData.elevatorBotInitialized=true;
+    }
     setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
