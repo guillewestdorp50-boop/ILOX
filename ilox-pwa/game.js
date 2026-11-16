@@ -2235,16 +2235,21 @@ function elevatorSweepBlocker(group,fromOffset,toOffset){
   const floorBottom=group.position.y+.18+Math.min(fromOffset,toOffset);
   const floorTop=group.position.y+.18+Math.max(fromOffset,toOffset)+.16;
   const passengers=group.userData.elevatorPassengers||new Map();
+  // Quien está dentro de la huella real de la cabina viaja con ella. La
+  // presencia puede tardar un ciclo de red en llegar; no debe frenar el piso
+  // por un pasajero que ya está físicamente abordo.
+  const insideCabin=position=>!!position&&Math.abs(position.x-group.position.x)<2.24&&Math.abs(position.z-group.position.z)<2.24;
   const overlaps=(position,id)=>{
     if(!position||Math.abs(position.x-group.position.x)>=3.28||Math.abs(position.z-group.position.z)>=3.28)return null;
     const bodyBottom=position.y+.08,bodyTop=position.y+PLAYER_HEIGHT;
     if(floorBottom<bodyTop-.025&&floorTop>bodyBottom+.025)return {id,x:Number(position.x.toFixed(3)),y:Number(position.y.toFixed(3)),z:Number(position.z.toFixed(3)),floorBottom:Number(floorBottom.toFixed(3)),floorTop:Number(floorTop.toFixed(3))};
     return null;
   };
-  if(!(elevatorRiding&&activeElevator===group)){const hit=overlaps(player.position,multiplayerUserId||'local');if(hit)return hit;}
-  for(const [remoteId,avatar] of remotePlayers){if(passengers.has(remoteId))continue;const hit=overlaps(avatar.position,remoteId);if(hit)return hit;}
-  const botRiding=elevatorBot&&elevatorBotElevator===group&&['boardedWait','waitingTop','rideDown','exit'].includes(elevatorBotPhase);
-  if(elevatorBot&&!botRiding){const hit=overlaps(elevatorBot.position,'ilox-bot');if(hit)return hit;}
+  if(!(elevatorRiding&&activeElevator===group)&&!insideCabin(player.position)){const hit=overlaps(player.position,multiplayerUserId||'local');if(hit)return hit;}
+  for(const [remoteId,avatar] of remotePlayers){if(passengers.has(remoteId)||insideCabin(avatar.position))continue;const hit=overlaps(avatar.position,remoteId);if(hit)return hit;}
+  const botInside=elevatorBot&&elevatorBotElevator===group&&insideCabin(elevatorBot.position);
+  const botRiding=botInside&&['board','boardedWait','waitingTop','rideDown','exit'].includes(elevatorBotPhase);
+  if(elevatorBot&&!botRiding&&!botInside){const hit=overlaps(elevatorBot.position,'ilox-bot');if(hit)return hit;}
   return null;
 }
 function animateElevator(group,now=Date.now()){
@@ -2425,7 +2430,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   // por la animación de las hojas y dejar inmóvil tanto al jugador como al bot.
   group.userData.elevatorPendingTravel=null;
   if(!setElevatorDoorState(group,false,broadcast,false))return false;
-  const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
+  const duration=Math.max(900,Math.abs(toFloor-fromFloor)*700);
   prepareElevatorCargo(group,fromFloor);
   group.userData.elevatorLastSafeOffset=(fromFloor-1)*3;
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
