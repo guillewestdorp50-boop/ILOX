@@ -2597,10 +2597,6 @@ function updateElevatorBot(delta){
         let moved=false;
         if(!isElevatorBotBlocked(tryX,elevatorBot.position.z,feet)){elevatorBot.position.x=tryX;moved=true;}
         if(!isElevatorBotBlocked(elevatorBot.position.x,tryZ,feet)){elevatorBot.position.z=tryZ;moved=true;}
-        if(!moved){
-          if(!isElevatorBotBlocked(elevatorBot.position.x,tryZ,feet))elevatorBot.position.z=tryZ;
-          else if(!isElevatorBotBlocked(tryX,elevatorBot.position.z,feet))elevatorBot.position.x=tryX;
-        }
       }
       elevatorBot.position.y=nextY;
       if(Math.abs(mx)+Math.abs(mz)>.001)elevatorBot.rotation.y=Math.atan2(dx,dz);
