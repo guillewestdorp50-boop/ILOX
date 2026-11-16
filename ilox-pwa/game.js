@@ -41,7 +41,7 @@ jumpButton.type = "button";
 jumpButton.setAttribute("aria-label", "Saltar");
 jumpButton.title = "Saltar";
 jumpButton.innerHTML = "⬆<small>SALTAR</small>";
-document.body.appendChild(jumpButton);
+game.appendChild(jumpButton);
 const runButton = document.querySelector("#run-button");
 let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
