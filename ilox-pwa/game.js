@@ -2231,7 +2231,8 @@ function animateElevator(group,now=Date.now()){
       // puede caminar libremente dentro del espacio interior.
       player.position.y=group.position.y+cabin.position.y+.16;
       player.position.x=THREE.MathUtils.clamp(player.position.x,group.position.x-2.12,group.position.x+2.12);
-      player.position.z=THREE.MathUtils.clamp(player.position.z,group.position.z-2.12,group.position.z+2.12);
+      const cabinFrontLimit=open?2.7:2.0;
+      player.position.z=THREE.MathUtils.clamp(player.position.z,group.position.z-2.12,group.position.z+cabinFrontLimit);
       playerVerticalVelocity=0;playerGrounded=true;
     }
   }
@@ -3697,6 +3698,13 @@ function animate() {
     };
     tryStepMove(nextX,player.position.z,"x");
     tryStepMove(player.position.x,nextZ,"z");
+    // Si dos avatares ya llegaron superpuestos (por una entrada simultánea),
+    // separarlos suavemente hasta recuperar una distancia corporal mínima.
+    for(const avatar of remotePlayers.values()){
+      if(Math.abs(avatar.position.y-player.position.y)>1.55)continue;
+      const sx=player.position.x-avatar.position.x,sz=player.position.z-avatar.position.z,d=Math.hypot(sx,sz);
+      if(d>0.001&&d<.76){const push=(.76-d)*Math.min(1,delta*5);player.position.x+=sx/d*push;player.position.z+=sz/d*push;}
+    }
     const pool=filledPoolAt(player.position.x,player.position.z);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(inWater){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
