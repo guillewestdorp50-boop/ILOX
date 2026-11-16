@@ -61,6 +61,12 @@ jobs:
       - name: Descargar recursos 3D
         run: python3 scripts/fetch_polyhaven_assets.py
 
+      - name: Verificar identidad de ILOX v102
+        run: |
+          grep -q "versionCode 102" app/build.gradle
+          grep -q "versionName 'V102'" app/build.gradle
+          grep -q "ILOX v102" ilox-pwa/index.html
+
       - name: Empaquetar la versión web ILOX v102 dentro del APK
         run: |
           node --check ilox-pwa/game.js
