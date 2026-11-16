@@ -176,6 +176,10 @@ function supportHeightAt(x,z,feet=Infinity,ignore=null){
     const b=new THREE.Box3().setFromObject(g);
     if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;
   }
+  if(Math.abs(x-ILOX_NIGHTCLUB.x)<20.4&&Math.abs(z-ILOX_NIGHTCLUB.z)<15.4){
+    const onDanceFloor=Math.abs(x-ILOX_NIGHTCLUB.x)<10&&Math.abs(z-ILOX_NIGHTCLUB.z)<7.6;
+    top=Math.max(top,onDanceFloor ? 0.325 : 0.16);
+  }
   return top;
 }
 function refreshTerrainSurface(){
@@ -267,6 +271,124 @@ function makeTerrain() {
   const material = new THREE.MeshStandardMaterial({ map: texture, color: 0xc4d2a2, roughness: 1 });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.receiveShadow = true; scene.add(mesh); terrainMesh = mesh; refreshTerrainSurface();
+}
+
+
+const ILOX_NIGHTCLUB={x:28,z:-22,width:42,depth:32};
+let iloxNightclub=null,iloxClubTrack=null,iloxClubLightClock=0;
+function makeIloxNightclub(){
+  const group=new THREE.Group();
+  group.position.set(ILOX_NIGHTCLUB.x,0,ILOX_NIGHTCLUB.z);
+  const dark=new THREE.MeshStandardMaterial({color:0x101326,roughness:.72,metalness:.48});
+  const wall=new THREE.MeshStandardMaterial({color:0x171a32,roughness:.78,metalness:.24});
+  const neon=new THREE.MeshStandardMaterial({color:0x3d1b72,emissive:0x6d22ff,emissiveIntensity:1.15,roughness:.28,metalness:.35});
+  const chrome=new THREE.MeshStandardMaterial({color:0xa7b5d8,metalness:.92,roughness:.2});
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(41.5,.28,31.5),dark);floor.position.y=.02;group.add(floor);
+  // Salón monumental: paredes laterales y fondo, con entrada frontal abierta.
+  const addBox=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);group.add(m);return m;};
+  addBox(1,9.6,32,-20.5,4.9,0,wall);addBox(1,9.6,32,20.5,4.9,0,wall);
+  addBox(42,9.6,1,0,4.9,-15.5,wall);
+  addBox(14,9.6,1,-14,4.9,15.5,wall);addBox(14,9.6,1,14,4.9,15.5,wall);
+  // Techo oscuro sostenido por vigas; deja ver la iluminación interior.
+  const roofMat=new THREE.MeshStandardMaterial({color:0x0a0c1b,roughness:.62,metalness:.3,transparent:true,opacity:.86,side:THREE.DoubleSide});
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(42,.45,32),roofMat);roof.position.y=10;group.add(roof);
+  for(let x=-19;x<=19;x+=9.5){addBox(.34,.42,31.5,x,9.7,0,chrome);addBox(.34,9.5,.34,x,4.9,15,chrome);}
+  // Portal principal y rótulo luminoso.
+  for(const x of [-7,7]){addBox(.7,9.7,.8,x,4.9,15.7,neon);addBox(1.2,.55,1.1,x,9.8,15.7,chrome);}
+  const signCanvas=document.createElement("canvas");signCanvas.width=1024;signCanvas.height=256;
+  const ctx=signCanvas.getContext("2d");ctx.fillStyle="#090b20";ctx.fillRect(0,0,1024,256);
+  ctx.shadowColor="#ff39e8";ctx.shadowBlur=36;ctx.fillStyle="#ffffff";ctx.font="900 116px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("ILOX NIGHTCLUB",512,126);
+  ctx.shadowBlur=0;ctx.fillStyle="#6efcff";ctx.font="bold 30px Arial";ctx.fillText("MÚSICA OFICIAL · PISTA ABIERTA",512,213);
+  const signTex=new THREE.CanvasTexture(signCanvas);signTex.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(17,4.25),new THREE.MeshBasicMaterial({map:signTex,transparent:true,side:THREE.DoubleSide}));
+  sign.position.set(0,8.1,16.25);group.add(sign);
+  // Pista central con 48 módulos luminosos en una sola llamada de dibujo.
+  const danceBase=new THREE.Mesh(new THREE.BoxGeometry(20,.25,15),dark);danceBase.position.set(0,.2,0);group.add(danceBase);
+  const tileGeo=new THREE.BoxGeometry(2.35,.13,2.35);
+  const tileMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.82,metalness:.42,roughness:.24});
+  const tiles=new THREE.InstancedMesh(tileGeo,tileMat,48),dummy=new THREE.Object3D();
+  const palette=[0xff32c8,0x28eaff,0x7c48ff,0xffc247,0x4dffad,0xffffff];
+  let n=0;for(let z=-5;z<=5;z+=2.5)for(let x=-8.75;x<=8.75;x+=2.5){dummy.position.set(x,.42,z);dummy.updateMatrix();tiles.setMatrixAt(n,dummy.matrix);tiles.setColorAt(n,new THREE.Color(palette[(Math.round((x+z)*2)+30+ n)%palette.length]));n++;}
+  tiles.instanceMatrix.needsUpdate=true;group.add(tiles);
+  // Escenario y cabina de DJ al fondo.
+  addBox(17,.8,4,0,.65,-11.2,neon);addBox(15,.32,3.3,0,1.18,-11.2,dark);
+  addBox(8,1.4,.55,0,2.05,-12.6,chrome);
+  for(const x of [-6,-2,2,6]){addBox(.22,1.5,.24,x,2.1,-12.35,neon);}
+  // Columnas de sonido con subwoofers visibles.
+  for(const x of [-17.2,17.2])for(const z of [-10,10]){
+    addBox(2.1,5.6,1.5,x,2.9,z,dark);
+    for(const y of [1.35,3.05,4.45]){
+      const speaker=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.16,20),chrome);
+      speaker.rotation.x=Math.PI/2;speaker.position.set(x,y,z+.82);group.add(speaker);
+      const cone=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.18,20),dark);
+      cone.rotation.x=Math.PI/2;cone.position.set(x,y,z+.94);group.add(cone);
+    }
+  }
+  // Bola espejada con jaula geométrica.
+  const ball=new THREE.Group();ball.position.set(0,8.65,0);
+  const sphere=new THREE.Mesh(new THREE.SphereGeometry(.82,18,14),new THREE.MeshStandardMaterial({color:0xdce7ff,metalness:1,roughness:.12}));
+  ball.add(sphere);
+  const cage=new THREE.Mesh(new THREE.SphereGeometry(.88,12,8),new THREE.MeshBasicMaterial({color:0x91eaff,wireframe:true,transparent:true,opacity:.75}));ball.add(cage);group.add(ball);
+  // Haces cónicos de luz y cuatro luces móviles de bajo coste.
+  const beams=[],lights=[];
+  const beamColors=[0xff20d7,0x19dcff,0x7145ff,0xffd34e];
+  for(let j=0;j<4;j++){
+    const pivot=new THREE.Group();pivot.position.set(j%2?12:-12,9.25,j<2?-8:8);
+    const beamMat=new THREE.MeshBasicMaterial({color:beamColors[j],transparent:true,opacity:.14,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(3.5,8.7,16,1,true),beamMat);cone.rotation.x=Math.PI;cone.position.y=-4.1;pivot.add(cone);group.add(pivot);beams.push(pivot);
+    const light=new THREE.PointLight(beamColors[j],42,30,2);light.position.set(j%2?12:-12,7,j<2?-8:8);group.add(light);lights.push(light);
+  }
+  // Guirnaldas de neón alrededor del perímetro y entrada.
+  for(const z of [-15.8,15.8]){const strip=new THREE.Mesh(new THREE.BoxGeometry(40,.12,.18),neon);strip.position.set(0,9.35,z);group.add(strip);}
+  for(const x of [-20.4,20.4]){const strip=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,30),neon);strip.position.set(x,9.35,0);group.add(strip);}
+  scene.add(group);
+  iloxNightclub={group,ball,beams,lights,beamMaterials:beams.map(b=>b.children[0].material),inside:false,dancing:false};
+}
+function isIloxNightclubWall(x,z,feet){
+  const dx=x-ILOX_NIGHTCLUB.x,dz=z-ILOX_NIGHTCLUB.z;
+  if(feet>9.5||feet+PLAYER_HEIGHT<0)return false;
+  const side=Math.abs(Math.abs(dx)-20.5)<.72&&Math.abs(dz)<15.8;
+  const back=Math.abs(dz+15.5)<.72&&Math.abs(dx)<20.8;
+  const front=Math.abs(dz-15.5)<.72&&Math.abs(dx)>7.4&&Math.abs(dx)<20.8;
+  return side||back||front;
+}
+function updateIloxNightclub(delta){
+  if(!iloxNightclub)return;
+  const now=clock.elapsedTime;
+  iloxNightclub.ball.rotation.y+=delta*.9;iloxNightclub.ball.rotation.x+=delta*.34;
+  iloxNightclub.beams.forEach((beam,i)=>{beam.rotation.y+=delta*(i%2?-.62:.78);beam.rotation.z=Math.sin(now*.8+i*1.7)*.28;});
+  iloxClubLightClock-=delta;
+  if(iloxClubLightClock<=0){
+    iloxClubLightClock=.12;
+    iloxNightclub.lights.forEach((light,i)=>{const hue=(now*.105+i*.235)%1;light.color.setHSL(hue,.95,.58);light.intensity=34+Math.sin(now*3.2+i*2)*9;});
+    iloxNightclub.beamMaterials.forEach((mat,i)=>{mat.color.setHSL((now*.105+i*.235)%1,.98,.62);});
+  }
+  if(!started||!player)return;
+  const dx=player.position.x-ILOX_NIGHTCLUB.x,dz=player.position.z-ILOX_NIGHTCLUB.z;
+  const inside=Math.abs(dx)<18.9&&dz<15.1&&dz>-14.9;
+  if(inside&&!iloxNightclub.inside){
+    iloxNightclub.inside=true;
+    if(!iloxClubTrack){
+      iloxClubTrack=new Audio(new URL("./elevator-party.mp3",import.meta.url).href);
+      iloxClubTrack.preload="auto";iloxClubTrack.volume=.78;iloxClubTrack.loop=true;
+      iloxClubTrack.addEventListener("error",()=>console.warn("ILOX: no se pudo cargar la música de la discoteca"));
+    }
+    iloxClubTrack.currentTime=0;
+    const playback=iloxClubTrack.play();
+    if(playback?.catch)playback.catch(error=>console.warn("ILOX: no se pudo reproducir la música de la discoteca",error));
+    showToast("🪩 ¡Bienvenido a ILOX NIGHTCLUB!");
+  }else if(!inside&&iloxNightclub.inside){
+    iloxNightclub.inside=false;
+    if(iloxClubTrack){iloxClubTrack.pause();try{iloxClubTrack.currentTime=0;}catch(_){}}
+    if(iloxNightclub.dancing&&player){iloxNightclub.dancing=false;player.userData.iloxClubDancing=false;player.userData.iloxDancing=false;if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();player.userData.iloxEmote=null;}}
+  }
+  const dance=inside&&Math.abs(dx)<9.7&&dz<7.5&&dz>-7.5;
+  if(dance&&!iloxNightclub.dancing){
+    iloxNightclub.dancing=true;player.userData.iloxClubDancing=true;player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;
+  }else if(!dance&&iloxNightclub.dancing){
+    iloxNightclub.dancing=false;player.userData.iloxClubDancing=false;player.userData.iloxDancing=false;
+    if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();player.userData.iloxEmote=null;}
+  }
 }
 
 function makeTree(x, z, scale, random) {
@@ -896,6 +1018,7 @@ function init() {
   // El terreno queda libre para construir; la naturaleza se agrega desde las herramientas
   // del jugador, con las colisiones del sistema de construcción.
   makeTerrain();
+  makeIloxNightclub();
   clock = new THREE.Clock();
   camera.position.set(0, terrainHeight(0,0) + 4.1, 8.5);
   camera.lookAt(0, terrainHeight(0,0) + 1.2, 0);
@@ -3038,6 +3161,7 @@ function animate() {
         g.updateMatrixWorld(true);
         let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
+      if(isIloxNightclubWall(x,z,feet))return true;
       return false;
     };
     const tryStepMove=(x,z,axis)=>{
@@ -3095,6 +3219,7 @@ function animate() {
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     if(player.userData.toonTail){player.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2)*.42;player.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7)*.16;}
+    updateIloxNightclub(delta);
     if(player.userData.iloxDancing)updateIloxElevatorParty(delta);
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading+(player.userData.iloxDancing?Math.sin((clock.elapsedTime-(player.userData.iloxDanceStarted||0))*Math.PI*1.92)*.30:0);
