@@ -1784,6 +1784,64 @@ function animateElevator(group,now=Date.now()){
     else if(elevatorRiding){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
   }
 }
+
+// Música original ILOX: melodía instrumental infantil, sintetizada localmente.
+let iloxElevatorAudio=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0;
+const ILOX_ELEVATOR_MELODY=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,783.99,987.77,1046.5,987.77,880,783.99,659.25,587.33,523.25,659.25,783.99,1046.5,987.77,783.99,659.25,523.25];
+const ILOX_ELEVATOR_EMOTES=["😂","🤩","🎉","❤️","⭐","🎵","🕺","🥳","✨","💃","🚀","👏"];
+function iloxPlayNote(freq,when,duration=.22,volume=.055,type="sine"){
+  if(!iloxElevatorAudio||!freq)return;
+  const osc=iloxElevatorAudio.createOscillator(),gain=iloxElevatorAudio.createGain();
+  osc.type=type;osc.frequency.setValueAtTime(freq,when);
+  gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.018);
+  gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+  osc.connect(gain);gain.connect(iloxElevatorAudio.destination);osc.start(when);osc.stop(when+duration+.025);
+}
+function startIloxElevatorParty(){
+  try{
+    const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return;
+    if(!iloxElevatorAudio)iloxElevatorAudio=new AudioClass();
+    if(iloxElevatorAudio.state==="suspended")iloxElevatorAudio.resume().catch(()=>{});
+    stopIloxElevatorParty(false);iloxElevatorBeat=0;
+    if(player){player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;}
+    iloxElevatorMusicTimer=setInterval(()=>{
+      if(!iloxElevatorAudio||iloxElevatorAudio.state!=="running")return;
+      const t=iloxElevatorAudio.currentTime+.025,idx=iloxElevatorBeat++%ILOX_ELEVATOR_MELODY.length;
+      const melody=ILOX_ELEVATOR_MELODY[idx];
+      iloxPlayNote(melody,t,.23,.052,"triangle");
+      if(idx%2===0)iloxPlayNote(melody*2,t+.015,.13,.022,"sine");
+      if(idx%4===0)iloxPlayNote([130.81,146.83,164.81,196][Math.floor(idx/4)%4],t,.34,.035,"sine");
+      // Golpecito de percusión suave, sin voz ni muestras externas.
+      if(idx%2===1)iloxPlayNote(95,t,.055,.012,"square");
+    },245);
+  }catch(error){console.warn("ILOX: no se pudo iniciar la música del ascensor",error);}
+}
+function stopIloxElevatorParty(clearDance=true){
+  if(iloxElevatorMusicTimer){clearInterval(iloxElevatorMusicTimer);iloxElevatorMusicTimer=null;}
+  if(clearDance&&player){player.userData.iloxDancing=false;if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();player.userData.iloxEmote=null;}}
+}
+function updateIloxElevatorParty(delta){
+  if(!player?.userData.iloxDancing)return;
+  const t=clock.elapsedTime-(player.userData.iloxDanceStarted||0),phase=t*9.2;
+  const rig=player.userData.rig;
+  if(rig){rig.position.y=(player.userData.toonType?Math.sin(clock.elapsedTime*2)*.022:0)+Math.abs(Math.sin(phase))*.105;rig.rotation.z=Math.sin(phase*.5)*.13;rig.rotation.x=Math.sin(phase)*.055;}
+  else{player.position.y+=Math.sin(phase*2)*.002;player.rotation.z=Math.sin(phase*.5)*.07;}
+  player.userData.arms?.forEach((arm,n)=>{arm.rotation.x=-1.15+Math.sin(phase+n*Math.PI)*.55;arm.rotation.z=(n===0?-.48:.48)+Math.sin(phase*.7+n)*.12;});
+  player.userData.legs?.forEach((leg,n)=>{leg.rotation.x=Math.sin(phase+n*Math.PI)*.62;});
+  if(t>=(player.userData.iloxEmoteNext||0)){
+    const emoji=ILOX_ELEVATOR_EMOTES[Math.floor(Math.random()*ILOX_ELEVATOR_EMOTES.length)];
+    const canvas=document.createElement("canvas");canvas.width=128;canvas.height=128;
+    const ctx=canvas.getContext("2d");ctx.font="100px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(emoji,64,68);
+    const texture=new THREE.CanvasTexture(canvas);texture.needsUpdate=true;
+    if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();}
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));
+    sprite.scale.set(.78,.78,1);sprite.position.set((Math.random()-.5)*.75,2.85,0);sprite.userData.started=t;
+    player.add(sprite);player.userData.iloxEmote=sprite;player.userData.iloxEmoteNext=t+.48+Math.random()*.42;
+  }
+  const emote=player.userData.iloxEmote;
+  if(emote){const age=t-(emote.userData.started||0);emote.position.y=2.85+Math.min(age,.7)*.55;emote.material.opacity=Math.max(0,1-age/.95);}
+}
+
 function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=true){
   const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
   const floorCount=Math.max(1,Math.min(40,Number(rec.floorCount)||40));
@@ -1801,6 +1859,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   if(!setElevatorDoorState(group,false,broadcast,false))return false;
   const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
+  if(elevatorRiding&&activeElevator===group)startIloxElevatorParty();
   rec.targetFloor=toFloor;
   if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration}).catch(error=>console.warn("ILOX elevator sync:",error));
   if(fromFloor===12&&toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
@@ -3000,8 +3059,10 @@ function animate() {
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     if(player.userData.toonTail){player.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2)*.42;player.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7)*.16;}
+    if(player.userData.iloxDancing)updateIloxElevatorParty(delta);
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
+    if(player.userData.iloxDancing)player.rotation.y=playerHeading+Math.sin(clock.elapsedTime*4.6)*.10;
   }
   for(const [remoteId,avatar] of remotePlayers){
     const target=avatar.userData.netTarget;
