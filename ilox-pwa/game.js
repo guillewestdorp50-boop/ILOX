@@ -2484,12 +2484,35 @@ function elevatorBotIsController(record){
   if(!multiplayerSession)return true;
   return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
 }
+function elevatorBotStepHeight(x,z,feet){
+  let step=0;
+  const nearby=getNearbyBuildGroups(x,z,.62);
+  for(const g of nearby){
+    const kind=g.userData.buildRecord?.kind;
+    if(!["platea","floor","stairs","pool","block","brick"].includes(kind)||!g.visible)continue;
+    if(kind==="pool")continue;
+    g.updateMatrixWorld(true);
+    g.traverse(mesh=>{
+      if(!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;
+      const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();
+      const b=geo.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+      if(x+.30<=b.min.x||x-.30>=b.max.x||z+.30<=b.min.z||z-.30>=b.max.z)return;
+      const rise=b.max.y-feet;
+      if(rise>.06&&rise<=.48)step=Math.max(step,rise+.025);
+    });
+  }
+  return step;
+}
 function isElevatorBotBlocked(x,z,feet){
   const body=new THREE.Box3(new THREE.Vector3(x-.34,feet+.08,z-.34),new THREE.Vector3(x+.34,feet+1.9,z+.34));
   const solidKinds=new Set(["block","brick","platea","pool","floor","wall","door","window","roof","elevator","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]);
-  for(const g of buildGroups){
+  for(const g of getNearbyBuildGroups(x,z,4)){
     const kind=g.userData.buildRecord?.kind;
-    if(!solidKinds.has(kind)||!g.visible||Math.hypot(x-g.position.x,z-g.position.z)>9)continue;
+    if(!solidKinds.has(kind)||!g.visible)continue;
+    // Con las puertas completamente abiertas, el hueco del ascensor es transitable.
+    // En board/exit el bot ya está alineado con la entrada: no debe chocar contra
+    // las hojas móviles ni contra el piso/cabina que forman parte del propio ascensor.
+    if(kind==="elevator"&&elevatorBotElevator===g&&["board","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel&&Number(g.userData.elevatorDoorProgress||0)>=.98)continue;
     if(kind==="pool"&&feet>=(g.userData.buildRecord.y||0)+.22)continue;
     g.updateMatrixWorld(true);
     let blocked=false;
@@ -2506,6 +2529,25 @@ function isElevatorBotBlocked(x,z,feet){
     if(isIloxNightclubWall(x+ox,z+oz,feet))return true;
   }
   return false;
+}
+function findElevatorBotMove(x,z,dx,dz,step,feet){
+  const direct=Math.atan2(dz,dx);
+  const offsets=[0,Math.PI/8,-Math.PI/8,Math.PI/4,-Math.PI/4,3*Math.PI/8,-3*Math.PI/8,Math.PI/2,-Math.PI/2,5*Math.PI/8,-5*Math.PI/8,3*Math.PI/4,-3*Math.PI/4,Math.PI];
+  let best=null,bestScore=Infinity;
+  for(const angle of offsets){
+    const a=direct+angle,nx=x+Math.cos(a)*step,nz=z+Math.sin(a)*step;
+    if(!isElevatorBotBlocked(nx,nz,feet)){
+      const score=Math.hypot(elevatorBotTarget.x-nx,elevatorBotTarget.z-nz)+Math.abs(angle)*.16;
+      if(score<bestScore){bestScore=score;best={x:nx,z:nz,y:feet,angle,stepped:false};}
+      continue;
+    }
+    const rise=elevatorBotStepHeight(nx,nz,feet);
+    if(rise>.0&&!isElevatorBotBlocked(nx,nz,feet+rise)){
+      const score=Math.hypot(elevatorBotTarget.x-nx,elevatorBotTarget.z-nz)+Math.abs(angle)*.16+.04;
+      if(score<bestScore){bestScore=score;best={x:nx,z:nz,y:feet+rise,angle,stepped:true};}
+    }
+  }
+  return best;
 }
 function setElevatorBotPhase(phase,group,target){
   elevatorBotPhase=phase;elevatorBotElevator=group;elevatorBotTarget=target?target.clone():null;
@@ -2594,23 +2636,25 @@ function updateElevatorBot(delta){
     elevatorBotTarget=null;
   }
   const movingPhases=["approach","approachFront","board","exit","clubApproach","clubEnter","clubExit"];
+  elevatorBot.userData.botActuallyMoving=false;
   if(elevatorBotTarget&&movingPhases.includes(elevatorBotPhase)){
     const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
     if(dist>.08){
-      const step=Math.min(dist,6.1*delta),mx=dx/dist*step,mz=dz/dist*step;
-      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp(elevatorBotTarget.y-elevatorBot.position.y,-2.2*delta,2.2*delta);
-      const tryX=elevatorBot.position.x+mx,tryZ=elevatorBot.position.z+mz,feet=elevatorBot.position.y;
-      if(!isElevatorBotBlocked(tryX,tryZ,feet)){elevatorBot.position.x=tryX;elevatorBot.position.z=tryZ;}
-      else{
-        let moved=false;
-        if(!isElevatorBotBlocked(tryX,elevatorBot.position.z,feet)){elevatorBot.position.x=tryX;moved=true;}
-        if(!isElevatorBotBlocked(elevatorBot.position.x,tryZ,feet)){elevatorBot.position.z=tryZ;moved=true;}
+      const step=Math.min(dist,6.1*delta),feet=elevatorBot.position.y;
+      const move=findElevatorBotMove(elevatorBot.position.x,elevatorBot.position.z,dx/dist,dz/dist,step,feet);
+      if(move){
+        elevatorBot.position.x=move.x;elevatorBot.position.z=move.z;
+        elevatorBot.rotation.y=Math.atan2(Math.cos(move.angle),Math.sin(move.angle));
+        elevatorBot.userData.botActuallyMoving=true;
       }
+      // Mantiene el cuerpo sobre la superficie mientras pisa la platea y baja
+      // suavemente al abandonarla; el ascenso se refleja en la zancada animada.
+      const supportLift=elevatorBotStepHeight(elevatorBot.position.x,elevatorBot.position.z,elevatorBotTarget.y);
+      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp((elevatorBotTarget.y+supportLift)-elevatorBot.position.y,-3.8*delta,3.8*delta);
       elevatorBot.position.y=nextY;
-      if(Math.abs(mx)+Math.abs(mz)>.001)elevatorBot.rotation.y=Math.atan2(dx,dz);
     }
   }
-  const actions=elevatorBot.userData.animalActions,moving=movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  const actions=elevatorBot.userData.animalActions,moving=!!elevatorBot.userData.botActuallyMoving&&movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
   updateIloxLivingDance(elevatorBot,delta);
   const next=moving?(actions?.run||actions?.walk||actions?.idle):(actions?.idle||actions?.walk);
   if(next&&next!==actions.current&&elevatorBotPhase!=="clubDance"){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
