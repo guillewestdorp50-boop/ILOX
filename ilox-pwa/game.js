@@ -2602,7 +2602,8 @@ function updateElevatorBot(delta){
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
   const floorOneY=group.position.y+.34;
   const floorY=group.position.y+cabin.position.y+.16;
-  const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
+  // Marca de embarque: centrada en el ancho y 0,75 m hacia dentro desde la puerta, lejos de los vidrios. El bot debe caminar hasta aquí antes de activar el viaje.
+  const inside=new THREE.Vector3(group.position.x,floorY,group.position.z+.75);
   const outside=new THREE.Vector3(group.position.x,floorOneY,group.position.z+4.35);
   if(elevatorBotPhase==="approach"){
     elevatorBotTarget.set(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35);
@@ -2622,7 +2623,8 @@ function updateElevatorBot(delta){
     // Permanecer quieto en el centro de la cabina para que el sensor de ocupación
     // registre al pasajero antes de solicitar el viaje.
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
-    if(Date.now()>=elevatorBotWaitUntil&&elevatorCabinOccupied(group)&&!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
   }else if(elevatorBotPhase==="waitingTop"){
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
     if((record.currentFloor||1)===12&&!group.userData.elevatorTravel){
