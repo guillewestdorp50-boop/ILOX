@@ -27,7 +27,7 @@ const cameraFreePad = document.querySelector("#camera-free-pad");
 const cameraFreeKnob = document.querySelector("#camera-free-knob");
 const cameraFreeUp = document.querySelector("#camera-free-up");
 const cameraFreeDown = document.querySelector("#camera-free-down");
-const menuToggle = document.querySelector("#menu-toggle");
+const menuToggle = document.createElement("canvas");
 const hudBuildButton = document.querySelector("#hud-build");
 const hudConfirmButton = document.querySelector("#hud-confirm");
 const hudDeleteButton = document.querySelector("#hud-delete");
@@ -1089,6 +1089,7 @@ function init() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.18;
   game.insertBefore(renderer.domElement, game.firstChild);
+  createMenuCanvasControl();
   createJumpCanvasControl();
   createRunCanvasControl();
   createElevatorCanvasControl();
@@ -1111,6 +1112,48 @@ function init() {
   addEvents();
   animate();
   requestAnimationFrame(() => loading.classList.add("done"));
+}
+
+function createMenuCanvasControl(){
+  const canvas=menuToggle;
+  canvas.id="ilox-menu-canvas";
+  for(const [prop,value] of Object.entries({
+    position:"absolute",left:"auto",top:"calc(max(16px, env(safe-area-inset-top)) + 8px)",
+    right:"calc(max(16px, env(safe-area-inset-right)) + 8px)",
+    width:"76px",height:"68px",minWidth:"76px",minHeight:"68px",
+    maxWidth:"76px",maxHeight:"68px",zIndex:"48",pointerEvents:"auto",
+    touchAction:"none",userSelect:"none",webkitUserSelect:"none"
+  })) canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.style.setProperty("width","76px","important");
+  canvas.style.setProperty("height","68px","important");
+  canvas.width=304;canvas.height=272;
+  canvas.setAttribute("role","button");
+  canvas.setAttribute("aria-label","Abrir menú del juego");
+  canvas.setAttribute("aria-expanded","false");
+  const ctx=canvas.getContext("2d");
+  const rounded=(x,y,w,h,r)=>{
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+  };
+  const draw=()=>{
+    if(!ctx)return;
+    ctx.clearRect(0,0,304,272);
+    ctx.save();
+    ctx.shadowColor="#000000a8";ctx.shadowBlur=22;ctx.shadowOffsetY=9;
+    const fill=ctx.createLinearGradient(28,20,276,250);
+    fill.addColorStop(0,"#fff1a6");fill.addColorStop(.48,"#ffbd36");fill.addColorStop(1,"#e87512");
+    rounded(18,14,268,244,42);ctx.fillStyle=fill;ctx.fill();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.lineWidth=9;ctx.strokeStyle="#fff8d6";ctx.stroke();
+    ctx.strokeStyle="#573414";ctx.lineWidth=17;ctx.lineCap="round";
+    for(const y of [83,119,155]){ctx.beginPath();ctx.moveTo(92,y);ctx.lineTo(212,y);ctx.stroke();}
+    ctx.fillStyle="#4a2b12";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="1000 36px system-ui,sans-serif";ctx.fillText("MENÚ",152,211);
+    ctx.restore();
+  };
+  canvas.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();});
+  canvas.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();});
+  game.appendChild(canvas);draw();return canvas;
 }
 
 function createJumpCanvasControl(){
@@ -1297,7 +1340,7 @@ function addEvents() {
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if (e.target.closest("#ilox-jump-canvas") || e.target.closest("#ilox-elevator-canvas") || e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
+    if (e.target.closest("#ilox-jump-canvas") || e.target.closest("#ilox-elevator-canvas") || e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#ilox-menu-canvas")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraFreeMode?cameraFreeZoom:cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -1549,7 +1592,7 @@ function addEvents() {
     renderBuildTools(categorySelect.value);
   });
   animalStyleSelect?.addEventListener("change",()=>renderBuildTools("farm"));
-  menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));setHudDockOpen(false);});
+  menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));menuToggle.setAttribute("aria-label",open?"Cerrar menú del juego":"Abrir menú del juego");setHudDockOpen(false);});
   document.querySelector("#force-app-update")?.addEventListener("click",async event=>{
     const button=event.currentTarget;
     if(button.disabled)return;
@@ -1576,7 +1619,7 @@ function addEvents() {
       button.textContent="⚡ FORZAR ACTUALIZACIÓN";
     }
   });
-   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen,#force-app-update")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");}});
+   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen,#force-app-update")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");}});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
   document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
@@ -1667,14 +1710,14 @@ function addEvents() {
     if(!buildRecords.length){showToast("Todavía no hay construcciones para eliminar.");return;}
     if(!confirm("¿Eliminar definitivamente todo lo construido en este mundo?"))return;
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
-    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");showToast("Se eliminaron todas las construcciones.");
   });
   function setHudDockOpen(open){cameraControls.classList.remove("hidden");if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);hudDockToggle?.setAttribute("aria-expanded","true");hudDockToggle?.setAttribute("aria-label","Controles siempre visibles");if(!open)cameraModePanel.classList.add("hidden");}
   if(hudDockToggle)hudDockToggle.classList.add("hidden");
   function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
     buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
     buildPanel.classList.toggle("hidden",!enabled||!showPanel);doorRotateControl?.classList.add("hidden");
-    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");
     setHudDockOpen(false);
     hudConfirmButton.disabled=!enabled;hudDeleteButton.classList.toggle("active",enabled&&tool==="erase");
     cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(enabled?9.5:5.4));if(enabled&&!firstPersonBuild)pitch=.48;
