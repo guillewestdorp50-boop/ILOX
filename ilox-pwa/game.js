@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-v113-bot-boarding-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-v114-bot-mission-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -2776,15 +2776,10 @@ function updateElevatorBot(delta){
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
     elevatorBot.position.copy(elevatorBotTarget);
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
-    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark){
-      // Prueba autónoma de abordaje: el bot entra y permanece en la cabina.
-      // No solicita pisos ni inicia ningún viaje.
-      setElevatorBotPhase("boardedIdle",group,inside);
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true)){
+      setElevatorBotPhase("waitingTop",group,inside);
+      elevatorBotWaitUntil=0;
     }
-  }else if(elevatorBotPhase==="boardedIdle"){
-    // Mantener al bot quieto dentro del ascensor, sin viajar con la cabina.
-    elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
-    elevatorBot.position.copy(elevatorBotTarget);
   }else if(elevatorBotPhase==="waitingTop"){
     // Seguir el centro de la cabina en cada frame mientras sube.
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
@@ -2825,10 +2820,13 @@ function updateElevatorBot(delta){
     if(model&&base){const t=clock.elapsedTime;model.position.y=base.position.y+Math.abs(Math.sin(t*3.4))*.09;model.rotation.y=base.rotation.y+Math.sin(t*1.7)*.48;model.rotation.z=base.rotation.z+Math.sin(t*3.4)*.07;}
     if(Date.now()>=elevatorBotEmoteUntil){const model=elevatorBot.userData.animalModel,base=elevatorBot.userData.animalModelBase;if(model&&base){model.position.copy(base.position);model.rotation.copy(base.rotation);}setElevatorBotPhase("done",group,elevatorBot.position);}
   }else if(elevatorBotPhase==="done"){
+    // La misión terminó: el bot queda disponible y espera una orden explícita.
     elevatorBotTarget=null;
-    elevatorBotElevator=null;
     elevatorBotWaitUntil=0;
-    elevatorBotPhase="idle";
+    elevatorBotPhase="waitingCommand";
+  }else if(elevatorBotPhase==="waitingCommand"){
+    elevatorBotTarget=null;
+    elevatorBot.userData.iloxClubDancing=false;
   }
   const movingPhases=["approach","approachFront","board","exit","clubApproach","clubEnter","clubExit"];
   elevatorBot.userData.botActuallyMoving=false;
