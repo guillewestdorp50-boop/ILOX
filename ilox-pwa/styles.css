@@ -703,11 +703,13 @@ body{background:#201747;color:#fff}
 #hud-dock button::selection,#hud-dock *::selection{background:transparent}
 
 /* ILOX — SALTAR dibujado en canvas: fijo al pulgar derecho en cualquier orientación. */
-#ilox-jump-canvas{
-  position:absolute;inset:auto max(12px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) auto;
-  z-index:46;width:112px;height:112px;display:none;pointer-events:auto;touch-action:none;
+/* Tamaño explícito y protegido: evita que la regla global canvas lo estire a pantalla completa. */
+#game #ilox-jump-canvas{
+  position:absolute!important;inset:auto max(12px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) auto!important;
+  z-index:46!important;width:72px!important;height:72px!important;min-width:72px!important;min-height:72px!important;
+  max-width:72px!important;max-height:72px!important;display:none;pointer-events:auto;touch-action:none;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
 }
-@media(pointer:coarse){#game.playing #ilox-jump-canvas{display:block}}
-@media(max-width:390px){#ilox-jump-canvas{width:98px;height:98px}}
-@media(orientation:landscape) and (max-height:520px){#ilox-jump-canvas{width:92px;height:92px;right:max(14px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom))}}
+@media(pointer:coarse){#game.playing #game #ilox-jump-canvas{display:block}}
+@media(max-width:390px){#game #ilox-jump-canvas{width:68px!important;height:68px!important;min-width:68px!important;min-height:68px!important;max-width:68px!important;max-height:68px!important}}
+@media(orientation:landscape) and (max-height:520px){#game #ilox-jump-canvas{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;max-width:64px!important;max-height:64px!important;right:max(14px,env(safe-area-inset-right))!important;bottom:max(10px,env(safe-area-inset-bottom))!important}}
