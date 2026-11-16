@@ -329,3 +329,9 @@ body{background:#201747;color:#fff}
 
 /* ILOX v95: versión visible desde la pantalla de inicio. */
 .welcome-version{position:absolute;z-index:5;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));padding:7px 11px;border:1px solid #ffffff55;border-radius:999px;background:#17123fcc;color:#fff8e8;font:800 11px/1 system-ui,sans-serif;letter-spacing:.12em;text-shadow:0 1px 5px #0008;box-shadow:0 4px 18px #080d3c66;pointer-events:none}
+
+/* Acciones separadas para entrar o eliminar mundos guardados. */
+.mp-world-row{display:flex;align-items:stretch;gap:7px}
+.mp-world-enter{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1;min-width:0;padding:0;border:0;background:transparent;color:#fff;text-align:left}
+.mp-world-delete{flex:0 0 auto;padding:8px 9px;border:1px solid #e58a8a88;border-radius:7px;background:#6b202055;color:#ffd0d0;font-size:9px;font-weight:900}
+.mp-world-delete:disabled{opacity:.35}
