@@ -1746,7 +1746,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   rec.targetFloor=toFloor;
   if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration}).catch(error=>console.warn("ILOX elevator sync:",error));
-  if(fromFloor===12&&toFloor===1&&elevatorBotIsController(rec))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
+  if(fromFloor===12&&toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
   return true;
 }
 function applyRemoteElevatorState(state){
@@ -1755,7 +1755,7 @@ function applyRemoteElevatorState(state){
   const rec=group.userData.buildRecord;
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
-  if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
+  if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
 }
 function updateElevatorDisplay(){if(elevatorDisplay)elevatorDisplay.textContent=String(elevatorSelectedFloor);}
 function openElevatorKeypad(group){if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);const keys=elevatorPanel?.querySelector(".elevator-keys");if(!keys)return;keys.innerHTML="";for(let floor=1;floor<=count;floor++){const b=document.createElement("button");b.type="button";b.className="elevator-key";b.dataset.floor=String(floor);b.textContent=String(floor);if(floor===elevatorSelectedFloor)b.classList.add("selected");keys.appendChild(b);}elevatorStatus.textContent="Elegí el piso de destino";elevatorPanel.classList.remove("hidden");updateElevatorDisplay();}
@@ -1842,18 +1842,20 @@ function updateElevatorBot(delta){
     setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,group.position.y+.34,group.position.z+4.35));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
+  const floorOneY=group.position.y+.34;
   const floorY=group.position.y+cabin.position.y+.16;
   const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
-  const outside=new THREE.Vector3(group.position.x,floorY,group.position.z+4.35);
+  const outside=new THREE.Vector3(group.position.x,floorOneY,group.position.z+4.35);
   if(elevatorBotPhase==="approach"){
-    elevatorBotTarget.set(group.position.x-4.5,floorY,group.position.z+4.35);
+    elevatorBotTarget.set(group.position.x-4.5,floorOneY,group.position.z+4.35);
     if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
   }else if(elevatorBotPhase==="approachFront"){
     elevatorBotTarget=outside;
-    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,12))setElevatorBotPhase("board",group,inside);
+    if(elevatorBot.position.distanceTo(outside)<.35&&!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))beginElevatorTravel(group,1,Date.now(),true);
+    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,12)&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
     elevatorBotTarget=inside;
-    if(elevatorBot.position.distanceTo(inside)<.32&&elevatorLandingExists(group,12)){
+    if(elevatorBot.position.distanceTo(inside)<.32&&elevatorLandingExists(group,12)&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
       if(!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
     }
