@@ -2255,7 +2255,7 @@ function animateElevator(group,now=Date.now()){
   if(travel){
     const t=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);
     const candidateOffset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
-    const authoritative=!group.userData.elevatorRemoteTravel&&(!multiplayerSession||elevatorBotIsController(rec));
+    const authoritative=!group.userData.elevatorRemoteTravel;
     const blocker=authoritative?elevatorSweepBlocker(group,previousSafeOffset,candidateOffset):null;
     if(blocker){
       offset=previousSafeOffset;
@@ -3884,6 +3884,7 @@ function animate() {
         break;
       }
     };
+    const movementSafeStart={x:player.position.x,y:player.position.y,z:player.position.z};
     tryStepMove(nextX,player.position.z,"x");
     tryStepMove(nextZ,player.position.x,"z");
     // Si dos avatares ya llegaron superpuestos (por una entrada simultánea),
@@ -3895,6 +3896,11 @@ function animate() {
         const push=(.76-d)*Math.min(1,delta*5),pushX=player.position.x+sx/d*push,pushZ=player.position.z+sz/d*push;
         if(!collides(pushX,pushZ,player.position.y,remoteId)){player.position.x=pushX;player.position.z=pushZ;}
       }
+    }
+    if(collides(player.position.x,player.position.z,player.position.y)&&!collides(movementSafeStart.x,movementSafeStart.z,movementSafeStart.y)){
+      const penetrated={x:Number(player.position.x.toFixed(3)),y:Number(player.position.y.toFixed(3)),z:Number(player.position.z.toFixed(3))};
+      player.position.set(movementSafeStart.x,movementSafeStart.y,movementSafeStart.z);playerVerticalVelocity=0;
+      window.__iloxReportRuntimeEvent?.("PHYSICS_WALL_PENETRATION_GUARD","Se detectó una posición final dentro de una estructura sólida; el jugador fue devuelto a su última posición libre.",{penetrated,restoredTo:movementSafeStart});
     }
     const pool=filledPoolAt(player.position.x,player.position.z);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
