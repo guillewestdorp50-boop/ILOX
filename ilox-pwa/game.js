@@ -2972,7 +2972,7 @@ async function placeBuildAtPointer(event){
         const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);
         if(rec.kind==="elevator")rebuildElevatorOpenings();
         refreshTerrainSurface();flushLocalBuildSave();
-        if(multiplayerSession)await multiplayerSession.sendWorldRefresh();
+        if(multiplayerSession)multiplayerSession.sendWorldRefresh().catch(error=>console.warn("ILOX multiplayer: no se pudo avisar la eliminación en tiempo real",error));
         scheduleMultiplayerSync();
         showToast("Pieza eliminada del mundo compartido.");
       }catch(error){showToast(error.message||"No se pudo eliminar esta pieza del mundo compartido.");}
