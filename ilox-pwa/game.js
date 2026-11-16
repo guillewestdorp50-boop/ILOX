@@ -27,25 +27,6 @@ const cameraFreePad = document.querySelector("#camera-free-pad");
 const cameraFreeKnob = document.querySelector("#camera-free-knob");
 const cameraFreeUp = document.querySelector("#camera-free-up");
 const cameraFreeDown = document.querySelector("#camera-free-down");
-// SALTO: retirar cualquier control HTML heredado y crear uno nuevo desde JavaScript,
-// igual que los controles funcionales del ascensor. Así no queda atado al DOM viejo.
-document.querySelectorAll("#jump-action, #jump-button, .jump-button, [data-ilox-jump]").forEach(node => node.remove());
-document.querySelectorAll("button").forEach(node => {
-  const label = (node.textContent || "").replace(/[^\\p{L}]/gu, "").toUpperCase();
-  if (label === "SALTAR") node.remove();
-});
-const jumpButton = document.createElement("button");
-jumpButton.id = "ilox-jump-control";
-jumpButton.className = "hud-action hud-jump";
-jumpButton.type = "button";
-jumpButton.setAttribute("aria-label", "Saltar");
-jumpButton.title = "Saltar";
-jumpButton.innerHTML = "⬆<small>SALTAR</small>";
-const rightPlayControls = document.querySelector("#hud-dock .right-play-controls");
-if (!rightPlayControls) throw new Error("No se encontró la botonera derecha de acciones");
-const runButton = document.querySelector("#run-button");
-rightPlayControls.insertBefore(jumpButton, runButton);
-let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
 const hudBuildButton = document.querySelector("#hud-build");
 const hudConfirmButton = document.querySelector("#hud-confirm");
@@ -1141,27 +1122,6 @@ function addEvents() {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
   });
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
-  const stopTouchSprint=()=>{touchSprintActive=false;runButton?.classList.remove("pressed");};
-  const stopJumpPress=()=>jumpButton.classList.remove("pressed");
-  [jumpButton,runButton].forEach(button=>button?.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();}));
-  const startTouchAction=(event,action)=>{
-    if(event.button!==0||!event.isPrimary)return;
-    event.preventDefault();event.stopPropagation();
-    if(!started)return;
-    action();
-    try{event.currentTarget.setPointerCapture(event.pointerId);}catch{}
-  };
-  jumpButton.addEventListener("pointerdown",event=>startTouchAction(event,()=>{
-    jumpButton.classList.add("pressed");triggerJump();
-  }));
-  runButton?.addEventListener("pointerdown",event=>startTouchAction(event,()=>{
-    touchSprintActive=true;runButton.classList.add("pressed");
-  }));
-  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>{
-    runButton?.addEventListener(type,stopTouchSprint);
-    jumpButton.addEventListener(type,stopJumpPress);
-  });
-  addEventListener("blur",()=>{stopTouchSprint();stopJumpPress();});
   movePad.addEventListener("pointerdown", e => {
     if (!started || cameraLocked || e.button !== 0 || moveStickPointer !== null) return;
     e.preventDefault();
@@ -3307,8 +3267,7 @@ function animate() {
     localMoving = inputLength > 0.08;
     if (inputLength > 1) { forward /= inputLength; strafe /= inputLength; }
     const swimming = !!player?.userData.isSwimming;
-    const sprinting = !swimming && (touchSprintActive || keys.has("shift"));
-    const speed = swimming ? 2.2 : (sprinting ? 11.2 : 7.2);
+    const speed = swimming ? 2.2 : 7.2;
     const cameraYaw = yaw;
     const dx = (-Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * strafe) * speed * delta;
     const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
