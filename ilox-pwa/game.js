@@ -2641,18 +2641,14 @@ function updateElevatorBot(delta){
     if(dist>.08){
       const step=Math.min(dist,6.1*delta),feet=elevatorBot.position.y;
       const move=findElevatorBotMove(elevatorBot.position.x,elevatorBot.position.z,dx/dist,dz/dist,step,feet);
-      const desiredY=elevatorBotTarget.y+(move?.stepped?Math.max(0,move.y-feet):0);
       if(move){
         elevatorBot.position.x=move.x;elevatorBot.position.z=move.z;
-        elevatorBot.userData.stepLift=move.stepped?Math.min(.48,move.y-feet):0;
-        elevatorBot.rotation.y=Math.atan2(move.x-elevatorBot.position.x+Math.cos(move.angle)*step,move.z-elevatorBot.position.z+Math.sin(move.angle)*step);
-      }else{
-        // Si todos los vectores están cerrados, cambia la búsqueda en el próximo
-        // fotograma; no avanza contra la misma pared ni finge caminar en el sitio.
-        elevatorBot.userData.stepLift=0;
+        elevatorBot.rotation.y=Math.atan2(Math.cos(move.angle),Math.sin(move.angle));
       }
-      const lift=elevatorBot.userData.stepLift||0;
-      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp((desiredY+lift)-elevatorBot.position.y,-3.8*delta,3.8*delta);
+      // Mantiene el cuerpo sobre la superficie mientras pisa la platea y baja
+      // suavemente al abandonarla; el ascenso se refleja en la zancada animada.
+      const supportLift=elevatorBotStepHeight(elevatorBot.position.x,elevatorBot.position.z,elevatorBotTarget.y);
+      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp((elevatorBotTarget.y+supportLift)-elevatorBot.position.y,-3.8*delta,3.8*delta);
       elevatorBot.position.y=nextY;
     }
   }
