@@ -43,7 +43,7 @@ let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgai
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
-let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorPanelDismissed=false;
+let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorPanelDismissed=false,elevatorJustExitedAt=0;
 const elevatorPanel=document.querySelector("#elevator-panel"),elevatorFloorSelect=document.querySelector("#elevator-floor"),elevatorStatus=document.querySelector("#elevator-status");
 const elevatorGoButton=document.querySelector("#elevator-go");
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
@@ -1588,7 +1588,7 @@ function animateElevator(group,now=Date.now()){
   if(travel){
     const t=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);
     offset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
-    if(t>=1){rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;persistBuilds();}
+    if(t>=1){rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;if(!group.userData.elevatorRemoteTravel)persistBuilds();group.userData.elevatorRemoteTravel=false;}
   }
   cabin.position.y=.18+offset;
   const open=group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel;
@@ -1596,7 +1596,7 @@ function animateElevator(group,now=Date.now()){
   if(left&&right){const amount=open?1.22:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
   if(elevatorRiding&&activeElevator===group&&player){
     const wantsExit=!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
-    if(wantsExit)elevatorRiding=false;
+    if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=Date.now();}
     else{player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
   }
 }
@@ -1616,7 +1616,7 @@ function applyRemoteElevatorState(state){
   if(!group)return;
   const rec=group.userData.buildRecord;
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;
-  group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};
+  group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
 }
 function updateElevators(delta){
   const elevators=buildGroups.filter(g=>g.userData.buildRecord?.kind==="elevator");
@@ -1626,7 +1626,7 @@ function updateElevators(delta){
     const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
     if(d<5.5&&d<nearestDistance){nearest=group;nearestDistance=d;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
-    if(!elevatorRiding&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.02&&Math.abs(player.position.y-level)<.8){
+    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.02&&Math.abs(player.position.y-level)<.8){
       activeElevator=group;elevatorRiding=true;player.position.set(group.position.x,level,group.position.z);
       showToast("Entraste en la cabina. Elegí tu planta.");
     }
