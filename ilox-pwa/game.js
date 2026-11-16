@@ -1143,6 +1143,7 @@ function addEvents() {
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
   const stopTouchSprint=()=>{touchSprintActive=false;runButton?.classList.remove("pressed");};
   const stopJumpPress=()=>jumpButton.classList.remove("pressed");
+  [jumpButton,runButton].forEach(button=>button?.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();}));
   const startTouchAction=(event,action)=>{
     if(event.button!==0||!event.isPrimary)return;
     event.preventDefault();event.stopPropagation();
