@@ -82,15 +82,13 @@
       <small class="build-attribution">Modelos “Fox”, “Robot”, “Old Man” y “T. rex” por <a href="https://bake3d.ai" target="_blank" rel="noopener">Bake3D</a>, licenciados bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Escala ajustada para ILOX.</small>
     </section>
     <button id="door-rotate-control" class="door-rotate-control hidden" type="button" aria-label="Girar la puerta 90 grados">↻ GIRAR 90°</button>
-    <section id="elevator-panel" class="door-pin-dialog elevator-panel hidden" role="dialog" aria-modal="false" aria-labelledby="elevator-title">
-      <div class="door-pin-card elevator-card">
-        <div class="door-pin-eyebrow">TRANSPORTE VERTICAL · ILOX</div>
-        <h2 id="elevator-title">ASCENSOR</h2>
-        <p id="elevator-status">Entrá en la cabina y elegí tu destino.</p>
-        <label class="mp-label" for="elevator-floor">PLANTA DE DESTINO</label>
-        <select id="elevator-floor" class="build-category"></select>
-        <button id="elevator-go" class="door-pin-submit" type="button">CERRAR PUERTAS Y VIAJAR</button>
-        <button id="elevator-close" class="door-pin-cancel" type="button">CERRAR</button>
+    <section id="elevator-panel" class="elevator-keypad hidden" role="dialog" aria-modal="false" aria-labelledby="elevator-title">
+      <div class="elevator-keypad-card">
+        <header><span>MANDO DEL ASCENSOR</span><button id="elevator-keypad-close" type="button" aria-label="Cerrar tablero">×</button></header>
+        <div id="elevator-status" class="elevator-keypad-status">Elegí el piso de destino</div>
+        <div class="elevator-display"><small>DESTINO</small><strong id="elevator-display">1</strong></div>
+        <div class="elevator-keys"></div>
+        <button id="elevator-ok" class="elevator-ok" type="button">OK · VIAJAR</button>
       </div>
     </section>
     <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-expanded="false">☰ MENÚ</button>
