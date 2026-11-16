@@ -43,9 +43,8 @@ let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgai
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
-let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorPanelDismissed=false,elevatorJustExitedAt=0;
-const elevatorPanel=document.querySelector("#elevator-panel"),elevatorFloorSelect=document.querySelector("#elevator-floor"),elevatorStatus=document.querySelector("#elevator-status");
-const elevatorGoButton=document.querySelector("#elevator-go");
+let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
+const elevatorPanel=document.querySelector("#elevator-panel"),elevatorStatus=document.querySelector("#elevator-status"),elevatorDisplay=document.querySelector("#elevator-display");
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -149,6 +148,7 @@ function stairSurfaceHeight(group,x,z,feet=Infinity){
 function supportHeightAt(x,z,feet=Infinity,ignore=null){
   const f=foundationAt(x,z);
   let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.936:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);
+  for(const elevator of buildGroups){if(elevator===ignore||elevator.userData.buildRecord?.kind!=="elevator")continue;const cabin=elevator.userData.elevatorCabin;if(!cabin)continue;const floorY=elevator.position.y+cabin.position.y+.16;if(Math.abs(x-elevator.position.x)<1.18&&Math.abs(z-elevator.position.z)<1.18&&floorY<=feet+.35&&floorY>top)top=floorY;}
   for(const g of buildGroups){
     if(g===ignore)continue;
     const kind=g.userData.buildRecord?.kind;
@@ -989,28 +989,14 @@ function addEvents() {
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
   });
-  elevatorGoButton?.addEventListener("click",()=>{
-    if(!activeElevator)return;
-    const target=Number(elevatorFloorSelect.value)||1;
-    if(!elevatorRiding){
-      showToast("Entrá en la cabina antes de elegir destino.");return;
-    }
-    const current=activeElevator.userData.buildRecord?.currentFloor||1;
-    if(beginElevatorTravel(activeElevator,target)){
-      if(target!==current){
-        elevatorPanelDismissed=true;
-        elevatorPanel?.classList.add("hidden");
-        showToast("Puertas cerradas. Mirá el ascensor en movimiento.");
-      }
-    }
-  });
-  document.querySelector("#elevator-close")?.addEventListener("click",()=>{elevatorPanelDismissed=true;elevatorPanel?.classList.add("hidden");});
+  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator||!activeElevator.userData.elevatorConsole)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
+  document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
     if (started && !pointerDragged && activePointers.size===0) {
       if(buildMode)placeBuildAtPointer(e);
-      else toggleDoorAtPointer(e);
+      else if(!tryElevatorConsoleAtPointer(e))toggleDoorAtPointer(e);
     }
     lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
     if(lookPointer!==null){const p=activePointers.get(lookPointer);lastLookX=p.x;lastLookY=p.y;pointerDragged=true;}
@@ -1456,11 +1442,14 @@ function createBuildPiece(record, options = {}) {
     for(const sx of [-1.22,1.22]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,2.5),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
     const back=new THREE.Mesh(new THREE.BoxGeometry(2.5,2.65,.08),glassPanel);back.position.set(0,1.4,-1.22);cabin.add(back);
     const roof=new THREE.Mesh(new THREE.BoxGeometry(2.55,.12,2.55),cabinMat);roof.position.y=2.75;cabin.add(roof);
+    const consoleBody=new THREE.Mesh(new THREE.BoxGeometry(.38,.58,.12),dark);consoleBody.position.set(.91,1.35,.99);cabin.add(consoleBody);
+    const consoleFace=new THREE.Mesh(new THREE.BoxGeometry(.29,.47,.035),mat(0x173e48,.3,.3));consoleFace.position.set(.91,1.36,1.065);consoleFace.userData.elevatorConsole=true;cabin.add(consoleFace);
+    const consoleLight=new THREE.Mesh(new THREE.BoxGeometry(.12,.07,.025),mat(0x63f4c4,.25,.2));consoleLight.position.set(.91,1.53,1.09);cabin.add(consoleLight);
     const doorL=new THREE.Mesh(new THREE.BoxGeometry(1.22,2.55,.08),steel),doorR=doorL.clone();
     doorL.position.set(-.61,1.36,1.22);doorR.position.set(.61,1.36,1.22);cabin.add(doorL,doorR);
     cabin.userData.doorLeft=doorL;cabin.userData.doorRight=doorR;
     cabin.position.y=.18;group.add(cabin);
-    group.userData.elevatorCabin=cabin;group.userData.elevatorDoorOpen=true;
+    group.userData.elevatorCabin=cabin;group.userData.elevatorConsole=consoleFace;group.userData.elevatorDoorOpen=true;
     group.userData.buildHeight=shaftHeight;
     group.userData.elevatorFloorCount=record.floorCount||20;
     group.userData.elevatorCurrentFloor=record.currentFloor||1;
@@ -1702,6 +1691,10 @@ function applyRemoteElevatorState(state){
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
 }
+function updateElevatorDisplay(){if(elevatorDisplay)elevatorDisplay.textContent=String(elevatorSelectedFloor);}
+function openElevatorKeypad(group){if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;const count=Math.max(1,Math.min(120,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);const keys=elevatorPanel?.querySelector(".elevator-keys");if(!keys)return;keys.innerHTML="";for(let floor=1;floor<=count;floor++){const b=document.createElement("button");b.type="button";b.className="elevator-key";b.dataset.floor=String(floor);b.textContent=String(floor);if(floor===elevatorSelectedFloor)b.classList.add("selected");keys.appendChild(b);}elevatorStatus.textContent="Elegí el piso de destino";elevatorPanel.classList.remove("hidden");updateElevatorDisplay();}
+function closeElevatorKeypad(){elevatorPanel?.classList.add("hidden");}
+function tryElevatorConsoleAtPointer(event){if(!elevatorRiding||!activeElevator?.userData.elevatorConsole||activeElevator.userData.elevatorTravel)return false;const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);activeElevator.updateMatrixWorld(true);const hit=raycaster.intersectObject(activeElevator.userData.elevatorConsole,true)[0];if(!hit)return false;openElevatorKeypad(activeElevator);return true;}
 function updateElevators(delta){
   const elevators=buildGroups.filter(g=>g.userData.buildRecord?.kind==="elevator");
   let nearest=null,nearestDistance=Infinity;
@@ -1710,36 +1703,14 @@ function updateElevators(delta){
     const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
     if(d<5.5&&d<nearestDistance){nearest=group;nearestDistance=d;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
-    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.12&&Math.abs(player.position.y-level)<.8){
-      activeElevator=group;elevatorRiding=true;elevatorPanelDismissed=false;
-      elevatorFloorSelect.dataset.currentFloor="";
-      player.position.set(group.position.x,level,group.position.z);
-      showToast("Entraste en la cabina. Elegí tu planta.");
+    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.05&&Math.abs(player.position.y-level)<.65){
+      activeElevator=group;elevatorRiding=true;
+      player.position.set(group.position.x,level,group.position.z);playerVerticalVelocity=0;playerGrounded=true;
     }
   }
   if(nearest!==activeElevator&&!elevatorRiding)activeElevator=nearest;
-  if(!nearest)elevatorPanelDismissed=false;
-  const panelOpen=!!nearest&&elevatorRiding&&activeElevator===nearest&&started&&!buildMode&&!elevatorPanelDismissed;
-  elevatorPanel?.classList.toggle("hidden",!panelOpen);
-  if(panelOpen&&nearest){
-    activeElevator=nearest;
-    const rec=nearest.userData.buildRecord;
-    const floorCount=rec.floorCount||40,elevatorKey=String(rec.id||rec.x+":"+rec.z);
-    if(elevatorFloorSelect.options.length!==floorCount||elevatorFloorSelect.dataset.elevatorKey!==elevatorKey){
-      elevatorFloorSelect.innerHTML="";
-      for(let floor=1;floor<=floorCount;floor++){const option=document.createElement("option");option.value=String(floor);option.textContent=floor===1?"PLANTA 1 · BAJA":("PLANTA "+floor);elevatorFloorSelect.appendChild(option);}
-      elevatorFloorSelect.dataset.elevatorKey=elevatorKey;
-      elevatorFloorSelect.dataset.currentFloor="";
-    }
-    const floorNow=String(rec.currentFloor||1);
-    if(elevatorFloorSelect.dataset.currentFloor!==floorNow){
-      elevatorFloorSelect.value=floorNow;
-      elevatorFloorSelect.dataset.currentFloor=floorNow;
-    }
-    elevatorStatus.textContent=nearest.userData.elevatorTravel?"Ascensor en movimiento…":"Estás dentro de la cabina. Elegí tu destino.";
-    elevatorGoButton.disabled=!!nearest.userData.elevatorTravel;
-    elevatorGoButton.textContent=nearest.userData.elevatorTravel?"EN MOVIMIENTO":"CERRAR PUERTAS Y VIAJAR";
-  }
+  if(!elevatorRiding)closeElevatorKeypad();
+  if(elevatorRiding&&activeElevator?.userData.elevatorTravel)closeElevatorKeypad();
 }
 function multiplayerPayload(record){
   const payload={...record};
