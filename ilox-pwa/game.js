@@ -2636,6 +2636,7 @@ function updateElevatorBot(delta){
     elevatorBotTarget=null;
   }
   const movingPhases=["approach","approachFront","board","exit","clubApproach","clubEnter","clubExit"];
+  elevatorBot.userData.botActuallyMoving=false;
   if(elevatorBotTarget&&movingPhases.includes(elevatorBotPhase)){
     const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
     if(dist>.08){
@@ -2644,6 +2645,7 @@ function updateElevatorBot(delta){
       if(move){
         elevatorBot.position.x=move.x;elevatorBot.position.z=move.z;
         elevatorBot.rotation.y=Math.atan2(Math.cos(move.angle),Math.sin(move.angle));
+        elevatorBot.userData.botActuallyMoving=true;
       }
       // Mantiene el cuerpo sobre la superficie mientras pisa la platea y baja
       // suavemente al abandonarla; el ascenso se refleja en la zancada animada.
@@ -2652,7 +2654,7 @@ function updateElevatorBot(delta){
       elevatorBot.position.y=nextY;
     }
   }
-  const actions=elevatorBot.userData.animalActions,moving=movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  const actions=elevatorBot.userData.animalActions,moving=!!elevatorBot.userData.botActuallyMoving&&movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
   updateIloxLivingDance(elevatorBot,delta);
   const next=moving?(actions?.run||actions?.walk||actions?.idle):(actions?.idle||actions?.walk);
   if(next&&next!==actions.current&&elevatorBotPhase!=="clubDance"){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
