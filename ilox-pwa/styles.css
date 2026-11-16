@@ -603,3 +603,50 @@ body{background:#201747;color:#fff}
   .hud-action:not(:active):not(.pressed){animation:hud-button-glow 3.2s ease-in-out infinite alternate}
   @keyframes hud-button-glow{from{filter:brightness(1)}to{filter:brightness(1.12)}}
 }
+
+/* ILOX V105 — esquema limpio: analógico izquierda, accesos centrales, acciones derecha. */
+.hud-dock{left:0;right:0;bottom:calc(5px + env(safe-area-inset-bottom));transform:none;width:100%;max-width:100%;display:grid;grid-template-columns:86px minmax(0,1fr) 124px;grid-template-rows:auto;align-items:end;justify-items:center;gap:6px;padding:0 8px;pointer-events:none}
+.hud-dock-toggle{display:none!important}
+#touch-ui{grid-column:1;grid-row:1;position:relative;inset:auto;z-index:42;width:82px;height:82px;display:block;align-self:end;pointer-events:none}
+.move-pad{position:relative;left:auto;bottom:auto;width:76px;height:76px;margin:0 auto;pointer-events:auto}
+.move-knob{width:34px;height:34px}
+.hud-controls{grid-column:2;grid-row:1;position:relative;left:auto;top:auto;right:auto;bottom:auto;transform:none;display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;max-width:100%;overflow:visible;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:none}
+.hud-controls.hidden{display:flex!important}
+.hud-action{pointer-events:auto;flex:0 0 62px;width:62px;height:66px;min-width:62px;max-width:62px;border:2px solid #fff;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:26px;box-shadow:inset 0 3px 7px #ffffff65,inset 0 -5px 0 #0003,0 5px 0 #0005,0 0 14px #ffffff35}
+.hud-action small{display:block!important;font-size:8px;line-height:1;font-weight:1000;white-space:nowrap}
+.hud-menu{background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;border-color:#fff3a2}
+.hud-camera{background:linear-gradient(145deg,#40dfff,#0875e4 60%,#073caa);color:white;border-color:#a9eaff}
+.camera-controls{position:relative;inset:auto;transform:none;display:flex;align-items:center;pointer-events:auto}
+.camera-menu-toggle{width:62px;height:66px;min-width:62px;border-radius:14px}
+.camera-mode-panel{display:none!important}
+.right-play-controls{grid-column:3;grid-row:1;display:flex;align-items:center;justify-content:flex-end;gap:7px;pointer-events:auto}
+.right-play-controls .hud-action{width:55px;height:60px;min-width:55px;max-width:55px;flex-basis:55px}
+.hud-jump{background:linear-gradient(145deg,#46eaff,#0086df 60%,#064d9c);color:#fff;border-color:#a8eeff}
+.hud-run{background:linear-gradient(145deg,#ffbd49,#f16b17 60%,#a83211);color:#fff;border-color:#ffe0a1}
+.hud-dock #jump-button,.hud-dock #run-button{position:relative;inset:auto}
+.menu-panel{top:auto;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(340px,calc(100vw - 22px));max-height:min(62vh,540px);overflow-y:auto;z-index:45;padding:12px;border:2px solid #ffe36e;border-radius:15px;background:linear-gradient(155deg,#19234cfa,#101b35fa);box-shadow:0 12px 30px #000a}
+.menu-section-title{padding:8px 5px 4px;color:#ffe36e;font-size:10px;font-weight:1000;letter-spacing:.13em}
+.menu-panel .menu-action{width:100%;min-height:42px;display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid #ffffff45;border-radius:9px;background:linear-gradient(110deg,#20599b,#173b76);color:#fff;text-align:left;font-size:11px;font-weight:950}
+.menu-panel .menu-tool-action{background:linear-gradient(110deg,#245db3,#183d80);border-color:#8ecaff}
+.menu-panel .menu-action.danger{background:#a51f38;border-color:#ff9a9a}
+#hud-confirm:disabled{opacity:.5}
+#door-rotate-control.hidden,#elevator-call-button.hidden,#mp-chat-toggle.hidden{display:none!important}
+#menu-panel{bottom:calc(96px + env(safe-area-inset-bottom))}
+@media(max-width:600px){
+ .hud-dock{grid-template-columns:76px minmax(0,1fr) 116px;gap:3px;padding:0 5px;bottom:calc(5px + env(safe-area-inset-bottom))}
+ #touch-ui{width:72px;height:72px}
+ .move-pad{width:66px;height:66px}
+ .move-knob{width:30px;height:30px}
+ .hud-controls{gap:7px}
+ .hud-action,.camera-menu-toggle{width:56px;height:60px;min-width:56px;max-width:56px;flex-basis:56px;border-radius:12px;font-size:23px}
+ .hud-action small{font-size:7px}
+ .right-play-controls{gap:5px}
+ .right-play-controls .hud-action{width:52px;height:56px;min-width:52px;max-width:52px;flex-basis:52px}
+ #menu-panel{bottom:calc(84px + env(safe-area-inset-bottom));max-height:58vh}
+}
+@media(max-width:390px){
+ .hud-dock{grid-template-columns:66px minmax(0,1fr) 108px}
+ #touch-ui{width:64px;height:64px}.move-pad{width:58px;height:58px}.move-knob{width:27px;height:27px}
+ .hud-controls{gap:5px}.hud-action,.camera-menu-toggle{width:50px;height:55px;min-width:50px;max-width:50px;flex-basis:50px}
+ .right-play-controls .hud-action{width:49px;height:54px;min-width:49px;max-width:49px;flex-basis:49px}
+}
