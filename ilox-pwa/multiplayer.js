@@ -240,7 +240,6 @@ export async function subscribeWorld(worldId, handlers = {}) {
     .on("broadcast", { event: "player_state" }, ({ payload }) => handlers.onPlayerState?.(payload))
     .on("broadcast", { event: "elevator_state" }, ({ payload }) => handlers.onElevatorState?.(payload))
     .on("broadcast", { event: "elevator_door_state" }, ({ payload }) => handlers.onElevatorDoorState?.(payload))
-    .on("broadcast", { event: "elevator_bot_state" }, ({ payload }) => handlers.onElevatorBotState?.(payload))
     .on("broadcast", { event: "world_refresh" }, () => handlers.onWorldRefresh?.())
     .on("postgres_changes", { event: "*", schema: "public", table: "multiplayer_structures", filter: "world_id=eq." + worldId }, () => handlers.onWorldRefresh?.())
     .on("broadcast", { event: "chat_message" }, ({ payload }) => handlers.onChatMessage?.(payload?.message || payload))
@@ -273,14 +272,6 @@ export async function subscribeWorld(worldId, handlers = {}) {
           sendWorldRefresh: () => channel.send({ type: "broadcast", event: "world_refresh", payload: { at: Date.now() } }),
           sendElevatorState: payload => channel.send({ type: "broadcast", event: "elevator_state", payload }),
           sendElevatorDoorState: payload => channel.send({ type: "broadcast", event: "elevator_door_state", payload }),
-          sendBotState: async payload => {
-            const status = await channel.send({
-              type: "broadcast", event: "elevator_bot_state",
-              payload: { ...payload, userId: user.id }
-            });
-            if (status !== "ok") throw new Error("No se pudo sincronizar el robot del ascensor.");
-            return true;
-          },
           sendChatMessage: async (message, displayName) => {
             const row = await sendWorldChatMessage(worldId, message, displayName);
             const status = await channel.send({
