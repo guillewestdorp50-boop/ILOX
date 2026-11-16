@@ -666,3 +666,9 @@ body{background:#201747;color:#fff}
 
 /* ILOX: el viaje se confirma desde el botón verde de la consola. */
 #elevator-ok,.elevator-keypad .elevator-ok{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+/* Acceso directo a cámara libre, independiente del joystick de movimiento. */
+.camera-free-quick{width:38px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:2px;border-radius:10px;border:1px solid #ffffff55;background:#10251feF;color:#fff;font-size:17px;line-height:1;box-shadow:0 4px 16px #0007;touch-action:manipulation}
+.camera-free-quick small{font-size:7px;font-weight:800;letter-spacing:.08em}
+.camera-free-quick.active{background:#e6d19b;color:#1b2d25;border-color:#fff}
+@media(max-width:600px){.camera-free-quick{width:36px;height:34px}}
