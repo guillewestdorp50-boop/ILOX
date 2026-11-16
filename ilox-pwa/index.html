@@ -32,7 +32,7 @@
       const runChecks = async () => {
         const checks = {};
         checks.webgl = (() => { try { const canvas=document.createElement("canvas"); return !!(window.WebGL2RenderingContext && canvas.getContext("webgl2")) || !!canvas.getContext("webgl"); } catch(e) { return false; } })();
-        checks.gameModule = await fetch("./game.js?v=ilox-v108-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
+        checks.gameModule = await fetch("./game.js?v=ilox-v109-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
@@ -206,7 +206,7 @@
       <button id="force-app-update" class="menu-action force-update-action" type="button">⚡ FORZAR ACTUALIZACIÓN <span>↻</span></button>
       <div class="menu-section-title">PARTIDA Y JUGADORES</div>
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
-      <div class="menu-version" aria-label="Versión del juego">ILOX v108</div>
+      <div class="menu-version" aria-label="Versión del juego">ILOX v109</div>
     </section>
     <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
       <div id="camera-free-pad" class="camera-free-pad" aria-label="Desplazar cámara"><div class="camera-free-ring"></div><div id="camera-free-knob" class="camera-free-knob"></div></div>
@@ -313,6 +313,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-v108-20261116"></script>
+  <script type="module" src="./game.js?v=ilox-v109-20261116"></script>
 </body>
 </html>
