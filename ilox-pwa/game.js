@@ -176,6 +176,10 @@ function supportHeightAt(x,z,feet=Infinity,ignore=null){
     const b=new THREE.Box3().setFromObject(g);
     if(x>=b.min.x-.02&&x<=b.max.x+.02&&z>=b.min.z-.02&&z<=b.max.z+.02&&b.max.y<=feet+.28&&b.max.y>top)top=b.max.y;
   }
+  if(Math.abs(x-ILOX_NIGHTCLUB.x)<20.4&&Math.abs(z-ILOX_NIGHTCLUB.z)<15.4){
+    const onDanceFloor=Math.abs(x-ILOX_NIGHTCLUB.x)<10&&Math.abs(z-ILOX_NIGHTCLUB.z)<7.6;
+    top=Math.max(top,onDanceFloor?.325:.16);
+  }
   return top;
 }
 function refreshTerrainSurface(){
