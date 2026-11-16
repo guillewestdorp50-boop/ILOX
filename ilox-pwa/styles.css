@@ -674,14 +674,11 @@ body{background:#201747;color:#fff}
 @media(max-width:600px){.camera-free-quick{width:36px;height:34px}}
 
 
-/* ILOX: botón de salto creado por JavaScript, independiente del HTML heredado. */
-#ilox-jump-control.jump-float{position:fixed!important;z-index:9999!important;left:auto!important;top:auto!important;right:14px!important;bottom:calc(18px + env(safe-area-inset-bottom))!important;width:68px;height:68px;min-width:68px;max-width:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;border:3px solid #ffd0d0;border-radius:14px;background:linear-gradient(145deg,#ff7777 0%,#f01828 52%,#9d0017 100%);color:#fff;font-size:29px;font-weight:1000;line-height:1;text-shadow:0 2px 4px #65000b;box-shadow:0 0 8px #ff273c,0 0 18px #ff152fbb,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;touch-action:none;pointer-events:auto;}
-#ilox-jump-control.jump-float small{display:block!important;font-size:9px;line-height:1;font-weight:1000;letter-spacing:.12em;color:#fff;}
-#ilox-jump-control.jump-float:active{transform:translateY(4px);filter:brightness(1.25);box-shadow:0 0 12px #ff273c,0 0 22px #ff152f,0 1px 0 #650014,inset 0 3px 6px #ffffff8c;}
-#game:not(.playing) #ilox-jump-control.jump-float{display:none!important;}
-@media(max-width:600px){#ilox-jump-control.jump-float{left:auto!important;top:auto!important;right:12px!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;width:64px;height:64px;min-width:64px;max-width:64px;border-radius:13px;font-size:27px;}}
-@media(prefers-reduced-motion:no-preference){#ilox-jump-control.jump-float{animation:ilox-jump-glow 1.6s ease-in-out infinite alternate;}@keyframes ilox-jump-glow{from{filter:brightness(1);box-shadow:0 0 7px #ff273c,0 0 14px #ff152f99,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;}to{filter:brightness(1.22);box-shadow:0 0 12px #ff273c,0 0 26px #ff152fdd,0 5px 0 #650014,0 8px 14px #0009,inset 0 3px 6px #ffffff8c;}}}
-
+/* SALTAR vive en la botonera derecha del HUD, junto a CORRER. */
+#hud-dock #ilox-jump-control{position:relative!important;inset:auto!important;z-index:auto!important;flex:0 0 55px;width:55px;height:60px;min-width:55px;max-width:55px;padding:0;border:3px solid #ffd0d0;border-radius:15px;background:linear-gradient(145deg,#ff7777 0%,#f01828 52%,#9d0017 100%);color:#fff;font-size:27px;font-weight:1000;line-height:1;text-shadow:0 2px 4px #65000b;box-shadow:0 0 8px #ff273c,0 0 18px #ff152fbb,0 4px 0 #650014,0 7px 12px #0009,inset 0 3px 6px #ffffff8c;touch-action:none;pointer-events:auto;}
+#hud-dock #ilox-jump-control small{display:none!important;}
+#hud-dock #ilox-jump-control:active{transform:translateY(3px);filter:brightness(1.2);}
+@media(max-width:600px){#hud-dock #ilox-jump-control{flex-basis:52px;width:52px;height:56px;min-width:52px;max-width:52px;font-size:25px;}}
 
 /* Actualización manual real: invalida cachés locales y vuelve a cargar el build publicado. */
 .menu-panel .force-update-action{margin-top:5px;min-height:48px;justify-content:space-between;border:2px solid #9dffca;background:linear-gradient(110deg,#087d52,#075b79 58%,#123d8c);color:#fff;font-size:12px;letter-spacing:.035em;text-shadow:0 1px 3px #001c18;box-shadow:0 0 9px #25f5a777,0 0 18px #19b9ff55,inset 0 1px 0 #ffffff55;animation:ilox-force-update-glow 1.8s ease-in-out infinite alternate}
