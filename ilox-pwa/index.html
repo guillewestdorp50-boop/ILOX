@@ -82,6 +82,17 @@
       <small class="build-attribution">Modelos “Fox”, “Robot”, “Old Man” y “T. rex” por <a href="https://bake3d.ai" target="_blank" rel="noopener">Bake3D</a>, licenciados bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Escala ajustada para ILOX.</small>
     </section>
     <button id="door-rotate-control" class="door-rotate-control hidden" type="button" aria-label="Girar la puerta 90 grados">↻ GIRAR 90°</button>
+    <section id="elevator-panel" class="door-pin-dialog hidden" role="dialog" aria-modal="false" aria-labelledby="elevator-title">
+      <div class="door-pin-card elevator-card">
+        <div class="door-pin-eyebrow">TRANSPORTE VERTICAL · ILOX</div>
+        <h2 id="elevator-title">ASCENSOR</h2>
+        <p id="elevator-status">Entrá en la cabina y elegí tu destino.</p>
+        <label class="mp-label" for="elevator-floor">PLANTA DE DESTINO</label>
+        <select id="elevator-floor" class="build-category"></select>
+        <button id="elevator-go" class="door-pin-submit" type="button">CERRAR PUERTAS Y VIAJAR</button>
+        <button id="elevator-close" class="door-pin-cancel" type="button">CERRAR</button>
+      </div>
+    </section>
     <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-expanded="false">☰ MENÚ</button>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
