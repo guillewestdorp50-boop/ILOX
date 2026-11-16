@@ -1459,6 +1459,17 @@ function createBuildPiece(record, options = {}) {
       left.castShadow=right.castShadow=true;group.add(left,right);landingDoors.push({floor,left,right});
     }
     group.userData.elevatorLandingDoors=landingDoors;
+    const makeDigitalScreen=(x,y,z)=>{
+      const canvas=document.createElement("canvas");canvas.width=512;canvas.height=256;
+      const ctx=canvas.getContext("2d");ctx.fillStyle="#04191f";ctx.fillRect(0,0,512,256);
+      ctx.strokeStyle="#42f5d0";ctx.lineWidth=8;ctx.strokeRect(8,8,496,240);
+      ctx.fillStyle="#72ffe0";ctx.font="bold 150px monospace";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("01",256,135);
+      const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+      const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.35,.68),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false}));
+      mesh.position.set(x,y,z);group.add(mesh);return {canvas,ctx,texture};
+    };
+    group.userData.elevatorDisplays=[makeDigitalScreen(0,2.42,3.24),makeDigitalScreen(0,2.34,-2.84)];
+    group.userData.elevatorDisplayUpdatedAt=0;
     group.userData.buildHeight=shaftHeight;
     group.userData.elevatorFloorCount=record.floorCount||20;
     group.userData.elevatorCurrentFloor=record.currentFloor||1;
@@ -1670,6 +1681,22 @@ function elevatorLandingExists(group,floor){
     return Math.abs(record.x-gx)<=halfW+1.25&&Math.abs(record.z-gz)<=halfD+1.25;
   });
 }
+function updateElevatorDigitalDisplays(group,now=Date.now()){
+  if(!group.userData.elevatorDisplays||now-(group.userData.elevatorDisplayUpdatedAt||0)<180)return;
+  group.userData.elevatorDisplayUpdatedAt=now;
+  const rec=group.userData.buildRecord,travel=group.userData.elevatorTravel;
+  let floor=rec?.currentFloor||1,arrow="";
+  if(travel){const progress=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);floor=Math.round(travel.fromFloor+(travel.toFloor-travel.fromFloor)*progress);arrow=travel.toFloor>travel.fromFloor?"▲":"▼";}
+  for(const screen of group.userData.elevatorDisplays){
+    const {ctx,canvas,texture}=screen;
+    ctx.fillStyle="#04191f";ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle="#42f5d0";ctx.lineWidth=8;ctx.strokeRect(8,8,496,240);
+    ctx.fillStyle="#72ffe0";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="bold 150px monospace";ctx.fillText(String(floor).padStart(2,"0"),235,135);
+    ctx.font="bold 76px sans-serif";ctx.fillText(arrow,420,130);
+    texture.needsUpdate=true;
+  }
+}
 function animateElevator(group,now=Date.now()){
   const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
   const travel=group.userData.elevatorTravel;
@@ -1692,6 +1719,7 @@ function animateElevator(group,now=Date.now()){
   }
   cabin.position.y=.18+offset;
   const currentFloor=rec.currentFloor||1;
+  updateElevatorDigitalDisplays(group,now);
   const open=!!group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,currentFloor);
   const left=cabin.userData.doorLeft,right=cabin.userData.doorRight;
   if(left&&right){const amount=open?1.22:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
@@ -1806,13 +1834,16 @@ function updateElevatorBot(delta){
   }
   if(!elevatorBotElevator){
     elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
-    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x,group.position.y+.34,group.position.z+4.35));
+    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,group.position.y+.34,group.position.z+4.35));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
   const floorY=group.position.y+cabin.position.y+.16;
   const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
   const outside=new THREE.Vector3(group.position.x,floorY,group.position.z+4.35);
   if(elevatorBotPhase==="approach"){
+    elevatorBotTarget.set(group.position.x-4.5,floorY,group.position.z+4.35);
+    if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
+  }else if(elevatorBotPhase==="approachFront"){
     elevatorBotTarget=outside;
     if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel)setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
@@ -1835,7 +1866,7 @@ function updateElevatorBot(delta){
     const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
     if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y=elevatorBotTarget.y;elevatorBot.rotation.y=Math.atan2(dx,dz);}
   }
-  const actions=elevatorBot.userData.animalActions,moving=["approach","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  const actions=elevatorBot.userData.animalActions,moving=["approach","approachFront","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
   const next=moving?(actions?.walk||actions?.run||actions?.idle):(actions?.idle||actions?.walk);
   if(next&&next!==actions.current){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
   if(multiplayerSession&&performance.now()-elevatorBotLastBroadcast>120){
