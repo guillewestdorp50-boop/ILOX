@@ -1780,14 +1780,14 @@ function animateElevator(group,now=Date.now()){
   }
   if(elevatorRiding&&activeElevator===group&&player){
     const wantsExit=open&&doorProgress>=.98&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
-    if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
+    if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
     else if(elevatorRiding){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
   }
 }
 
 // Música original ILOX: melodía instrumental infantil, sintetizada localmente.
-let iloxElevatorAudio=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0,iloxGuitarShaper=null,iloxDrumNoise=null;
-const ILOX_ELEVATOR_MELODY=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,783.99,987.77,1046.5,987.77,880,783.99,659.25,587.33];
+let iloxElevatorAudio=null,iloxElevatorMaster=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0,iloxGuitarShaper=null,iloxDrumNoise=null;
+const ILOX_ELEVATOR_MELODY=[659.25,0,783.99,880,783.99,659.25,587.33,0,659.25,783.99,987.77,880,783.99,659.25,587.33,523.25];
 const ILOX_ELEVATOR_EMOTES=["😂","🤩","🎉","❤️","⭐","🎵","🕺","🥳","✨","💃","🚀","👏"];
 function iloxPlayNote(freq,when,duration=.22,volume=.055,type="sine"){
   if(!iloxElevatorAudio||!freq)return;
@@ -1795,7 +1795,7 @@ function iloxPlayNote(freq,when,duration=.22,volume=.055,type="sine"){
   osc.type=type;osc.frequency.setValueAtTime(freq,when);
   gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.012);
   gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
-  osc.connect(gain);gain.connect(iloxElevatorAudio.destination);osc.start(when);osc.stop(when+duration+.025);
+  osc.connect(gain);gain.connect(iloxElevatorMaster||iloxElevatorAudio.destination);osc.start(when);osc.stop(when+duration+.025);
 }
 function iloxNoise(){
   if(!iloxElevatorAudio)return null;
@@ -1806,60 +1806,80 @@ function iloxKick(t){
   const o=iloxElevatorAudio.createOscillator(),g=iloxElevatorAudio.createGain();o.type="sine";
   o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(48,t+.16);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.32,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.2);
-  o.connect(g);g.connect(iloxElevatorAudio.destination);o.start(t);o.stop(t+.21);
+  o.connect(g);g.connect(iloxElevatorMaster||iloxElevatorAudio.destination);o.start(t);o.stop(t+.21);
 }
 function iloxSnare(t){
   const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),g=iloxElevatorAudio.createGain();
   src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=950;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.19,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.14);
-  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+.15);
+  src.connect(filter);filter.connect(g);g.connect(iloxElevatorMaster||iloxElevatorAudio.destination);src.start(t);src.stop(t+.15);
   iloxPlayNote(185,t,.09,.055,"triangle");
 }
 function iloxHat(t,open=false){
   const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),g=iloxElevatorAudio.createGain();
   src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=7200;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(open ? 0.075 : 0.035,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+(open ? 0.19 : 0.045));
-  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+(open ? 0.2 : 0.05));
+  src.connect(filter);filter.connect(g);g.connect(iloxElevatorMaster||iloxElevatorAudio.destination);src.start(t);src.stop(t+(open ? 0.2 : 0.05));
 }
 function iloxGuitar(t,root){
   const chord=[root,root*1.5,root*2],mix=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
   filter.type="lowpass";filter.frequency.value=2300;mix.gain.setValueAtTime(.0001,t);mix.gain.exponentialRampToValueAtTime(.075,t+.012);mix.gain.exponentialRampToValueAtTime(.0001,t+.31);
-  filter.connect(mix);mix.connect(iloxElevatorAudio.destination);
+  filter.connect(mix);mix.connect(iloxElevatorMaster||iloxElevatorAudio.destination);
   for(const f of chord){const o=iloxElevatorAudio.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(f,t);o.detune.value=(Math.random()-.5)*9;o.connect(filter);o.start(t);o.stop(t+.33);}
 }
 function iloxBass(t,root){
   const o=iloxElevatorAudio.createOscillator(),g=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
-  o.type="triangle";o.frequency.setValueAtTime(root,t);filter.type="lowpass";filter.frequency.value=420;
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.13,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+.19);
-  o.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);o.start(t);o.stop(t+.2);
+  o.type="sawtooth";o.frequency.setValueAtTime(root,t);filter.type="lowpass";filter.frequency.value=310;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
+  o.connect(filter);filter.connect(g);g.connect(iloxElevatorMaster||iloxElevatorAudio.destination);o.start(t);o.stop(t+.17);
+}
+function iloxPopBrass(t,root){
+  const bus=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
+  filter.type="lowpass";filter.frequency.setValueAtTime(2600,t);
+  bus.gain.setValueAtTime(.0001,t);bus.gain.exponentialRampToValueAtTime(.055,t+.008);bus.gain.exponentialRampToValueAtTime(.0001,t+.19);
+  filter.connect(bus);bus.connect(iloxElevatorMaster||iloxElevatorAudio.destination);
+  [1,1.25,1.5].forEach((ratio,index)=>{const osc=iloxElevatorAudio.createOscillator();osc.type="sawtooth";osc.frequency.setValueAtTime(root*ratio,t);osc.detune.value=(index-1)*5;osc.connect(filter);osc.start(t);osc.stop(t+.2);});
+}
+function iloxPopClap(t){
+  const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),gain=iloxElevatorAudio.createGain();
+  src.buffer=iloxNoise();filter.type="bandpass";filter.frequency.value=1700;filter.Q.value=.7;
+  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.09,t+.003);gain.gain.exponentialRampToValueAtTime(.0001,t+.075);
+  src.connect(filter);filter.connect(gain);gain.connect(iloxElevatorMaster||iloxElevatorAudio.destination);src.start(t);src.stop(t+.08);
 }
 function startIloxElevatorParty(){
   try{
     const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return;
     if(!iloxElevatorAudio)iloxElevatorAudio=new AudioClass();
+    if(!iloxElevatorMaster){iloxElevatorMaster=iloxElevatorAudio.createGain();iloxElevatorMaster.gain.value=0;iloxElevatorMaster.connect(iloxElevatorAudio.destination);}
+    iloxElevatorMaster.gain.cancelScheduledValues(iloxElevatorAudio.currentTime);
+    iloxElevatorMaster.gain.setTargetAtTime(.82,iloxElevatorAudio.currentTime,.035);
     if(iloxElevatorAudio.state==="suspended")iloxElevatorAudio.resume().catch(()=>{});
     stopIloxElevatorParty(false);iloxElevatorBeat=0;
     if(player){player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;}
-    // Banda ILOX: batería 4/4, bajo eléctrico, guitarra distorsionada y melodía de metales/sintes.
-    const bpm=122,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[110,130.81,146.83,98];
+    // Pop-funk bailable original: bajo sincopado, batería firme, palmas, guitarra cortada y metales brillantes.
+    const bpm=116,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[220,261.63,293.66,196];
     iloxElevatorMusicTimer=setInterval(()=>{
-      if(!iloxElevatorAudio||iloxElevatorAudio.state!=="running")return;
-      const step=iloxElevatorBeat++%16,t=iloxElevatorAudio.currentTime+.018,bar=Math.floor(iloxElevatorBeat/16);
+      if(!iloxElevatorAudio||iloxElevatorAudio.state!=="running"||!player?.userData.iloxDancing)return;
+      const step=iloxElevatorBeat++%16,t=iloxElevatorAudio.currentTime+.018;
       const root=roots[Math.floor(step/4)%4],melody=ILOX_ELEVATOR_MELODY[step];
-      // Kick en negras, caja en el 2 y 4, hi-hat marcando corcheas.
-      if(step%2===0)iloxKick(t);
-      if(step===2||step===6||step===10||step===14)iloxSnare(t);
-      iloxHat(t,step===7||step===15);
-      // Guitarra eléctrica con acordes de potencia y bajo con groove.
-      if(step===0||step===4||step===8||step===12)iloxGuitar(t,chords[Math.floor(step/4)]);
-      if(step%2===0)iloxBass(t,root*(step%4===0?1:1.5));
-      // La melodía alegre queda de acompañamiento, no domina la mezcla.
-      if(step%2===0)iloxPlayNote(melody,t+.015,.17,.025,"square");
-      else iloxPlayNote(melody,t+.015,.14,.018,"triangle");
-      if(step===15)iloxPlayNote(1046.5,t+.08,.12,.018,"sine");
+      // Pulso pop con bombo a negras, caja y palmas en 2/4, hi-hat constante.
+      if(step%4===0||step===7||step===15)iloxKick(t);
+      if(step===2||step===6||step===10||step===14){iloxSnare(t);iloxPopClap(t+.006);}
+      iloxHat(t,step%4===3);
+      // Guitarra funky a contratiempo y golpes cortos de metales en los acentos.
+      if(step===2||step===6||step===10||step===14)iloxGuitar(t,chords[Math.floor(step/4)]);
+      if(step===0||step===7||step===11)iloxPopBrass(t,chords[Math.floor(step/4)]*2);
+      // Bajo sincopado con notas de paso para que el groove tenga movimiento.
+      if([0,3,4,7,8,11,12,15].includes(step))iloxBass(t,root*(step%4===3?1.5:step%4===0?1:2));
+      if(melody)iloxPlayNote(melody,t+.012,.13,step%4===0?.025:.016,step%4===0?"square":"triangle");
     },stepMs);
-  }catch(error){console.warn("ILOX: no se pudo iniciar la banda del ascensor",error);}
+  }catch(error){console.warn("ILOX: no se pudo iniciar la banda pop del ascensor",error);}
 }
 function stopIloxElevatorParty(clearDance=true){
   if(iloxElevatorMusicTimer){clearInterval(iloxElevatorMusicTimer);iloxElevatorMusicTimer=null;}
+  if(iloxElevatorMaster&&iloxElevatorAudio){
+    const now=iloxElevatorAudio.currentTime;
+    iloxElevatorMaster.gain.cancelScheduledValues(now);
+    iloxElevatorMaster.gain.setTargetAtTime(0,now,.008);
+  }
   if(clearDance&&player){player.userData.iloxDancing=false;if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();player.userData.iloxEmote=null;}}
 }
 function updateIloxElevatorParty(delta){
