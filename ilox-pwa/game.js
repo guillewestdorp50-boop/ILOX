@@ -2662,7 +2662,7 @@ function updateElevatorBot(delta){
     if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&!group.userData.elevatorTravel&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
     elevatorBotTarget=inside;
-    if(Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.62&&Math.abs(elevatorBot.position.y-floorY)<1.5&&elevatorLandingExists(group,1)){
+    if(Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.62&&Math.abs(elevatorBot.position.y-inside.y)<1.5&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
       setElevatorBotPhase("boardedWait",group,inside);
       elevatorBotWaitUntil=Date.now()+1100;
