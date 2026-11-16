@@ -1132,8 +1132,8 @@ function addEvents() {
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
-  cameraMenuToggle.addEventListener("click",()=>{cameraModePanel.classList.toggle("hidden");setHudDockOpen(false);});
-  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");}));
+  cameraMenuToggle.addEventListener("click",()=>cameraModePanel.classList.toggle("hidden"));
+  document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");setHudDockOpen(false);}));
   cameraLockButton.addEventListener("click", () => {
     cameraLocked = !cameraLocked;
     game.classList.toggle("camera-locked", cameraLocked);
@@ -1153,6 +1153,7 @@ function addEvents() {
       cameraLockButton.setAttribute("aria-pressed","false");
       showToast("Movimiento desbloqueado");
     }
+    setHudDockOpen(false);
   });
   const viewToggle = document.querySelector("#view-toggle");
   const categorySelect = document.querySelector("#build-category");
