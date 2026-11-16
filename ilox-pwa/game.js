@@ -16,6 +16,8 @@ const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
 const moveKnob = document.querySelector("#move-knob");
 const cameraControls = document.querySelector("#hud-controls");
+const hudDock=document.querySelector("#hud-dock");
+const hudDockToggle=document.querySelector("#hud-dock-toggle");
 const cameraLockButton = document.querySelector("#camera-lock");
 const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
 const cameraModePanel = document.querySelector("#camera-mode-panel");
@@ -996,12 +998,12 @@ function addEvents() {
   });
   elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator||!activeElevator.userData.elevatorConsole)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
   document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
-  elevatorCallButton?.addEventListener("click",()=>callElevator(activeElevator));
+  elevatorCallButton?.addEventListener("click",()=>{callElevator(activeElevator);setHudDockOpen(false);});
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
     if (started && !pointerDragged && activePointers.size===0) {
-      if(buildMode)placeBuildAtPointer(e);
+      if(buildMode){const before=buildRecords.length;placeBuildAtPointer(e);if(buildRecords.length>before)setHudDockOpen(false);}
       else if(!tryElevatorConsoleAtPointer(e))toggleDoorAtPointer(e);
     }
     lookPointer = activePointers.size ? [...activePointers.keys()][0] : null;
@@ -1082,11 +1084,13 @@ function addEvents() {
     if (welcome) welcome.style.display = "none";
     loading?.classList.add("done");
     if (renderer?.domElement) renderer.domElement.style.visibility = "visible";
-    cameraControls.classList.remove("hidden");
+    hudDock.classList.remove("hidden");
+    cameraControls.classList.add("hidden");
+    hudDockToggle.setAttribute("aria-expanded","false");
     loadRiggedAvatar(selectedAvatar);
     if(multiplayerSession) Multiplayer.updateMyAvatar(selectedAvatar).catch(error=>console.warn("ILOX multiplayer: no se pudo actualizar el avatar",error));
     avatarSelect.classList.add("hidden");
-    menuToggle.classList.remove("hidden");
+
     if (hint) hint.textContent = "";
 
     if (firstEntry && !activeMultiplayerWorldId) {
@@ -1128,7 +1132,7 @@ function addEvents() {
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
-  cameraMenuToggle.addEventListener("click",()=>cameraModePanel.classList.toggle("hidden"));
+  cameraMenuToggle.addEventListener("click",()=>{cameraModePanel.classList.toggle("hidden");setHudDockOpen(false);});
   document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");}));
   cameraLockButton.addEventListener("click", () => {
     cameraLocked = !cameraLocked;
@@ -1154,7 +1158,7 @@ function addEvents() {
   const categorySelect = document.querySelector("#build-category");
   const buildToolsHost = document.querySelector("#build-tools");
   const doorRotateControl = document.querySelector("#door-rotate-control");
-  doorRotateControl?.addEventListener("click",()=>{buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast(`Puerta girada ${Math.round(buildRotation*180/Math.PI)}°`);});
+  doorRotateControl?.addEventListener("click",()=>{buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast(`Puerta girada ${Math.round(buildRotation*180/Math.PI)}°`);setHudDockOpen(false);});
   const toolCatalog = {
     block:[["block","🧱","CUBO"],["brick","🧱","LADRILLO"],["erase","⌫","BORRAR"],["rotate","↻","GIRAR"]],
     nature:[["tree","🌳","ÁRBOL"],["rock","🪨","ROCA"],["erase","⌫","BORRAR"]],
@@ -1176,6 +1180,7 @@ function addEvents() {
         doorRotateControl?.classList.toggle("hidden",!["door-solid","door-brick","door"].includes(kind));hudDeleteButton.classList.toggle("active",kind==="erase");
         document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
+        setHudDockOpen(false);
       });buildToolsHost.appendChild(button);
     }
   }
@@ -1187,7 +1192,7 @@ function addEvents() {
     renderBuildTools(categorySelect.value);
   });
   animalStyleSelect?.addEventListener("change",()=>renderBuildTools("farm"));
-  menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));});
+  menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));setHudDockOpen(false);});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
   document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
@@ -1248,7 +1253,7 @@ function addEvents() {
   });
   document.querySelector("#mp-chat-toggle")?.addEventListener("click",()=>{
     if(!activeMultiplayerWorldId){showToast("El chat funciona dentro de un mundo compartido.");openMultiplayerDialog();return;}
-    const panel=document.querySelector("#mp-chat-panel");panel?.classList.toggle("hidden");
+    const panel=document.querySelector("#mp-chat-panel");panel?.classList.toggle("hidden");setHudDockOpen(false);
     if(panel&&!panel.classList.contains("hidden")){markMultiplayerChatRead();const list=document.querySelector("#mp-chat-messages");if(list)list.scrollTop=list.scrollHeight;document.querySelector("#mp-chat-input")?.focus();}
   });
   const unlockChatAudio=()=>{
@@ -1280,19 +1285,22 @@ function addEvents() {
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
   });
+  function setHudDockOpen(open){cameraControls.classList.toggle("hidden",!open);hudDockToggle.setAttribute("aria-expanded",String(open));hudDockToggle.setAttribute("aria-label",open?"Ocultar controles":"Desplegar controles");hudDockToggle.textContent=open?"⌄":"⌃";if(!open)cameraModePanel.classList.add("hidden");}
+  hudDockToggle.addEventListener("click",()=>setHudDockOpen(cameraControls.classList.contains("hidden")));
   function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
     buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
     buildPanel.classList.toggle("hidden",!enabled||!showPanel);doorRotateControl?.classList.add("hidden");
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    setHudDockOpen(false);
     hudConfirmButton.disabled=!enabled;hudDeleteButton.classList.toggle("active",enabled&&tool==="erase");
     cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(enabled?9.5:5.4));if(enabled&&!firstPersonBuild)pitch=.48;
     viewToggle.classList.toggle("hidden",!enabled);viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
     document.querySelector("#build-help").textContent=enabled?(tool==="erase"?"Tocá cada pieza que quieras eliminar.":"Elegí una categoría y una pieza. Tocá para colocar; todo encaja en cuadrícula."):"Explorá el mundo y construí.";
     if(notify)showToast(!enabled?"¡A explorar!":tool==="erase"?"Modo eliminación activado":"Modo construcción activado");
   }
-  hudBuildButton.addEventListener("click",()=>{if(!buildMode||buildTool==="erase")setBuildMode(true,"block",true);else buildPanel.classList.toggle("hidden");});
-  hudConfirmButton.addEventListener("click",()=>{if(buildMode)setBuildMode(false,buildTool,false);});
-  hudDeleteButton.addEventListener("click",()=>setBuildMode(true,"erase",false));
+  hudBuildButton.addEventListener("click",()=>{if(!buildMode||buildTool==="erase")setBuildMode(true,"block",true);else buildPanel.classList.toggle("hidden");setHudDockOpen(false);});
+  hudConfirmButton.addEventListener("click",()=>{if(buildMode)setBuildMode(false,buildTool,false);setHudDockOpen(false);});
+  hudDeleteButton.addEventListener("click",()=>{setBuildMode(true,"erase",false);setHudDockOpen(false);});
   viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
   document.querySelectorAll(".block-color").forEach(button => {
     button.addEventListener("click", () => {
