@@ -1337,7 +1337,7 @@ function addEvents() {
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
         doorRotateControl?.classList.toggle("hidden",!["door-solid","door-brick","door"].includes(kind));hudDeleteButton.classList.toggle("active",kind==="erase");
-        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":isLivingBuildKind(kind)?"Seres vivos: colocación directa sobre el terreno, sin platea.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
         setHudDockOpen(false);
       });buildToolsHost.appendChild(button);
