@@ -2937,5 +2937,6 @@ try {
   init();
 } catch (error) {
   console.error(error);
-  loading.innerHTML = '<div class="loading-mark">ILOX</div><p>No se pudo iniciar el mundo 3D. Revisá la conexión y volvé a intentar.</p>';
+  if (window.__iloxReportStartupError) window.__iloxReportStartupError("INIT", error?.stack || error?.message || error);
+  else loading.innerHTML = '<div class="loading-mark">ILOX</div><p>No se pudo iniciar el mundo 3D. Revisá la conexión y volvé a intentar.</p>';
 }
