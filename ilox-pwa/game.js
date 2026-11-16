@@ -2644,7 +2644,7 @@ function updateElevatorBot(delta){
       elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
       elevatorBot.userData.elevatorBotInitialized=true;
     }
-    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35));
+    setElevatorBotPhase("approach",group,group.localToWorld(new THREE.Vector3(-4.5,.34,4.35)));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
   // Anclar los puntos a las transformaciones reales del ascensor: así el bot
@@ -2654,7 +2654,7 @@ function updateElevatorBot(delta){
   const outside=group.localToWorld(new THREE.Vector3(0,.34,4.35));
   const botTopFloor=Math.max(2,Number(group.userData.iloxBotTopFloor)||12);
   if(elevatorBotPhase==="approach"){
-    elevatorBotTarget.set(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35);
+    elevatorBotTarget.copy(group.localToWorld(new THREE.Vector3(-4.5,.34,4.35)));
     if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
   }else if(elevatorBotPhase==="approachFront"){
     elevatorBotTarget.copy(outside);
@@ -2675,7 +2675,7 @@ function updateElevatorBot(delta){
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
     elevatorBot.position.copy(elevatorBotTarget);
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
-    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true)){setElevatorBotPhase("waitingTop",group,inside);elevatorBotWaitUntil=0;}
   }else if(elevatorBotPhase==="waitingTop"){
     // Seguir el centro de la cabina en cada frame mientras sube.
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
