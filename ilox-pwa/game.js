@@ -41,7 +41,7 @@ const doorPinTitle = document.querySelector("#door-pin-title");
 const doorPinHelp = document.querySelector("#door-pin-help");
 const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
-let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null;
+let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null, multiplayerWorldOwnerId = null;
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
@@ -2231,7 +2231,8 @@ function animateElevator(group,now=Date.now()){
     landing.left.position.x=-1.45-landingSlide;landing.right.position.x=1.45+landingSlide;
   }
   if(elevatorRiding&&activeElevator===group&&player){
-    const atDoor=player.position.z>group.position.z+2.15&&Math.abs(player.position.x-group.position.x)<2.2;
+    // No liberar el control al tocar el umbral: el jugador debe cruzar la puerta y quedar fuera de la cabina.
+    const atDoor=player.position.z>group.position.z+3.35&&Math.abs(player.position.x-group.position.x)<2.2;
     const wantsExit=open&&doorProgress>=.98&&atDoor;
     if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
     else if(elevatorRiding){
@@ -2239,7 +2240,9 @@ function animateElevator(group,now=Date.now()){
       // puede caminar libremente dentro del espacio interior.
       player.position.y=group.position.y+cabin.position.y+.16;
       player.position.x=THREE.MathUtils.clamp(player.position.x,group.position.x-2.12,group.position.x+2.12);
-      const cabinFrontLimit=open?2.7:2.0;
+      // Con la puerta abierta se permite avanzar más allá del borde de la cabina;
+      // elevatorRiding sigue activo hasta que el cuerpo ya cruzó completamente.
+      const cabinFrontLimit=open?3.65:2.0;
       player.position.z=THREE.MathUtils.clamp(player.position.z,group.position.z-2.12,group.position.z+cabinFrontLimit);
       playerVerticalVelocity=0;playerGrounded=true;
     }
@@ -2502,6 +2505,9 @@ function applyRemoteElevatorBotState(state){
 }
 function elevatorBotIsController(record){
   if(!multiplayerSession)return true;
+  // El propietario del mundo coordina al único bot compartido; no depende
+  // de quién haya construido el ascensor que el bot elija usar.
+  if(multiplayerWorldOwnerId)return multiplayerWorldOwnerId===multiplayerUserId;
   return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
 }
 function elevatorBotStepHeight(x,z,feet){
@@ -2973,6 +2979,8 @@ async function enterMultiplayerWorld(worldId){
   for(const avatar of remotePlayers.values())scene.remove(avatar);
   remotePlayers.clear();clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
   activeMultiplayerWorldId=worldId;
+  const accessibleWorlds=await Multiplayer.listMyWorlds();
+  multiplayerWorldOwnerId=accessibleWorlds.find(world=>world.id===worldId)?.owner_id||null;
   localStorage.setItem("ilox-last-multiplayer-world",worldId);
   // Cada integrante que entra aparece junto al punto común del mundo, sin superponerse.
   spawnPlayerAtMultiplayerMeetingPoint();
@@ -3005,7 +3013,7 @@ async function enterMultiplayerWorld(worldId){
     return count;
   }catch(error){
     stopMultiplayerFallbackSync();
-    activeMultiplayerWorldId=null;multiplayerUserId=null;
+    activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;
     if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
     for(const avatar of remotePlayers.values())scene.remove(avatar);
     remotePlayers.clear();clearCurrentBuildWorld();loadBuilds();
@@ -3050,7 +3058,7 @@ async function leaveMultiplayerWorld(){
   }
   if(multiplayerSession){try{await multiplayerSession.close();}catch(error){console.warn(error);}multiplayerSession=null;}
   for(const avatar of remotePlayers.values())scene.remove(avatar);
-  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerCloudSnapshot.clear();
+  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerCloudSnapshot.clear();
   clearCurrentBuildWorld();loadBuilds();
   document.querySelector("#mp-leave-world")?.classList.add("hidden");
   document.querySelector("#mp-chat-panel")?.classList.add("hidden");
