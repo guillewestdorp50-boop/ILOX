@@ -1786,16 +1786,50 @@ function animateElevator(group,now=Date.now()){
 }
 
 // Música original ILOX: melodía instrumental infantil, sintetizada localmente.
-let iloxElevatorAudio=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0;
-const ILOX_ELEVATOR_MELODY=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,783.99,987.77,1046.5,987.77,880,783.99,659.25,587.33,523.25,659.25,783.99,1046.5,987.77,783.99,659.25,523.25];
+let iloxElevatorAudio=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0,iloxGuitarShaper=null,iloxDrumNoise=null;
+const ILOX_ELEVATOR_MELODY=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,783.99,987.77,1046.5,987.77,880,783.99,659.25,587.33];
 const ILOX_ELEVATOR_EMOTES=["😂","🤩","🎉","❤️","⭐","🎵","🕺","🥳","✨","💃","🚀","👏"];
 function iloxPlayNote(freq,when,duration=.22,volume=.055,type="sine"){
   if(!iloxElevatorAudio||!freq)return;
   const osc=iloxElevatorAudio.createOscillator(),gain=iloxElevatorAudio.createGain();
   osc.type=type;osc.frequency.setValueAtTime(freq,when);
-  gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.018);
+  gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.012);
   gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
   osc.connect(gain);gain.connect(iloxElevatorAudio.destination);osc.start(when);osc.stop(when+duration+.025);
+}
+function iloxNoise(){
+  if(!iloxElevatorAudio)return null;
+  if(!iloxDrumNoise){const length=iloxElevatorAudio.sampleRate;iloxDrumNoise=iloxElevatorAudio.createBuffer(1,length,iloxElevatorAudio.sampleRate);const data=iloxDrumNoise.getChannelData(0);for(let i=0;i<length;i++)data[i]=Math.random()*2-1;}
+  return iloxDrumNoise;
+}
+function iloxKick(t){
+  const o=iloxElevatorAudio.createOscillator(),g=iloxElevatorAudio.createGain();o.type="sine";
+  o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(48,t+.16);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.32,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.2);
+  o.connect(g);g.connect(iloxElevatorAudio.destination);o.start(t);o.stop(t+.21);
+}
+function iloxSnare(t){
+  const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),g=iloxElevatorAudio.createGain();
+  src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=950;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.19,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.14);
+  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+.15);
+  iloxPlayNote(185,t,.09,.055,"triangle");
+}
+function iloxHat(t,open=false){
+  const src=iloxElevatorAudio.createBufferSource(),filter=iloxElevatorAudio.createBiquadFilter(),g=iloxElevatorAudio.createGain();
+  src.buffer=iloxNoise();filter.type="highpass";filter.frequency.value=7200;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(open?.075:.035,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+(open?.19:.045));
+  src.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);src.start(t);src.stop(t+(open?.2:.05));
+}
+function iloxGuitar(t,root){
+  const chord=[root,root*1.5,root*2],mix=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
+  filter.type="lowpass";filter.frequency.value=2300;mix.gain.setValueAtTime(.0001,t);mix.gain.exponentialRampToValueAtTime(.075,t+.012);mix.gain.exponentialRampToValueAtTime(.0001,t+.31);
+  filter.connect(mix);mix.connect(iloxElevatorAudio.destination);
+  for(const f of chord){const o=iloxElevatorAudio.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(f,t);o.detune.value=(Math.random()-.5)*9;o.connect(filter);o.start(t);o.stop(t+.33);}
+}
+function iloxBass(t,root){
+  const o=iloxElevatorAudio.createOscillator(),g=iloxElevatorAudio.createGain(),filter=iloxElevatorAudio.createBiquadFilter();
+  o.type="triangle";o.frequency.setValueAtTime(root,t);filter.type="lowpass";filter.frequency.value=420;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.13,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+.19);
+  o.connect(filter);filter.connect(g);g.connect(iloxElevatorAudio.destination);o.start(t);o.stop(t+.2);
 }
 function startIloxElevatorParty(){
   try{
@@ -1804,17 +1838,25 @@ function startIloxElevatorParty(){
     if(iloxElevatorAudio.state==="suspended")iloxElevatorAudio.resume().catch(()=>{});
     stopIloxElevatorParty(false);iloxElevatorBeat=0;
     if(player){player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;}
+    // Banda ILOX: batería 4/4, bajo eléctrico, guitarra distorsionada y melodía de metales/sintes.
+    const bpm=122,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[110,130.81,146.83,98];
     iloxElevatorMusicTimer=setInterval(()=>{
       if(!iloxElevatorAudio||iloxElevatorAudio.state!=="running")return;
-      const t=iloxElevatorAudio.currentTime+.025,idx=iloxElevatorBeat++%ILOX_ELEVATOR_MELODY.length;
-      const melody=ILOX_ELEVATOR_MELODY[idx];
-      iloxPlayNote(melody,t,.23,.052,"triangle");
-      if(idx%2===0)iloxPlayNote(melody*2,t+.015,.13,.022,"sine");
-      if(idx%4===0)iloxPlayNote([130.81,146.83,164.81,196][Math.floor(idx/4)%4],t,.34,.035,"sine");
-      // Golpecito de percusión suave, sin voz ni muestras externas.
-      if(idx%2===1)iloxPlayNote(95,t,.055,.012,"square");
-    },245);
-  }catch(error){console.warn("ILOX: no se pudo iniciar la música del ascensor",error);}
+      const step=iloxElevatorBeat++%16,t=iloxElevatorAudio.currentTime+.018,bar=Math.floor(iloxElevatorBeat/16);
+      const root=roots[Math.floor(step/4)%4],melody=ILOX_ELEVATOR_MELODY[step];
+      // Kick en negras, caja en el 2 y 4, hi-hat marcando corcheas.
+      if(step%2===0)iloxKick(t);
+      if(step===2||step===6||step===10||step===14)iloxSnare(t);
+      iloxHat(t,step===7||step===15);
+      // Guitarra eléctrica con acordes de potencia y bajo con groove.
+      if(step===0||step===4||step===8||step===12)iloxGuitar(t,chords[Math.floor(step/4)]);
+      if(step%2===0)iloxBass(t,root*(step%4===0?1:1.5));
+      // La melodía alegre queda de acompañamiento, no domina la mezcla.
+      if(step%2===0)iloxPlayNote(melody,t+.015,.17,.025,"square");
+      else iloxPlayNote(melody,t+.015,.14,.018,"triangle");
+      if(step===15)iloxPlayNote(1046.5,t+.08,.12,.018,"sine");
+    },stepMs);
+  }catch(error){console.warn("ILOX: no se pudo iniciar la banda del ascensor",error);}
 }
 function stopIloxElevatorParty(clearDance=true){
   if(iloxElevatorMusicTimer){clearInterval(iloxElevatorMusicTimer);iloxElevatorMusicTimer=null;}
