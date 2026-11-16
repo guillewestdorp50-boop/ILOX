@@ -1393,7 +1393,33 @@ function addEvents() {
   });
   animalStyleSelect?.addEventListener("change",()=>renderBuildTools("farm"));
   menuToggle.addEventListener("click",()=>{const open=menuPanel.classList.contains("hidden");menuPanel.classList.toggle("hidden",!open);menuToggle.setAttribute("aria-expanded",String(open));setHudDockOpen(false);});
-   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");}});
+  document.querySelector("#force-app-update")?.addEventListener("click",async event=>{
+    const button=event.currentTarget;
+    if(button.disabled)return;
+    button.disabled=true;
+    button.textContent="⚡ BUSCANDO ACTUALIZACIÓN…";
+    showToast("Conectando con la última versión publicada…");
+    try{
+      if(!("serviceWorker" in navigator))throw new Error("Este navegador no permite actualizar la aplicación.");
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration=>registration.update().catch(()=>{})));
+      await Promise.all(registrations.map(registration=>registration.unregister()));
+      if("caches" in window){
+        const cacheNames=await caches.keys();
+        await Promise.all(cacheNames.map(name=>caches.delete(name)));
+      }
+      showToast("Caché renovada. Cargando la última versión publicada…");
+      const freshUrl=new URL("./",window.location.href);
+      freshUrl.searchParams.set("ilox-force-update",String(Date.now()));
+      window.location.replace(freshUrl.href);
+    }catch(error){
+      console.error("ILOX: actualización forzada fallida",error);
+      showToast("No se pudo actualizar. Revisá tu conexión e intentá otra vez.");
+      button.disabled=false;
+      button.textContent="⚡ FORZAR ACTUALIZACIÓN";
+    }
+  });
+   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen,#force-app-update")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");}});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
   document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
