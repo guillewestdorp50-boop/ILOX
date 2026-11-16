@@ -95,6 +95,24 @@
       });
     })();
   </script>
+  <script>
+    // Arranque de emergencia: permite salir de la pantalla de carga si el motor quedó inicializado pero el overlay no se cerró.
+    document.addEventListener("DOMContentLoaded", () => {
+      const panel = document.getElementById("loading");
+      const force = document.getElementById("ilox-force-start");
+      const release = () => {
+        if (!panel || panel.querySelector("#ilox-diagnostic-detail")) return;
+        panel.classList.add("done");
+        const toast = document.getElementById("toast");
+        if (toast) {
+          toast.textContent = "Inicio forzado. Si JUGAR no responde, el motor 3D no llegó a arrancar.";
+          toast.classList.add("show");
+        }
+      };
+      force?.addEventListener("click", release);
+      window.setTimeout(release, 15000);
+    });
+  </script>
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest?v=ilox-v104-five-controls">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
@@ -104,7 +122,7 @@
 </head>
 <body>
   <main id="game" aria-label="Mundo 3D de ILOX">
-    <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p><button id="ilox-diagnostic-trigger" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">DETECTAR FALLO Y ENVIAR INFORME</button><p id="ilox-diagnostic-status" role="status"></p></div>
+    <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p><button id="ilox-diagnostic-trigger" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">DETECTAR FALLO Y ENVIAR INFORME</button><button id="ilox-force-start" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#71f0c2,#22a6bd);color:#102b45;font-weight:900">FORZAR INICIO</button><p id="ilox-diagnostic-status" role="status"></p></div>
     <div id="welcome-scene" class="welcome-scene" aria-hidden="true">
       <svg class="welcome-art" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
         <defs>
