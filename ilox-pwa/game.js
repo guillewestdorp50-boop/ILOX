@@ -2580,7 +2580,20 @@ function updateElevatorBot(delta){
   if(elevatorBotElevator&&!buildGroups.includes(elevatorBotElevator)){
     elevatorBotElevator=null;elevatorBotPhase="idle";elevatorBotTarget=null;elevatorBotWaitUntil=0;
   }
-  const group=elevatorBotElevator||buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator");
+  let group=elevatorBotElevator;
+  if(!group&&elevatorBotRemoteState)group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator");
+  if(!group){
+    const candidates=buildGroups.filter(item=>item.userData.buildRecord?.kind==="elevator"&&elevatorLandingExists(item,1)).map(item=>{
+      const count=Math.max(1,Math.min(40,Number(item.userData.buildRecord.floorCount)||40));
+      let topFloor=1;
+      for(let floor=count;floor>=2;floor--)if(elevatorLandingExists(item,floor)){topFloor=floor;break;}
+      return {item,topFloor,distance:Math.hypot(elevatorBot.position.x-item.position.x,elevatorBot.position.z-item.position.z)};
+    }).filter(candidate=>candidate.topFloor>1).sort((a,b)=>a.distance-b.distance);
+    if(candidates.length){
+      group=candidates[0].item;
+      group.userData.iloxBotTopFloor=candidates[0].topFloor;
+    }
+  }
   if(!group){
     if(elevatorBotRemoteState&&elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
     return;
@@ -2602,6 +2615,7 @@ function updateElevatorBot(delta){
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
   const floorOneY=group.position.y+.34;
   const floorY=group.position.y+cabin.position.y+.16;
+  const botTopFloor=Math.max(2,Number(group.userData.iloxBotTopFloor)||12);
   // Marca de embarque: centrada en el ancho y 0,75 m hacia dentro desde la puerta, lejos de los vidrios. El bot debe caminar hasta aquí antes de activar el viaje.
   const inside=new THREE.Vector3(group.position.x,floorY,group.position.z+.75);
   const outside=new THREE.Vector3(group.position.x,floorOneY,group.position.z+4.35);
@@ -2624,10 +2638,10 @@ function updateElevatorBot(delta){
     // registre al pasajero antes de solicitar el viaje.
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
-    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
   }else if(elevatorBotPhase==="waitingTop"){
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
-    if((record.currentFloor||1)===12&&!group.userData.elevatorTravel){
+    if((record.currentFloor||1)===botTopFloor&&!group.userData.elevatorTravel){
       if(!elevatorBotWaitUntil)elevatorBotWaitUntil=Date.now()+6500;
       if(Date.now()>=elevatorBotWaitUntil&&beginElevatorTravel(group,1,Date.now(),true))setElevatorBotPhase("rideDown",group,inside);
     }
@@ -2662,6 +2676,9 @@ function updateElevatorBot(delta){
     if(Date.now()>=elevatorBotEmoteUntil){const model=elevatorBot.userData.animalModel,base=elevatorBot.userData.animalModelBase;if(model&&base){model.position.copy(base.position);model.rotation.copy(base.rotation);}setElevatorBotPhase("done",group,elevatorBot.position);}
   }else if(elevatorBotPhase==="done"){
     elevatorBotTarget=null;
+    elevatorBotElevator=null;
+    elevatorBotWaitUntil=0;
+    elevatorBotPhase="idle";
   }
   const movingPhases=["approach","approachFront","board","exit","clubApproach","clubEnter","clubExit"];
   elevatorBot.userData.botActuallyMoving=false;
