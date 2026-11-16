@@ -60,6 +60,7 @@ let playerVerticalVelocity = 0, playerGrounded = true;
 let moveStick = { x: 0, y: 0 };
 
 let scene, camera, renderer, player, clock, terrainMesh;
+let renderPixelRatio=1,slowFrameStreak=0,fastFrameStreak=0;
 let buildMode = false, buildTool = "block", buildRotation = 0, firstPersonBuild = false, viewHands = null;
 let selectedBlockColor = 0xff3030;
 let buildGuide = null, buildPointer = null;
@@ -1089,7 +1090,8 @@ function init() {
   heldBlock.position.set(0.02,-0.53,-0.82); heldBlock.rotation.set(0.18,0.25,0.12); viewHands.add(heldBlock);
   camera.add(viewHands); scene.add(camera);
   renderer = new THREE.WebGLRenderer({ antialias: innerWidth > 700, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
+  renderPixelRatio=Math.min(devicePixelRatio||1,1.25);
+  renderer.setPixelRatio(renderPixelRatio);
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1341,7 +1343,6 @@ function addEvents() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   });
   addEventListener("keydown", e => {
     keys.add(e.key.toLowerCase());
@@ -3576,6 +3577,12 @@ function updateBuildGravity(delta){
     else if(group.position.y<supportY-.015){group.position.y=supportY;group.userData.vy=0;record.y=supportY;updateBuildSpatialGroup(group);}
   }
 }
+function adjustRenderResolution(delta){
+  if(delta>.024){slowFrameStreak++;fastFrameStreak=0;}else if(delta<.019){fastFrameStreak++;slowFrameStreak=Math.max(0,slowFrameStreak-1);}else{slowFrameStreak=0;fastFrameStreak=0;}
+  const maximum=Math.min(devicePixelRatio||1,1.25);
+  if(slowFrameStreak>=90&&renderPixelRatio>.72){renderPixelRatio=Math.max(.72,renderPixelRatio-.12);renderer.setPixelRatio(renderPixelRatio);renderer.setSize(innerWidth,innerHeight,false);slowFrameStreak=0;fastFrameStreak=0;}
+  else if(fastFrameStreak>=300&&renderPixelRatio<maximum){renderPixelRatio=Math.min(maximum,renderPixelRatio+.08);renderer.setPixelRatio(renderPixelRatio);renderer.setSize(innerWidth,innerHeight,false);slowFrameStreak=0;fastFrameStreak=0;}
+}
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
@@ -3684,6 +3691,7 @@ function animate() {
     const targetRotation=avatar.userData.netRotation||0;
     const angle=Math.atan2(Math.sin(targetRotation-avatar.rotation.y),Math.cos(targetRotation-avatar.rotation.y));
     avatar.rotation.y+=angle*(1-Math.exp(-delta*14));
+    if(avatar.position.distanceTo(camera.position)>70)continue;
     const moving=!!avatar.userData.remoteMoving,swimming=!!avatar.userData.remoteSwimming;
     if(avatar.userData.toonTail){avatar.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2+avatar.position.x)*.42;avatar.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7+avatar.position.z)*.16;}
     if(avatar.userData.riggedMixer){
@@ -3821,6 +3829,7 @@ function animate() {
     }
   }
   renderer.render(scene, camera);
+  adjustRenderResolution(delta);
 }
 
 try {
