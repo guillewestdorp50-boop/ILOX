@@ -2601,10 +2601,21 @@ function updateElevators(delta){
   if(elevatorRiding&&activeElevator?.userData.elevatorTravel)closeElevatorKeypad();
 }
 function ensureElevatorBot(){
-  if(elevatorBot||!scene)return;
-  elevatorBot=new THREE.Group();elevatorBot.name="ilox-shared-elevator-bot";
-  elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
-  elevatorBot.userData.buildHeight=1.9;
+  if(!scene)return;
+  if(elevatorBot&&elevatorBot.parent===scene)return;
+  // Reemplazo limpio de la instancia anterior: no toca estructuras ni datos del mundo.
+  if(elevatorBot?.parent)elevatorBot.parent.remove(elevatorBot);
+  elevatorBot=null;elevatorBotRemoteState=null;elevatorBotTarget=null;
+  elevatorBotPhase="idle";elevatorBotElevator=null;elevatorBotWaitUntil=0;
+  elevatorBotEmoteUntil=0;elevatorBotLastBroadcast=0;
+  const freshBot=new THREE.Group();
+  freshBot.name="ilox-shared-elevator-bot-v2";
+  freshBot.position.set(-6,terrainHeight(-6,-6),-6);
+  freshBot.userData.buildHeight=1.9;
+  freshBot.userData.collisionRadius=.43;
+  freshBot.userData.botGeneration=2;
+  freshBot.userData.elevatorBotInitialized=false;
+  elevatorBot=freshBot;
   scene.add(elevatorBot);
   loadAnimalModel(elevatorBot,"robot",false);
 }
@@ -3875,6 +3886,16 @@ function animate() {
         let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
       if(isIloxNightclubWall(x,z,feet))return true;
+      // El bot compartido tiene colisión propia: no es un objeto decorativo atravesable.
+      if(elevatorBot&&elevatorBot.parent===scene){
+        const botFeet=elevatorBot.position.y,botTop=botFeet+(elevatorBot.userData.buildHeight||1.9);
+        const radius=elevatorBot.userData.collisionRadius||.43;
+        if(botTop>feet+.08&&botFeet<feet+PLAYER_HEIGHT){
+          const nearestX=THREE.MathUtils.clamp(elevatorBot.position.x,x-.28,x+.28);
+          const nearestZ=THREE.MathUtils.clamp(elevatorBot.position.z,z-.28,z+.28);
+          if((nearestX-elevatorBot.position.x)**2+(nearestZ-elevatorBot.position.z)**2<radius*radius)return true;
+        }
+      }
       // Separación física entre avatares: evita que los jugadores se fusionen.
       for(const [remoteId,avatar] of remotePlayers){
         if(remoteId===ignoreRemoteId)continue;
