@@ -21,9 +21,10 @@
         panel.classList.remove("done");
         let info = panel.querySelector("#ilox-diagnostic-detail");
         if (!info) {
-          panel.innerHTML = '<div class="loading-mark">ILOX</div><p id="ilox-diagnostic-title"></p><pre id="ilox-diagnostic-detail" style="max-width:min(92vw,760px);max-height:28vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;padding:12px;border:1px solid #ff8b8b;border-radius:10px;background:#160d20;color:#ffe1e1;font:12px/1.45 monospace"></pre><button id="ilox-diagnostic-send" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">ENVIAR INFORME DE FALLO</button><p id="ilox-diagnostic-status" role="status"></p>';
+          panel.innerHTML = '<div class="loading-mark">ILOX</div><p id="ilox-diagnostic-title"></p><pre id="ilox-diagnostic-detail" style="max-width:min(92vw,760px);max-height:28vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;padding:12px;border:1px solid #ff8b8b;border-radius:10px;background:#160d20;color:#ffe1e1;font:12px/1.45 monospace"></pre><button id="ilox-diagnostic-send" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">ENVIAR INFORME DE FALLO</button><button id="ilox-diagnostic-force" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#71f0c2,#22a6bd);color:#102b45;font-weight:900">FORZAR INICIO IGUAL</button><p id="ilox-diagnostic-status" role="status"></p>';
           info = panel.querySelector("#ilox-diagnostic-detail");
           panel.querySelector("#ilox-diagnostic-send").addEventListener("click", sendReport);
+          panel.querySelector("#ilox-diagnostic-force").addEventListener("click", () => panel.classList.add("done"));
         }
         panel.querySelector("#ilox-diagnostic-title").textContent = title;
         info.textContent = detail;
