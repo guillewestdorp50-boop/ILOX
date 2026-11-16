@@ -32,7 +32,7 @@
       const runChecks = async () => {
         const checks = {};
         checks.webgl = (() => { try { const canvas=document.createElement("canvas"); return !!(window.WebGL2RenderingContext && canvas.getContext("webgl2")) || !!canvas.getContext("webgl"); } catch(e) { return false; } })();
-        checks.gameModule = await fetch("./game.js?v=ilox-pwa-naturaleza-segura-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
+        checks.gameModule = await fetch("./game.js?v=ilox-salto-unico-fijo-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
@@ -115,7 +115,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=ilox-v104-five-controls">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
-  <link rel="stylesheet" href="./styles.css?v=ilox-pwa-naturaleza-segura-20261116">
+  <link rel="stylesheet" href="./styles.css?v=ilox-salto-unico-fijo-20261116">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -211,7 +211,7 @@
         <button id="run-button" class="hud-action hud-run" type="button" aria-label="Correr" title="Correr">🏃<small>CORRER</small></button>
       </div>
     </div>
-    <button id="jump-button" class="jump-float" type="button" aria-label="Saltar" title="Saltar">⬆<small>SALTAR</small></button>
+    <button id="jump-action" class="jump-float" type="button" aria-label="Saltar" title="Saltar">⬆<small>SALTAR</small></button>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <div class="menu-section-title">HERRAMIENTAS DEL MUNDO</div>
       <button id="hud-build" class="menu-action menu-tool-action" type="button">🔨 CONSTRUIR <span>›</span></button>
@@ -334,6 +334,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-pwa-naturaleza-segura-20261116"></script>
+  <script type="module" src="./game.js?v=ilox-salto-unico-fijo-20261116"></script>
 </body>
 </html>
