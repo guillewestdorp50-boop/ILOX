@@ -1745,7 +1745,7 @@ function animateElevator(group,now=Date.now()){
       group.userData.elevatorTravel=null;
       group.userData.elevatorDoorOpen=false;
       group.userData.elevatorDoorCloseAt=0;
-      if(elevatorLandingExists(group,travel.toFloor))setElevatorDoorState(group,true,true,false);
+      if(elevatorLandingExists(group,travel.toFloor))setElevatorDoorState(group,true,!group.userData.elevatorRemoteTravel,false);
       else showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
       if(elevatorRiding&&activeElevator===group&&group.userData.elevatorDoorOpen)openElevatorKeypad(group);
       if(!group.userData.elevatorRemoteTravel)persistBuilds();
@@ -1782,7 +1782,7 @@ function animateElevator(group,now=Date.now()){
     beginElevatorTravel(group,pending.targetFloor,Date.now(),pending.broadcast);
   }
   if(elevatorRiding&&activeElevator===group&&player){
-    const wantsExit=open&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
+    const wantsExit=open&&doorProgress>=.98&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
     if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
     else if(elevatorRiding){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
   }
