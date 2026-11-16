@@ -2243,7 +2243,6 @@ function animateElevator(group,now=Date.now()){
       group.userData.elevatorDoorCloseAt=0;
       if(elevatorLandingExists(group,travel.toFloor))setElevatorDoorState(group,true,!group.userData.elevatorRemoteTravel,false);
       else showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
-      if(elevatorRiding&&activeElevator===group&&group.userData.elevatorDoorOpen)openElevatorKeypad(group);
       group.userData.elevatorNeedsPersist=!group.userData.elevatorRemoteTravel;
       group.userData.elevatorRemoteTravel=false;
     }
