@@ -605,10 +605,10 @@ body{background:#201747;color:#fff}
 }
 
 /* ILOX V105 — esquema limpio: analógico izquierda, accesos centrales, acciones derecha. */
-.hud-dock{left:0;right:0;bottom:calc(5px + env(safe-area-inset-bottom));transform:none;width:100%;max-width:100%;display:grid;grid-template-columns:86px minmax(0,1fr) 124px;grid-template-rows:auto;align-items:end;justify-items:center;gap:6px;padding:0 8px;pointer-events:none}
+.hud-dock{left:0;right:0;bottom:calc(5px + env(safe-area-inset-bottom));transform:none;width:100%;max-width:100%;display:grid;grid-template-columns:130px minmax(0,1fr) 60px;grid-template-rows:auto;align-items:end;justify-items:center;gap:6px;padding:0 8px;pointer-events:none}
 .hud-dock-toggle{display:none!important}
-#touch-ui{grid-column:1;grid-row:1;position:relative;inset:auto;z-index:42;width:82px;height:82px;display:block;align-self:end;pointer-events:none}
-.move-pad{position:relative;left:auto;bottom:auto;width:76px;height:76px;margin:0 auto;pointer-events:auto}
+#touch-ui{grid-column:1;grid-row:1;position:relative;inset:auto;z-index:42;width:130px;height:82px;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:5px;align-self:end;pointer-events:none}
+.move-pad{position:relative;left:auto;bottom:auto;flex:0 0 76px;width:76px;height:76px;margin:0;pointer-events:auto}
 .move-knob{width:34px;height:34px}
 .hud-controls{grid-column:2;grid-row:1;position:relative;left:auto;top:auto;right:auto;bottom:auto;transform:none;display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;max-width:100%;overflow:visible;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:none}
 .hud-controls.hidden{display:flex!important}
@@ -633,8 +633,8 @@ body{background:#201747;color:#fff}
 #door-rotate-control.hidden,#elevator-call-button.hidden,#mp-chat-toggle.hidden{display:none!important}
 #menu-panel{bottom:calc(96px + env(safe-area-inset-bottom))}
 @media(max-width:600px){
- .hud-dock{grid-template-columns:76px minmax(0,1fr) 116px;gap:3px;padding:0 5px;bottom:calc(5px + env(safe-area-inset-bottom))}
- #touch-ui{width:72px;height:72px}
+ .hud-dock{grid-template-columns:126px minmax(0,1fr) 58px;gap:3px;padding:0 5px;bottom:calc(5px + env(safe-area-inset-bottom))}
+ #touch-ui{width:126px;height:72px}
  .move-pad{width:66px;height:66px}
  .move-knob{width:30px;height:30px}
  .hud-controls{gap:7px}
@@ -645,8 +645,8 @@ body{background:#201747;color:#fff}
  #menu-panel{bottom:calc(84px + env(safe-area-inset-bottom));max-height:58vh}
 }
 @media(max-width:390px){
- .hud-dock{grid-template-columns:66px minmax(0,1fr) 108px}
- #touch-ui{width:64px;height:64px}.move-pad{width:58px;height:58px}.move-knob{width:27px;height:27px}
+ .hud-dock{grid-template-columns:116px minmax(0,1fr) 54px}
+ #touch-ui{width:116px;height:64px}.move-pad{flex-basis:58px;width:58px;height:58px}.move-knob{width:27px;height:27px}
  .hud-controls{gap:5px}.hud-action,.camera-menu-toggle{width:50px;height:55px;min-width:50px;max-width:50px;flex-basis:50px}
  .right-play-controls .hud-action{width:49px;height:54px;min-width:49px;max-width:49px;flex-basis:49px}
 }
