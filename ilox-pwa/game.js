@@ -1899,12 +1899,37 @@ function stopIloxElevatorParty(clearDance=true){
 }
 function updateIloxElevatorParty(delta){
   if(!player?.userData.iloxDancing)return;
-  const t=clock.elapsedTime-(player.userData.iloxDanceStarted||0),phase=t*9.2;
+  const t=clock.elapsedTime-(player.userData.iloxDanceStarted||0),beat=t* Math.PI*2*1.92,phase=beat;
+  const groove=Math.sin(phase),side=Math.sin(phase*.5),accent=Math.sin(phase*2);
+  const bar=((t*1.92)%4)/4;
   const rig=player.userData.rig;
-  if(rig){rig.position.y=(player.userData.toonType?Math.sin(clock.elapsedTime*2)*.022:0)+Math.abs(Math.sin(phase))*.105;rig.rotation.z=Math.sin(phase*.5)*.13;rig.rotation.x=Math.sin(phase)*.055;}
-  else{player.position.y+=Math.sin(phase*2)*.002;player.rotation.z=Math.sin(phase*.5)*.07;}
-  player.userData.arms?.forEach((arm,n)=>{arm.rotation.x=-1.15+Math.sin(phase+n*Math.PI)*.55;arm.rotation.z=(n===0?-.48:.48)+Math.sin(phase*.7+n)*.12;});
-  player.userData.legs?.forEach((leg,n)=>{leg.rotation.x=Math.sin(phase+n*Math.PI)*.62;});
+  // Coreografía pop-funk visible: rebote de rodillas, cadera marcada y torso que se inclina.
+  if(rig){
+    const bounce=Math.abs(Math.sin(phase))*.22;
+    rig.position.y=(player.userData.toonType?Math.sin(clock.elapsedTime*2)*.022:0)+bounce;
+    rig.rotation.z=side*.34+Math.sin(phase*.25)*.10;
+    rig.rotation.x=Math.sin(phase*.5)*.20+Math.sin(phase*1.5)*.07;
+    rig.rotation.y=Math.sin(phase*.5)*.18;
+  }else{
+    player.position.y+=Math.sin(phase*2)*.004;
+    player.rotation.z=side*.18;
+  }
+  // Brazos alternan bombeos, apertura lateral y poses por encima de la cabeza.
+  player.userData.arms?.forEach((arm,n)=>{
+    const sign=n===0?-1:1;
+    const overhead=Math.max(0,Math.sin(phase*.5+(n*Math.PI)));
+    const punch=Math.sin(phase+n*Math.PI);
+    const reach=Math.sin(phase*.5+n*Math.PI);
+    arm.rotation.x=-.35+punch*.95+Math.max(0,Math.sin(phase*2+n*Math.PI))*.42;
+    arm.rotation.z=sign*(.28+overhead*1.65+Math.max(0,reach)*.48);
+    arm.rotation.y=sign*(.12+Math.sin(phase+n*Math.PI)*.34);
+  });
+  // Pasos laterales y patadas alternadas, con amplitud suficiente para que se note el baile.
+  player.userData.legs?.forEach((leg,n)=>{
+    const kick=Math.sin(phase+n*Math.PI);
+    leg.rotation.x=kick*.92+Math.max(0,Math.sin(phase*2+n*Math.PI))*.28;
+    leg.rotation.z=(n===0?-1:1)*(.10+Math.max(0,Math.sin(phase*.5+n*Math.PI))*.20);
+  });
   if(t>=(player.userData.iloxEmoteNext||0)){
     const emoji=ILOX_ELEVATOR_EMOTES[Math.floor(Math.random()*ILOX_ELEVATOR_EMOTES.length)];
     const canvas=document.createElement("canvas");canvas.width=128;canvas.height=128;
@@ -3138,8 +3163,7 @@ function animate() {
     if(player.userData.toonTail){player.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2)*.42;player.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7)*.16;}
     if(player.userData.iloxDancing)updateIloxElevatorParty(delta);
     // La cámara nunca modifica la orientación del personaje.
-    player.rotation.y = playerHeading;
-    if(player.userData.iloxDancing)player.rotation.y=playerHeading+Math.sin(clock.elapsedTime*4.6)*.10;
+    player.rotation.y = playerHeading+(player.userData.iloxDancing?Math.sin((clock.elapsedTime-(player.userData.iloxDanceStarted||0))*Math.PI*1.92)*.30:0);
   }
   for(const [remoteId,avatar] of remotePlayers){
     const target=avatar.userData.netTarget;
