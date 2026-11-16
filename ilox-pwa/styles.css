@@ -701,3 +701,13 @@ body{background:#201747;color:#fff}
 #hud-dock,#hud-dock *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 #hud-dock button{touch-action:none;-webkit-tap-highlight-color:transparent}
 #hud-dock button::selection,#hud-dock *::selection{background:transparent}
+
+/* ILOX — SALTAR dibujado en canvas: fijo al pulgar derecho en cualquier orientación. */
+#ilox-jump-canvas{
+  position:absolute;inset:auto max(12px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) auto;
+  z-index:46;width:112px;height:112px;display:none;pointer-events:auto;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+@media(pointer:coarse){#game.playing #ilox-jump-canvas{display:block}}
+@media(max-width:390px){#ilox-jump-canvas{width:98px;height:98px}}
+@media(orientation:landscape) and (max-height:520px){#ilox-jump-canvas{width:92px;height:92px;right:max(14px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom))}}
