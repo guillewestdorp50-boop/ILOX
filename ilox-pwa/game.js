@@ -1463,7 +1463,7 @@ function createBuildPiece(record, options = {}) {
   }
   if(kind==="elevator"){
     const shaftHeight=Math.max(3,Math.min(120,(record.floorCount||40)*3));
-    const steel=mat(0x56636b,.42,.72),glassPanel=mat(0x78c9d8,.22,.25),cabinMat=mat(0x9ba8aa,.48,.48),dark=mat(0x25343b,.6,.35);
+    const steel=mat(0x56636b,.42,.72),glassPanel=new THREE.MeshPhysicalMaterial({color:0x9feaf5,transparent:true,opacity:.16,roughness:.1,metalness:.08,depthWrite:false,side:THREE.DoubleSide}),cabinMat=mat(0x9ba8aa,.48,.48),dark=mat(0x25343b,.6,.35);
     // Guías verticales y cuatro montantes dejan el hueco central libre.
     for(const sx of [-2.92,2.92])for(const sz of [-2.92,2.92]){
       box(.16,shaftHeight,.16,steel,sx,shaftHeight/2,sz);box(.08,shaftHeight,.08,dark,sx*.94,shaftHeight/2,sz*.94);
@@ -1475,7 +1475,7 @@ function createBuildPiece(record, options = {}) {
     for(const sx of [-2.92,2.92]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,5.84),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
     const back=new THREE.Mesh(new THREE.BoxGeometry(5.84,2.65,.08),glassPanel);back.position.set(0,1.4,-2.92);cabin.add(back);
     const roof=new THREE.Mesh(new THREE.BoxGeometry(6,.12,6),cabinMat);roof.position.y=2.75;cabin.add(roof);
-    const doorL=new THREE.Mesh(new THREE.BoxGeometry(2.9,2.55,.08),steel),doorR=doorL.clone();
+    const doorL=new THREE.Mesh(new THREE.BoxGeometry(2.9,2.55,.08),glassPanel),doorR=doorL.clone();
     doorL.position.set(-1.45,1.36,2.92);doorR.position.set(1.45,1.36,2.92);cabin.add(doorL,doorR);
     // El mando verde queda montado directamente sobre la hoja derecha de la puerta.
     // Al deslizarse la puerta, el mando se desplaza con ella y nunca queda flotando en la cabina.
