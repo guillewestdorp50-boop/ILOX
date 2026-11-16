@@ -1331,9 +1331,15 @@ function createBuildPiece(record, options = {}) {
     // Línea decorativa de mosaicos bajo la coronación.
     for(let side of [-1,1])box(w-.85,.10,.055,accent,0,-.34,side*(d/2-.37));
     if(record.poolDesign==="municipal"){
-      // Carriles de natación y escalerillas en ambos extremos de la pileta municipal.
-      for(let lane=-2;lane<=2;lane++)box(.035,.018,d-1.15,mat(0xf4fbff),lane*w/6,-.035,0);
-      // Se quitaron las barandas transversales que interferían con el paso del jugador.
+      // DISEÑO MUNICIPAL LIMPIO v2: sin arcos, tubos ni barandas transversales.
+      // Accesos sumergidos compactos en los dos extremos; no cruzan el recorrido central.
+      for(const end of [-1,1]){
+        for(let step=0;step<3;step++){
+          box(1.05,.16,.58,inner,end*(w/2-1.05),-.34-step*.22,-d/2+.52+step*.38);
+          box(1.05,.16,.58,inner,end*(w/2-1.05),-.34-step*.22,d/2-.52-step*.38);
+        }
+      }
+      group.userData.poolRevision="municipal-clean-v2";
     }else if(record.poolDesign==="large"){
       // Escalones sumergidos en una esquina para facilitar la entrada.
       for(let step=0;step<3;step++)box(1.05,.18,.62,inner,-w/2+.78+step*.42,-.34-step*.28,-d/2+.62+step*.42);
