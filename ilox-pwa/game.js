@@ -1727,6 +1727,7 @@ function applyRemoteElevatorState(state){
   const rec=group.userData.buildRecord;
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
+  if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
 }
 function updateElevatorDisplay(){if(elevatorDisplay)elevatorDisplay.textContent=String(elevatorSelectedFloor);}
 function openElevatorKeypad(group){if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);const keys=elevatorPanel?.querySelector(".elevator-keys");if(!keys)return;keys.innerHTML="";for(let floor=1;floor<=count;floor++){const b=document.createElement("button");b.type="button";b.className="elevator-key";b.dataset.floor=String(floor);b.textContent=String(floor);if(floor===elevatorSelectedFloor)b.classList.add("selected");keys.appendChild(b);}elevatorStatus.textContent="Elegí el piso de destino";elevatorPanel.classList.remove("hidden");updateElevatorDisplay();}
@@ -1737,7 +1738,7 @@ function callElevator(group){
   const floor=elevatorFloorAtPlayer(group),landingY=group.position.y+.34+(floor-1)*3;
   if(Math.abs(player.position.y-landingY)>1.35){showToast("Acercate a una planta del ascensor para llamarlo.");return;}
   if(!elevatorLandingExists(group,floor)){showToast("No hay un descanso seguro en esta planta.");return;}
-  if(beginElevatorTravel(group,floor))showToast("Ascensor llamado a la planta "+floor+".");
+  if(beginElevatorTravel(group,floor)){if(floor===1&&(group.userData.buildRecord?.currentFloor||1)===12&&elevatorBotIsController(group.userData.buildRecord))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));showToast("Ascensor llamado a la planta "+floor+".");}
 }
 function updateElevators(delta){
   const elevators=buildGroups.filter(g=>g.userData.buildRecord?.kind==="elevator");
@@ -1763,6 +1764,84 @@ function updateElevators(delta){
   }else elevatorCallButton?.classList.add("hidden");
   if(!elevatorRiding)closeElevatorKeypad();
   if(elevatorRiding&&activeElevator?.userData.elevatorTravel)closeElevatorKeypad();
+}
+function ensureElevatorBot(){
+  if(elevatorBot||!scene)return;
+  elevatorBot=new THREE.Group();elevatorBot.name="ilox-shared-elevator-bot";
+  elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+  elevatorBot.userData.buildHeight=1.9;
+  scene.add(elevatorBot);
+  loadAnimalModel(elevatorBot,"robot",false);
+}
+function applyRemoteElevatorBotState(state){
+  if(!state||state.userId===multiplayerUserId)return;
+  if(!elevatorBot)ensureElevatorBot();
+  if(!elevatorBot)return;
+  elevatorBotRemoteState={...state};
+  elevatorBotTarget=new THREE.Vector3(Number(state.x)||0,Number(state.y)||0,Number(state.z)||0);
+  elevatorBotPhase=String(state.phase||"idle");
+}
+function elevatorBotIsController(record){
+  if(!multiplayerSession)return true;
+  return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
+}
+function setElevatorBotPhase(phase,group,target){
+  elevatorBotPhase=phase;elevatorBotElevator=group;elevatorBotTarget=target?target.clone():null;
+}
+function updateElevatorBot(delta){
+  if(!elevatorBot)return;
+  if(elevatorBot.userData.animalMixer)elevatorBot.userData.animalMixer.update(delta);
+  const group=elevatorBotElevator||buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator");
+  if(!group){
+    if(elevatorBotRemoteState&&elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
+    return;
+  }
+  const record=group.userData.buildRecord,controller=elevatorBotIsController(record);
+  if(!controller){
+    if(elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
+    const remoteActions=elevatorBot.userData.animalActions,remoteMoving=!!elevatorBotRemoteState?.moving;
+    const remoteNext=remoteMoving?(remoteActions?.walk||remoteActions?.run):(remoteActions?.idle||remoteActions?.walk);
+    if(remoteNext&&remoteNext!==remoteActions.current){remoteNext.reset().fadeIn(.2).play();if(remoteActions.current)remoteActions.current.fadeOut(.2);remoteActions.current=remoteNext;}
+    return;
+  }
+  if(!elevatorBotElevator){
+    elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x,group.position.y+.34,group.position.z+4.35));
+  }
+  const cabin=group.userData.elevatorCabin;if(!cabin)return;
+  const floorY=group.position.y+cabin.position.y+.16;
+  const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
+  const outside=new THREE.Vector3(group.position.x,floorY,group.position.z+4.35);
+  if(elevatorBotPhase==="approach"){
+    elevatorBotTarget=outside;
+    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel)setElevatorBotPhase("board",group,inside);
+  }else if(elevatorBotPhase==="board"){
+    elevatorBotTarget=inside;
+    if(elevatorBot.position.distanceTo(inside)<.32){
+      elevatorBot.position.copy(inside);group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
+      if(!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    }
+  }else if(elevatorBotPhase==="waitingTop"||elevatorBotPhase==="rideDown"){
+    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    const floor=record.currentFloor||1;
+    if(elevatorBotPhase==="rideDown"&&floor===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
+  }else if(elevatorBotPhase==="exit"){
+    elevatorBotTarget=outside;
+    if(elevatorBot.position.distanceTo(outside)<.35){elevatorBot.position.copy(outside);setElevatorBotPhase("done",group,outside);}
+  }else if(elevatorBotPhase==="done"){
+    elevatorBotTarget=outside;elevatorBot.position.lerp(outside,Math.min(1,delta*4));
+  }
+  if(elevatorBotTarget&&elevatorBotPhase!=="waitingTop"&&elevatorBotPhase!=="rideDown"){
+    const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
+    if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y=elevatorBotTarget.y;elevatorBot.rotation.y=Math.atan2(dx,dz);}
+  }
+  const actions=elevatorBot.userData.animalActions,moving=["approach","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  const next=moving?(actions?.walk||actions?.run||actions?.idle):(actions?.idle||actions?.walk);
+  if(next&&next!==actions.current){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
+  if(multiplayerSession&&performance.now()-elevatorBotLastBroadcast>120){
+    elevatorBotLastBroadcast=performance.now();
+    multiplayerSession.sendBotState({userId:multiplayerUserId,x:elevatorBot.position.x,y:elevatorBot.position.y,z:elevatorBot.position.z,rotation:elevatorBot.rotation.y,phase:elevatorBotPhase,moving:!!moving}).catch(error=>console.warn("ILOX bot sync:",error));
+  }
 }
 function multiplayerPayload(record){
   const payload={...record};
@@ -2835,7 +2914,7 @@ function animate() {
       }
     }
   }
-  if(started&&player)updateElevators(delta);
+  if(started&&player){ensureElevatorBot();updateElevators(delta);updateElevatorBot(delta);}
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
   if(cameraFreeMode && cameraFreePosition){
