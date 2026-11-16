@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-bot-sync-contract-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-elevator-interaction-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -54,6 +54,8 @@ let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
 const elevatorPanel=document.querySelector("#elevator-panel"),elevatorStatus=document.querySelector("#elevator-status"),elevatorDisplay=document.querySelector("#elevator-display");
 const elevatorCallButton=document.querySelector("#elevator-call-button");
+const elevatorDoorOpenButton=document.querySelector("#elevator-door-open-button");
+const elevatorDoorCloseButton=document.querySelector("#elevator-door-close-button");
 let elevatorBot=null,elevatorBotRemoteState=null,elevatorBotTarget=null,elevatorBotPhase="idle",elevatorBotElevator=null,elevatorBotLastBroadcast=0,elevatorBotWaitUntil=0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
@@ -1006,6 +1008,8 @@ function addEvents() {
   elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator||!activeElevator.userData.elevatorConsole)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
   document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
   elevatorCallButton?.addEventListener("click",()=>{callElevator(activeElevator);setHudDockOpen(false);});
+  elevatorDoorOpenButton?.addEventListener("click",()=>{if(setElevatorDoorState(activeElevator,true,true,true))showToast("Puertas abiertas.");});
+  elevatorDoorCloseButton?.addEventListener("click",()=>{if(setElevatorDoorState(activeElevator,false,true,true))showToast("Puertas cerradas.");});
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
@@ -1697,6 +1701,34 @@ function elevatorLandingExists(group,floor){
     return Math.abs(record.x-gx)<=halfW+1.25&&Math.abs(record.z-gz)<=halfD+1.25;
   });
 }
+function elevatorDoorAreaOccupied(group){
+  if(!group||!player)return false;
+  const floorY=group.position.y+((group.userData.buildRecord?.currentFloor||1)-1)*3+.34;
+  const playerNear=Math.hypot(player.position.x-group.position.x,player.position.z-(group.position.z+3.1))<2.25&&Math.abs(player.position.y-floorY)<1.4;
+  if(playerNear)return true;
+  if(elevatorBot&&elevatorBotElevator===group&&["approachFront","board","waitingTop","rideDown","exit"].includes(elevatorBotPhase)){
+    const cabin=group.userData.elevatorCabin,insideY=group.position.y+(cabin?.position.y||0)+.16;
+    const outside=new THREE.Vector3(group.position.x, floorY, group.position.z+4.35);
+    const inside=new THREE.Vector3(group.position.x, insideY, group.position.z);
+    if(elevatorBot.position.distanceTo(outside)<2.4||elevatorBot.position.distanceTo(inside)<2.4)return true;
+  }
+  return false;
+}
+function setElevatorDoorState(group,open,broadcast=true,manual=false){
+  const rec=group?.userData.buildRecord;
+  if(!rec||group.userData.elevatorTravel)return false;
+  const floor=rec.currentFloor||1;
+  if(open&&!elevatorLandingExists(group,floor)){showToast("No hay una plataforma segura en esta planta.");return false;}
+  if(!open&&manual&&elevatorDoorAreaOccupied(group)){showToast("Esperá a que todos salgan de la entrada.");return false;}
+  group.userData.elevatorDoorOpen=!!open;
+  group.userData.elevatorDoorCloseAt=open?Date.now()+4500:0;
+  group.userData.elevatorDoorChangedAt=Date.now();
+  if(broadcast&&multiplayerSession?.sendElevatorDoorState){
+    multiplayerSession.sendElevatorDoorState({x:rec.x,z:rec.z,floor,open:!!open,changedAt:group.userData.elevatorDoorChangedAt})
+      .catch(error=>console.warn("ILOX elevator door sync:",error));
+  }
+  return true;
+}
 function animateElevator(group,now=Date.now()){
   const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
   const travel=group.userData.elevatorTravel;
@@ -1708,23 +1740,25 @@ function animateElevator(group,now=Date.now()){
       rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;
       group.userData.elevatorTravel=null;
       group.userData.elevatorDoorOpen=elevatorLandingExists(group,travel.toFloor);
-      group.userData.elevatorDoorCloseAt=0;group.userData.elevatorDoorChangedAt=now;
+      group.userData.elevatorDoorCloseAt=group.userData.elevatorDoorOpen?now+4500:0;group.userData.elevatorDoorChangedAt=now;
+      if(group.userData.elevatorDoorOpen&&multiplayerSession?.sendElevatorDoorState)multiplayerSession.sendElevatorDoorState({x:rec.x,z:rec.z,floor:travel.toFloor,open:true,changedAt:now}).catch(error=>console.warn("ILOX elevator door sync:",error));
       if(!group.userData.elevatorDoorOpen)showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
       if(!group.userData.elevatorRemoteTravel)persistBuilds();
       group.userData.elevatorRemoteTravel=false;
     }
   }
   if(group.userData.elevatorDoorCloseAt&&now>=group.userData.elevatorDoorCloseAt&&!elevatorRiding){
-    group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
+    if(elevatorDoorAreaOccupied(group))group.userData.elevatorDoorCloseAt=now+900;
+    else setElevatorDoorState(group,false,true,false);
   }
   cabin.position.y=.18+offset;
   const currentFloor=rec.currentFloor||1;
   const open=!!group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,currentFloor);
   const left=cabin.userData.doorLeft,right=cabin.userData.doorRight;
-  if(left&&right){const amount=open?1.22:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
+  if(left&&right){const amount=open?1.56:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
   for(const landing of group.userData.elevatorLandingDoors||[]){
     const landingOpen=open&&landing.floor===currentFloor;
-    const amount=landingOpen?1.22:0;
+    const amount=landingOpen?1.56:0;
     landing.left.position.x=-.61-amount;landing.right.position.x=.61+amount;
   }
   if(elevatorRiding&&activeElevator===group&&player){
@@ -1737,11 +1771,11 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
   const fromFloor=rec.currentFloor||1,toFloor=THREE.MathUtils.clamp(Math.round(targetFloor),1,rec.floorCount||40);
   if(fromFloor===toFloor){
-    group.userData.elevatorDoorOpen=elevatorLandingExists(group,toFloor);group.userData.elevatorDoorCloseAt=0;group.userData.elevatorDoorChangedAt=Date.now();
-    if(!group.userData.elevatorDoorOpen)showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
-    return group.userData.elevatorDoorOpen;
+    const opened=setElevatorDoorState(group,true,broadcast,false);
+    if(!opened)showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
+    return opened;
   }
-  group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
+  setElevatorDoorState(group,false,broadcast,false);
   const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   rec.targetFloor=toFloor;
@@ -1776,6 +1810,8 @@ function updateElevators(delta){
     const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
     const floor=elevatorFloorAtPlayer(group),landingY=group.position.y+.34+(floor-1)*3,verticalGap=Math.abs(player.position.y-landingY);
     const score=d+verticalGap*2;
+    const botNear=elevatorBot&&elevatorBotElevator===group&&elevatorBotPhase!=="done"&&Math.hypot(elevatorBot.position.x-group.position.x,elevatorBot.position.z-group.position.z)<7.1&&Math.abs(elevatorBot.position.y-landingY)<1.6;
+    if(!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,floor)&&((d<7.1&&verticalGap<1.35)||botNear))setElevatorDoorState(group,true,true,false);
     if(d<5.5&&verticalGap<1.35&&score<nearestDistance){nearest=group;nearestFloor=floor;nearestDistance=score;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
     if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,group.userData.buildRecord?.currentFloor||1)&&d<2.65&&Math.abs(player.position.y-level)<.65){
@@ -1786,10 +1822,12 @@ function updateElevators(delta){
   if(!elevatorRiding){
     activeElevator=nearest;
     if(nearest){
+      elevatorDoorOpenButton?.classList.toggle("hidden",!!nearest.userData.elevatorTravel||!!nearest.userData.elevatorDoorOpen);
+      elevatorDoorCloseButton?.classList.toggle("hidden",!!nearest.userData.elevatorTravel||!nearest.userData.elevatorDoorOpen);
       elevatorCallButton?.classList.remove("hidden");
       if(elevatorCallButton){elevatorCallButton.disabled=!!nearest.userData.elevatorTravel;if(elevatorCallLabel)elevatorCallLabel.textContent=nearest.userData.elevatorTravel?"EN VIAJE":"PISO "+nearestFloor;}
     }else elevatorCallButton?.classList.add("hidden");
-  }else elevatorCallButton?.classList.add("hidden");
+  }else {elevatorCallButton?.classList.add("hidden");elevatorDoorOpenButton?.classList.toggle("hidden",!!activeElevator?.userData.elevatorTravel||!!activeElevator?.userData.elevatorDoorOpen);elevatorDoorCloseButton?.classList.toggle("hidden",!!activeElevator?.userData.elevatorTravel||!activeElevator?.userData.elevatorDoorOpen);}
   if(!elevatorRiding)closeElevatorKeypad();
   if(elevatorRiding&&activeElevator?.userData.elevatorTravel)closeElevatorKeypad();
 }
@@ -1800,6 +1838,17 @@ function ensureElevatorBot(){
   elevatorBot.userData.buildHeight=1.9;
   scene.add(elevatorBot);
   loadAnimalModel(elevatorBot,"robot",false);
+}
+function applyRemoteElevatorDoorState(state){
+  if(!state||!Number.isFinite(Number(state.x))||!Number.isFinite(Number(state.z)))return;
+  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
+  if(!group||Number(state.changedAt||0)<Number(group.userData.elevatorDoorChangedAt||0))return;
+  if(group.userData.elevatorTravel)return;
+  const floor=group.userData.buildRecord?.currentFloor||1;
+  if(Number(state.floor)!==floor|| (state.open&&!elevatorLandingExists(group,floor)))return;
+  group.userData.elevatorDoorOpen=!!state.open;
+  group.userData.elevatorDoorCloseAt=state.open?Date.now()+4500:0;
+  group.userData.elevatorDoorChangedAt=Number(state.changedAt)||Date.now();
 }
 function applyRemoteElevatorBotState(state){
   if(!state||state.userId===multiplayerUserId)return;
@@ -2150,6 +2199,7 @@ async function enterMultiplayerWorld(worldId){
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
       onPlayerState:updateRemotePlayer,
       onElevatorState:applyRemoteElevatorState,
+      onElevatorDoorState:applyRemoteElevatorDoorState,
       onElevatorBotState:applyRemoteElevatorBotState,
       onPlayerStateChange:payload=>{
         if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
