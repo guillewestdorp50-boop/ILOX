@@ -725,3 +725,18 @@ body{background:#201747;color:#fff}
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
 }
 @media(pointer:coarse){#game.playing #ilox-run-canvas{display:block!important}}
+
+
+/* ILOX V105: controles de cámara reales en Canvas 2D, esquina superior derecha. */
+#game #ilox-camera-view-canvas,#game #ilox-camera-free-canvas{
+  display:block!important;position:absolute!important;top:calc(max(16px,env(safe-area-inset-top)) + 8px)!important;
+  width:76px!important;height:68px!important;min-width:76px!important;min-height:68px!important;
+  max-width:76px!important;max-height:68px!important;z-index:49!important;pointer-events:auto!important;
+  touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;
+}
+#game #ilox-camera-view-canvas{right:calc(max(16px,env(safe-area-inset-right)) + 92px)!important;left:auto!important}
+#game #ilox-camera-free-canvas{right:calc(max(16px,env(safe-area-inset-right)) + 8px)!important;left:auto!important}
+@media(max-width:390px){
+  #game #ilox-camera-view-canvas{right:calc(max(12px,env(safe-area-inset-right)) + 84px)!important}
+  #game #ilox-camera-free-canvas{right:calc(max(12px,env(safe-area-inset-right)) + 6px)!important}
+}
