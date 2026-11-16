@@ -1074,6 +1074,7 @@ function addEvents() {
     player.position.copy(oldPosition);player.rotation.y=oldHeading;
     if(activeMultiplayerWorldId)spawnPlayerAtMultiplayerMeetingPoint();
     started = true;
+    document.querySelector("#mp-chat-toggle")?.classList.remove("hidden");
     game.classList.add("playing");
     if (welcomeScene) {
       welcomeScene.classList.add("hidden");
@@ -1248,6 +1249,7 @@ function addEvents() {
     await leaveMultiplayerWorld();document.querySelector("#multiplayer-dialog").classList.add("hidden");
   });
   document.querySelector("#mp-chat-toggle")?.addEventListener("click",()=>{
+    if(!activeMultiplayerWorldId){showToast("El chat funciona dentro de un mundo compartido.");openMultiplayerDialog();return;}
     const panel=document.querySelector("#mp-chat-panel");panel?.classList.toggle("hidden");
     if(panel&&!panel.classList.contains("hidden")){markMultiplayerChatRead();const list=document.querySelector("#mp-chat-messages");if(list)list.scrollTop=list.scrollHeight;document.querySelector("#mp-chat-input")?.focus();}
   });
@@ -2003,7 +2005,6 @@ async function enterMultiplayerWorld(worldId){
     for(const avatar of remotePlayers.values())scene.remove(avatar);
     remotePlayers.clear();clearCurrentBuildWorld();loadBuilds();
     document.querySelector("#mp-leave-world")?.classList.add("hidden");
-    document.querySelector("#mp-chat-toggle")?.classList.add("hidden");
     document.querySelector("#mp-chat-panel")?.classList.add("hidden");
     showToast(error.message||"No se pudo entrar al mundo compartido.");
     throw error;
@@ -2047,7 +2048,6 @@ async function leaveMultiplayerWorld(){
   remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerCloudSnapshot.clear();
   clearCurrentBuildWorld();loadBuilds();
   document.querySelector("#mp-leave-world")?.classList.add("hidden");
-  document.querySelector("#mp-chat-toggle")?.classList.add("hidden");
   document.querySelector("#mp-chat-panel")?.classList.add("hidden");
   document.querySelector("#mp-chat-messages")?.replaceChildren();
   multiplayerChatSeen.clear();multiplayerUnreadMessages=0;updateMultiplayerUnreadBadge();
