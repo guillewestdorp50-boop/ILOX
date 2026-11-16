@@ -51,7 +51,7 @@ let elevatorCanvas=null,elevatorKeypadOpen=false,elevatorFloorInput="";
 const elevatorCallButton=document.querySelector("#elevator-call-button");
 const elevatorDoorOpenButton=document.querySelector("#elevator-door-open-button");
 const elevatorDoorCloseButton=document.querySelector("#elevator-door-close-button");
-let elevatorBot=null,elevatorBotRemoteState=null,elevatorBotTarget=null,elevatorBotPhase="idle",elevatorBotElevator=null,elevatorBotLastBroadcast=0,elevatorBotWaitUntil=0;
+let elevatorBot=null,elevatorBotRemoteState=null,elevatorBotTarget=null,elevatorBotPhase="idle",elevatorBotElevator=null,elevatorBotLastBroadcast=0,elevatorBotWaitUntil=0,elevatorBotEmoteUntil=0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -2476,9 +2476,33 @@ function elevatorBotIsController(record){
   if(!multiplayerSession)return true;
   return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
 }
+function isElevatorBotBlocked(x,z,feet){
+  const body=new THREE.Box3(new THREE.Vector3(x-.34,feet+.08,z-.34),new THREE.Vector3(x+.34,feet+1.9,z+.34));
+  const solidKinds=new Set(["block","brick","platea","pool","floor","wall","door","window","roof","elevator","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]);
+  for(const g of buildGroups){
+    const kind=g.userData.buildRecord?.kind;
+    if(!solidKinds.has(kind)||!g.visible||Math.hypot(x-g.position.x,z-g.position.z)>9)continue;
+    if(kind==="pool"&&feet>=(g.userData.buildRecord.y||0)+.22)continue;
+    g.updateMatrixWorld(true);
+    let blocked=false;
+    g.traverse(mesh=>{
+      if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;
+      const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();
+      const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+      if(bounds.max.y<=feet+.08||bounds.min.y>=feet+1.9)return;
+      if(body.intersectsBox(bounds))blocked=true;
+    });
+    if(blocked)return true;
+  }
+  for(const ox of [-.34,0,.34])for(const oz of [-.34,0,.34]){
+    if(isIloxNightclubWall(x+ox,z+oz,feet))return true;
+  }
+  return false;
+}
 function setElevatorBotPhase(phase,group,target){
   elevatorBotPhase=phase;elevatorBotElevator=group;elevatorBotTarget=target?target.clone():null;
-  if(phase!=="waitingTop")elevatorBotWaitUntil=0;
+  if(!["waitingTop","clubDance","emote"].includes(phase))elevatorBotWaitUntil=0;
+  if(phase!=="emote")elevatorBotEmoteUntil=0;
 }
 function updateElevatorBot(delta){
   if(!elevatorBot)return;
@@ -2495,8 +2519,10 @@ function updateElevatorBot(delta){
   if(!controller){
     if(elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
     const remoteActions=elevatorBot.userData.animalActions,remoteMoving=!!elevatorBotRemoteState?.moving;
-    const remoteNext=remoteMoving?(remoteActions?.walk||remoteActions?.run):(remoteActions?.idle||remoteActions?.walk);
-    if(remoteNext&&remoteNext!==remoteActions.current){remoteNext.reset().fadeIn(.2).play();if(remoteActions.current)remoteActions.current.fadeOut(.2);remoteActions.current=remoteNext;}
+    elevatorBot.userData.iloxClubDancing=elevatorBotRemoteState?.phase==="clubDance";
+    updateIloxLivingDance(elevatorBot,delta);
+    const remoteNext=remoteMoving?(remoteActions?.run||remoteActions?.walk):(remoteActions?.idle||remoteActions?.walk);
+    if(remoteNext&&remoteNext!==remoteActions.current&&elevatorBotRemoteState?.phase!=="clubDance"){remoteNext.reset().fadeIn(.2).play();if(remoteActions.current)remoteActions.current.fadeOut(.2);remoteActions.current=remoteNext;}
     return;
   }
   if(!elevatorBotElevator){
@@ -2532,17 +2558,58 @@ function updateElevatorBot(delta){
     if((record.currentFloor||1)===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
   }else if(elevatorBotPhase==="exit"){
     elevatorBotTarget=outside;
-    if(elevatorBot.position.distanceTo(outside)<.35){elevatorBot.position.copy(outside);setElevatorBotPhase("done",group,outside);}
+    if(elevatorBot.position.distanceTo(outside)<.35){elevatorBot.position.copy(outside);setElevatorBotPhase("clubApproach",group,new THREE.Vector3(ILOX_NIGHTCLUB.x,terrainHeight(ILOX_NIGHTCLUB.x,ILOX_NIGHTCLUB.z+18.5),ILOX_NIGHTCLUB.z+18.5));}
+  }else if(elevatorBotPhase==="clubApproach"){
+    const entrance=new THREE.Vector3(ILOX_NIGHTCLUB.x,terrainHeight(ILOX_NIGHTCLUB.x,ILOX_NIGHTCLUB.z+18.5),ILOX_NIGHTCLUB.z+18.5);
+    elevatorBotTarget=entrance;
+    if(elevatorBot.position.distanceTo(entrance)<.48)setElevatorBotPhase("clubEnter",group,new THREE.Vector3(ILOX_NIGHTCLUB.x,.34,ILOX_NIGHTCLUB.z));
+  }else if(elevatorBotPhase==="clubEnter"){
+    const danceSpot=new THREE.Vector3(ILOX_NIGHTCLUB.x,.34,ILOX_NIGHTCLUB.z);
+    elevatorBotTarget=danceSpot;
+    if(elevatorBot.position.distanceTo(danceSpot)<.72){elevatorBot.position.copy(danceSpot);setElevatorBotPhase("clubDance",group,danceSpot);elevatorBotWaitUntil=Date.now()+18000;elevatorBot.userData.iloxClubDancing=true;}
+  }else if(elevatorBotPhase==="clubDance"){
+    elevatorBotTarget.set(ILOX_NIGHTCLUB.x,.34,ILOX_NIGHTCLUB.z);
+    elevatorBot.userData.iloxClubDancing=true;
+    if(!elevatorBotWaitUntil)elevatorBotWaitUntil=Date.now()+18000;
+    if(Date.now()>=elevatorBotWaitUntil){elevatorBot.userData.iloxClubDancing=false;setElevatorBotPhase("clubExit",group,new THREE.Vector3(ILOX_NIGHTCLUB.x,terrainHeight(ILOX_NIGHTCLUB.x,ILOX_NIGHTCLUB.z+19),ILOX_NIGHTCLUB.z+19));}
+  }else if(elevatorBotPhase==="clubExit"){
+    const exitSpot=new THREE.Vector3(ILOX_NIGHTCLUB.x,terrainHeight(ILOX_NIGHTCLUB.x,ILOX_NIGHTCLUB.z+19),ILOX_NIGHTCLUB.z+19);
+    elevatorBotTarget=exitSpot;
+    if(elevatorBot.position.distanceTo(exitSpot)<.5){elevatorBot.position.copy(exitSpot);setElevatorBotPhase("emote",group,exitSpot);elevatorBotEmoteUntil=Date.now()+7000;}
+  }else if(elevatorBotPhase==="emote"){
+    elevatorBotTarget.set(ILOX_NIGHTCLUB.x,terrainHeight(ILOX_NIGHTCLUB.x,ILOX_NIGHTCLUB.z+19),ILOX_NIGHTCLUB.z+19);
+    if(!elevatorBotEmoteUntil)elevatorBotEmoteUntil=Date.now()+7000;
+    const model=elevatorBot.userData.animalModel,base=elevatorBot.userData.animalModelBase;
+    if(model&&base){const t=clock.elapsedTime;model.position.y=base.position.y+Math.abs(Math.sin(t*3.4))*.09;model.rotation.y=base.rotation.y+Math.sin(t*1.7)*.48;model.rotation.z=base.rotation.z+Math.sin(t*3.4)*.07;}
+    if(Date.now()>=elevatorBotEmoteUntil){const model=elevatorBot.userData.animalModel,base=elevatorBot.userData.animalModelBase;if(model&&base){model.position.copy(base.position);model.rotation.copy(base.rotation);}setElevatorBotPhase("done",group,elevatorBot.position);}
   }else if(elevatorBotPhase==="done"){
-    elevatorBotTarget=outside;elevatorBot.position.lerp(outside,Math.min(1,delta*4));
+    elevatorBotTarget=null;
   }
-  if(elevatorBotTarget&&elevatorBotPhase!=="waitingTop"&&elevatorBotPhase!=="rideDown"){
+  const movingPhases=["approach","approachFront","board","exit","clubApproach","clubEnter","clubExit"];
+  if(elevatorBotTarget&&movingPhases.includes(elevatorBotPhase)){
     const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
-    if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y+=THREE.MathUtils.clamp(elevatorBotTarget.y-elevatorBot.position.y,-1.8*delta,1.8*delta);elevatorBot.rotation.y=Math.atan2(dx,dz);}
+    if(dist>.08){
+      const step=Math.min(dist,6.1*delta),mx=dx/dist*step,mz=dz/dist*step;
+      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp(elevatorBotTarget.y-elevatorBot.position.y,-2.2*delta,2.2*delta);
+      const tryX=elevatorBot.position.x+mx,tryZ=elevatorBot.position.z+mz,feet=elevatorBot.position.y;
+      if(!isElevatorBotBlocked(tryX,tryZ,feet)){elevatorBot.position.x=tryX;elevatorBot.position.z=tryZ;}
+      else{
+        let moved=false;
+        if(!isElevatorBotBlocked(tryX,elevatorBot.position.z,feet)){elevatorBot.position.x=tryX;moved=true;}
+        if(!isElevatorBotBlocked(elevatorBot.position.x,tryZ,feet)){elevatorBot.position.z=tryZ;moved=true;}
+        if(!moved){
+          if(!isElevatorBotBlocked(elevatorBot.position.x,tryZ,feet))elevatorBot.position.z=tryZ;
+          else if(!isElevatorBotBlocked(tryX,elevatorBot.position.z,feet))elevatorBot.position.x=tryX;
+        }
+      }
+      elevatorBot.position.y=nextY;
+      if(Math.abs(mx)+Math.abs(mz)>.001)elevatorBot.rotation.y=Math.atan2(dx,dz);
+    }
   }
-  const actions=elevatorBot.userData.animalActions,moving=["approach","approachFront","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
-  const next=moving?(actions?.walk||actions?.run||actions?.idle):(actions?.idle||actions?.walk);
-  if(next&&next!==actions.current){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
+  const actions=elevatorBot.userData.animalActions,moving=movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  if(elevatorBotPhase!=="clubDance")updateIloxLivingDance(elevatorBot,delta);
+  const next=moving?(actions?.run||actions?.walk||actions?.idle):(actions?.idle||actions?.walk);
+  if(next&&next!==actions.current&&elevatorBotPhase!=="clubDance"){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
   if(multiplayerSession&&performance.now()-elevatorBotLastBroadcast>120){
     elevatorBotLastBroadcast=performance.now();
     multiplayerSession.sendBotState({x:elevatorBot.position.x,y:elevatorBot.position.y,z:elevatorBot.position.z,rotation:elevatorBot.rotation.y,phase:elevatorBotPhase,moving:!!moving}).catch(error=>console.warn("ILOX bot sync:",error));
