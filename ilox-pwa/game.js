@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-v112-elevator-passengers-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-v113-bot-boarding-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -2162,7 +2162,7 @@ function elevatorDoorAreaOccupied(group){
   const floorY=group.position.y+((group.userData.buildRecord?.currentFloor||1)-1)*3+.34;
   const playerNear=Math.hypot(player.position.x-group.position.x,player.position.z-(group.position.z+3.1))<2.25&&Math.abs(player.position.y-floorY)<1.4;
   if(playerNear)return true;
-  if(elevatorBot&&elevatorBotElevator===group&&["approachFront","board","boardedWait","waitingTop","rideDown","exit"].includes(elevatorBotPhase)){
+  if(elevatorBot&&elevatorBotElevator===group&&["approachFront","board","boardedWait","boardedIdle","waitingTop","rideDown","exit"].includes(elevatorBotPhase)){
     const cabin=group.userData.elevatorCabin,insideY=group.position.y+(cabin?.position.y||0)+.16;
     const outside=new THREE.Vector3(group.position.x, floorY, group.position.z+4.35);
     const inside=new THREE.Vector3(group.position.x, insideY, group.position.z);
@@ -2551,7 +2551,7 @@ function elevatorCabinOccupied(group){
   const inside=actor=>!!actor&&Math.abs(actor.position.x-group.position.x)<2.72&&Math.abs(actor.position.z-group.position.z)<2.72&&Math.abs(actor.position.y-floorY)<1.35;
   if(elevatorRiding&&activeElevator===group)return true;
   if(inside(player))return true;
-  if(elevatorBot&&elevatorBotElevator===group&&["board","boardedWait","waitingTop","rideDown"].includes(elevatorBotPhase)&&inside(elevatorBot))return true;
+  if(elevatorBot&&elevatorBotElevator===group&&["board","boardedWait","boardedIdle","waitingTop","rideDown"].includes(elevatorBotPhase)&&inside(elevatorBot))return true;
   for(const avatar of remotePlayers.values())if(inside(avatar))return true;
   return false;
 }
@@ -2664,7 +2664,7 @@ function isElevatorBotBlocked(x,z,feet){
     // Con las puertas completamente abiertas, el hueco del ascensor es transitable.
     // En board/exit el bot ya está alineado con la entrada: no debe chocar contra
     // las hojas móviles ni contra el piso/cabina que forman parte del propio ascensor.
-    if(kind==="elevator"&&elevatorBotElevator===g&&["board","boardedWait","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel)continue;
+    if(kind==="elevator"&&elevatorBotElevator===g&&["board","boardedWait","boardedIdle","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel)continue;
     if(kind==="pool"&&feet>=(g.userData.buildRecord.y||0)+.22)continue;
     g.updateMatrixWorld(true);
     let blocked=false;
@@ -2776,7 +2776,15 @@ function updateElevatorBot(delta){
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
     elevatorBot.position.copy(elevatorBotTarget);
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
-    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true)){setElevatorBotPhase("waitingTop",group,inside);elevatorBotWaitUntil=0;}
+    if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark){
+      // Prueba autónoma de abordaje: el bot entra y permanece en la cabina.
+      // No solicita pisos ni inicia ningún viaje.
+      setElevatorBotPhase("boardedIdle",group,inside);
+    }
+  }else if(elevatorBotPhase==="boardedIdle"){
+    // Mantener al bot quieto dentro del ascensor, sin viajar con la cabina.
+    elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
+    elevatorBot.position.copy(elevatorBotTarget);
   }else if(elevatorBotPhase==="waitingTop"){
     // Seguir el centro de la cabina en cada frame mientras sube.
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
