@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-elevator-real-controls-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-elevator-passenger-cargo-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -2188,6 +2188,47 @@ function setElevatorDoorState(group,open,broadcast=true,manual=false){
   }
   return true;
 }
+function prepareElevatorCargo(group,fromFloor){
+  const floorOffset=(Math.max(1,Number(fromFloor)||1)-1)*3;
+  const floorY=group.position.y+.18+floorOffset;
+  const cargo=[];
+  for(const item of buildGroups){
+    const record=item.userData.buildRecord;
+    if(!record||item===group||["elevator","platea","floor","roof"].includes(record.kind))continue;
+    if(Math.abs(item.position.x-group.position.x)>2.12||Math.abs(item.position.z-group.position.z)>2.12)continue;
+    item.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(item);
+    if(bounds.isEmpty()||bounds.max.y<floorY-.08||bounds.min.y>floorY+3.15)continue;
+    cargo.push({group:item,record});
+  }
+  group.userData.elevatorCargo=cargo;
+  group.userData.elevatorCargoBaseOffset=floorOffset;
+  group.userData.elevatorCargoLastOffset=0;
+}
+function updateElevatorCargo(group,offset){
+  const cargo=group.userData.elevatorCargo;
+  if(!cargo)return;
+  const relativeOffset=offset-(group.userData.elevatorCargoBaseOffset||0);
+  const delta=relativeOffset-(group.userData.elevatorCargoLastOffset||0);
+  if(Math.abs(delta)>.00001){
+    for(const item of cargo){
+      if(!item.group||item.group.parent!==scene)continue;
+      item.group.position.y+=delta;
+      item.record.y=(Number(item.record.y)||0)+delta;
+    }
+    group.userData.elevatorCargoLastOffset=relativeOffset;
+  }
+  if(!group.userData.elevatorTravel){
+    for(const item of cargo)if(item.group?.parent===scene)updateBuildSpatialGroup(item.group);
+    group.userData.elevatorCargo=null;
+    group.userData.elevatorCargoBaseOffset=0;
+    group.userData.elevatorCargoLastOffset=0;
+    if(group.userData.elevatorNeedsPersist){
+      group.userData.elevatorNeedsPersist=false;
+      persistBuilds();
+    }
+  }
+}
 function animateElevator(group,now=Date.now()){
   const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
   const travel=group.userData.elevatorTravel;
@@ -2203,7 +2244,7 @@ function animateElevator(group,now=Date.now()){
       if(elevatorLandingExists(group,travel.toFloor))setElevatorDoorState(group,true,!group.userData.elevatorRemoteTravel,false);
       else showToast("No hay una plataforma segura en ese piso. Las puertas permanecen cerradas.");
       if(elevatorRiding&&activeElevator===group&&group.userData.elevatorDoorOpen)openElevatorKeypad(group);
-      if(!group.userData.elevatorRemoteTravel)persistBuilds();
+      group.userData.elevatorNeedsPersist=!group.userData.elevatorRemoteTravel;
       group.userData.elevatorRemoteTravel=false;
     }
   }
@@ -2212,6 +2253,7 @@ function animateElevator(group,now=Date.now()){
     else setElevatorDoorState(group,false,true,false);
   }
   cabin.position.y=.18+offset;
+  updateElevatorCargo(group,offset);
   const currentFloor=rec.currentFloor||1;
   const open=!!group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,currentFloor);
   const doorAnimation=group.userData.elevatorDoorAnimation;
@@ -2348,6 +2390,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   group.userData.elevatorPendingTravel=null;
   if(!setElevatorDoorState(group,false,broadcast,false))return false;
   const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
+  prepareElevatorCargo(group,fromFloor);
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   if(elevatorRiding&&activeElevator===group)startIloxElevatorParty();
   rec.targetFloor=toFloor;
@@ -2364,13 +2407,14 @@ function applyRemoteElevatorState(state){
     else passengers.set(state.passengerId,{joinedAt:Number(state.joinedAt)||Date.now()});
     const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
     group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
-    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel){if(group.userData.elevatorCaptainId===multiplayerUserId)openElevatorKeypad(group);else closeElevatorKeypad();}
+    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel&&group.userData.elevatorCaptainId!==multiplayerUserId)closeElevatorKeypad();
     return;
   }
   const rec=group.userData.buildRecord;
   if(state.captainId)group.userData.elevatorCaptainId=state.captainId;
   if(player&&Math.abs(player.position.x-group.position.x)<2.72&&Math.abs(player.position.z-group.position.z)<2.72&&Math.abs(player.position.y-(group.position.y+(group.userData.elevatorCabin?.position.y||.18)+.16))<1.5){activeElevator=group;elevatorRiding=true;playerVerticalVelocity=0;playerGrounded=true;}
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
+  prepareElevatorCargo(group,state.fromFloor);
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
   if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
 }
@@ -2485,7 +2529,7 @@ function updateElevators(delta){
       group.userData.elevatorCaptainId=ordered[0]?.[0]||passengerId;
       if(multiplayerSession){
         multiplayerSession.updatePresence({userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,elevatorX:group.userData.buildRecord.x,elevatorZ:group.userData.buildRecord.z,elevatorJoinedAt:elevatorBoardedAt}).catch(error=>console.warn("ILOX elevator presence:",error));
-      }else openElevatorKeypad(group);
+      }
     }
   }
   if(!elevatorRiding){
@@ -2994,10 +3038,7 @@ function syncRemotePresence(state){
   for(const group of elevators){
     const ordered=[...group.userData.elevatorPassengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
     group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
-    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel){
-      if(group.userData.elevatorCaptainId===multiplayerUserId)openElevatorKeypad(group);
-      else closeElevatorKeypad();
-    }
+    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel&&group.userData.elevatorCaptainId!==multiplayerUserId)closeElevatorKeypad();
   }
   for(const userId of remotePlayers.keys())if(!seen.has(userId))removeRemotePlayer(userId);
 }
@@ -3849,6 +3890,19 @@ function animate() {
   for(const [remoteId,avatar] of remotePlayers){
     const target=avatar.userData.netTarget;
     if(target)avatar.position.lerp(target,1-Math.exp(-delta*13));
+    // Un pasajero remoto queda anclado a la misma altura y al interior de la cabina
+    // en todos los clientes; el objetivo de red no puede dejarlo en el piso anterior.
+    for(const elevator of buildGroups){
+      if(elevator.userData.buildRecord?.kind!=="elevator"||!elevator.userData.elevatorPassengers?.has(remoteId))continue;
+      const cabin=elevator.userData.elevatorCabin;
+      if(!cabin)continue;
+      const floorY=elevator.position.y+cabin.position.y+.16;
+      avatar.position.y=floorY;
+      if(target)target.y=floorY;
+      avatar.position.x=THREE.MathUtils.clamp(avatar.position.x,elevator.position.x-2.12,elevator.position.x+2.12);
+      avatar.position.z=THREE.MathUtils.clamp(avatar.position.z,elevator.position.z-2.12,elevator.position.z+2.12);
+      break;
+    }
     const targetRotation=avatar.userData.netRotation||0;
     const angle=Math.atan2(Math.sin(targetRotation-avatar.rotation.y),Math.cos(targetRotation-avatar.rotation.y));
     avatar.rotation.y+=angle*(1-Math.exp(-delta*14));
