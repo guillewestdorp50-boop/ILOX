@@ -3882,7 +3882,7 @@ function animate() {
           const previousTop=fromFeet+PLAYER_HEIGHT,nextTop=toFeet+PLAYER_HEIGHT;
           if(previousTop<=bounds.min.y+.02&&nextTop>bounds.min.y){
             const safeFeet=bounds.min.y-PLAYER_HEIGHT-.02;
-            if(safeFeet>=resolved){resolved=safeFeet;hit={kind,x:Number(player.position.x.toFixed(3)),z:Number(player.position.z.toFixed(3)),ceilingY:Number(bounds.min.y.toFixed(3))};}
+            if(safeFeet>=fromFeet-.02&&safeFeet<resolved){resolved=safeFeet;hit={kind,x:Number(player.position.x.toFixed(3)),z:Number(player.position.z.toFixed(3)),ceilingY:Number(bounds.min.y.toFixed(3))};}
           }
         });
       }
