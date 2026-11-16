@@ -19,6 +19,11 @@ const cameraControls = document.querySelector("#camera-controls");
 const cameraLockButton = document.querySelector("#camera-lock");
 const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
 const cameraModePanel = document.querySelector("#camera-mode-panel");
+const cameraFreeControls = document.querySelector("#camera-free-controls");
+const cameraFreePad = document.querySelector("#camera-free-pad");
+const cameraFreeKnob = document.querySelector("#camera-free-knob");
+const cameraFreeUp = document.querySelector("#camera-free-up");
+const cameraFreeDown = document.querySelector("#camera-free-down");
 const jumpButton = document.querySelector("#jump-button");
 const menuToggle = document.querySelector("#menu-toggle");
 const menuPanel = document.querySelector("#menu-panel");
@@ -52,7 +57,11 @@ let buildGuide = null, buildPointer = null;
 const buildRecords = [], buildGroups = [];
 let started = false;
 let yaw = 0, playerHeading = 0, pitch = 0;
-let cameraMode = "third", cameraLocked = false;
+let cameraMode = "third", cameraLocked = false, cameraFreeMode = false;
+let cameraFreePointer = null;
+let cameraFreeStick = {x:0,y:0};
+let cameraFreePosition = null, cameraFreeYaw = 0, cameraFreePitch = 0;
+let cameraFreeVertical = 0;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
 
@@ -911,9 +920,33 @@ function addEvents() {
   movePad.addEventListener("pointercancel", e => {
     if (e.pointerId === moveStickPointer) resetMoveStick();
   });
+  cameraFreePad?.addEventListener("pointerdown", e => {
+    if (!started || !cameraFreeMode || cameraFreePointer !== null || e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation(); cameraFreePointer=e.pointerId;
+    cameraFreePad.setPointerCapture(e.pointerId); updateCameraFreeStick(e);
+  });
+  cameraFreePad?.addEventListener("pointermove", e => {
+    if (e.pointerId !== cameraFreePointer) return;
+    e.preventDefault(); updateCameraFreeStick(e);
+  });
+  const resetCameraFreeStick = e => {
+    if (e && e.pointerId !== cameraFreePointer) return;
+    cameraFreePointer=null; cameraFreeStick.x=0; cameraFreeStick.y=0;
+    if(cameraFreeKnob)cameraFreeKnob.style.transform="translate(-50%, -50%)";
+  };
+  cameraFreePad?.addEventListener("pointerup", resetCameraFreeStick);
+  cameraFreePad?.addEventListener("pointercancel", resetCameraFreeStick);
+  const setCameraVertical = value => { cameraFreeVertical=value; };
+  cameraFreeUp?.addEventListener("pointerdown",e=>{e.preventDefault();setCameraVertical(1);});
+  cameraFreeDown?.addEventListener("pointerdown",e=>{e.preventDefault();setCameraVertical(-1);});
+  [cameraFreeUp,cameraFreeDown].forEach(button=>{
+    if(!button)return;
+    const stop=()=>setCameraVertical(0);
+    button.addEventListener("pointerup",stop);button.addEventListener("pointercancel",stop);button.addEventListener("lostpointercapture",stop);
+  });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
+    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -935,8 +968,13 @@ function addEvents() {
     // Cámara libre compartida por primera, segunda, tercera persona y bloqueo.
     // Arrastrar el dedo hacia arriba mira al cielo; hacia abajo, al suelo.
     // Giro horizontal completo y vertical casi de cenit a nadir, en las tres vistas.
-    yaw -= dx * 0.0048;
-    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
+    if(cameraFreeMode){
+      cameraFreeYaw -= dx * 0.0048;
+      cameraFreePitch = THREE.MathUtils.clamp(cameraFreePitch - dy * 0.0048, -1.52, 1.52);
+    }else{
+      yaw -= dx * 0.0048;
+      pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
+    }
   });
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -1050,15 +1088,23 @@ function addEvents() {
   });
   const applyCameraMode = mode => {
     if (cameraLocked && mode === "first") mode = "second";
+    const enteringFree = mode === "free" && !cameraFreeMode;
     cameraMode = mode;
-    firstPersonBuild = mode === "first";
-    cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
+    cameraFreeMode = mode === "free";
+    if(enteringFree){
+      cameraFreePosition = camera.position.clone();
+      cameraFreeYaw = yaw; cameraFreePitch = pitch;
+    }
+    if(!cameraFreeMode)cameraFreeVertical=0;
+    if(cameraFreeControls)cameraFreeControls.classList.toggle("hidden",!cameraFreeMode);
+    if(cameraFreeMode){cameraFreePosition ||= camera.position.clone();}
+    else cameraDistance = mode === "first" ? 0.08 : mode === "second" ? 3.0 : 5.4;
     // Conservamos el ángulo orbital al cambiar de cámara: las tres vistas
     // y el bloqueo comparten exactamente el mismo control libre.
     document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
     const buildView = document.querySelector("#view-toggle");
-    if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : "⬆ VISTA AÉREA";
-    showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : "Cámara en tercera persona");
+    if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
+    showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
   cameraMenuToggle.addEventListener("click",()=>cameraModePanel.classList.toggle("hidden"));
   document.querySelectorAll(".camera-mode").forEach(button => button.addEventListener("click", () => {applyCameraMode(button.dataset.camera);cameraModePanel.classList.add("hidden");}));
@@ -1067,6 +1113,7 @@ function addEvents() {
     game.classList.toggle("camera-locked", cameraLocked);
     if (cameraLocked) {
       if (cameraMode === "first") applyCameraMode("second");
+      if (cameraFreeMode) applyCameraMode("third");
       resetMoveStick();
       keys.clear();
       yaw += Math.PI;
@@ -2341,6 +2388,16 @@ function triggerJump(){if(!started||!player||cameraLocked)return;
   if(player.userData.isSwimming){player.userData.poolExitJumpUntil=Date.now()+950;player.userData.isSwimming=false;playerVerticalVelocity=8.4;playerGrounded=false;return;}
   if(!playerGrounded)return;playerVerticalVelocity=8.4;playerGrounded=false;
 }
+function updateCameraFreeStick(event){
+  if(!cameraFreePad||!cameraFreeKnob)return;
+  const rect=cameraFreePad.getBoundingClientRect(),radius=Math.min(rect.width,rect.height)*.36;
+  let x=(event.clientX-(rect.left+rect.width/2))/radius;
+  let y=(event.clientY-(rect.top+rect.height/2))/radius;
+  const magnitude=Math.hypot(x,y);if(magnitude>1){x/=magnitude;y/=magnitude;}
+  cameraFreeStick.x=x;cameraFreeStick.y=y;
+  cameraFreeKnob.style.transform=`translate(calc(-50% + ${x*radius}px), calc(-50% + ${y*radius}px))`;
+}
+
 function updateMoveStick(event) {
   const rect = movePad.getBoundingClientRect();
   const radius = Math.min(rect.width, rect.height) * 0.36;
@@ -2379,9 +2436,9 @@ function animate() {
     // Entrada nueva: el joystick da un vector 360°. La cámara define el frente;
     // por eso, al mantener el joystick arriba y arrastrar la vista a la derecha,
     // el personaje sigue avanzando y curva su trayectoria con la cámara.
-    let forward = cameraLocked ? 0 : (-moveStick.y + (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
+    let forward = cameraLocked ? 0 : (-moveStick.y + (keys.has("w") && !cameraFreeMode ? 1 : 0) - (keys.has("s") && !cameraFreeMode ? 1 : 0)
       + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0));
-    let strafe = cameraLocked ? 0 : (moveStick.x + (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0)
+    let strafe = cameraLocked ? 0 : (moveStick.x + (keys.has("d") && !cameraFreeMode ? 1 : 0) - (keys.has("a") && !cameraFreeMode ? 1 : 0)
       + (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0));
     const inputLength = Math.hypot(forward, strafe);
     localMoving = inputLength > 0.08;
@@ -2519,17 +2576,41 @@ function animate() {
   }
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
+  if(cameraFreeMode && cameraFreePosition){
+    const keyboardForward=(keys.has("w")?1:0)-(keys.has("s")?1:0);
+    const keyboardStrafe=(keys.has("d")?1:0)-(keys.has("a")?1:0);
+    const forward=cameraFreeStick.y*-1+keyboardForward;
+    const strafe=cameraFreeStick.x+keyboardStrafe;
+    const length=Math.hypot(forward,strafe)||1;
+    const speed=keys.has("shift")?22:12;
+    const fx=-Math.sin(cameraFreeYaw),fz=-Math.cos(cameraFreeYaw);
+    const rx=Math.cos(cameraFreeYaw),rz=-Math.sin(cameraFreeYaw);
+    cameraFreePosition.x+=(fx*forward+rx*strafe)/Math.max(1,length)*speed*delta;
+    cameraFreePosition.z+=(fz*forward+rz*strafe)/Math.max(1,length)*speed*delta;
+    const vertical=cameraFreeVertical+(keys.has("e")?1:0)-(keys.has("q")?1:0);
+    cameraFreePosition.y+=vertical*speed*delta;
+    cameraFreePosition.x=THREE.MathUtils.clamp(cameraFreePosition.x,-worldSize/2,worldSize/2);
+    cameraFreePosition.z=THREE.MathUtils.clamp(cameraFreePosition.z,-worldSize/2,worldSize/2);
+    cameraFreePosition.y=THREE.MathUtils.clamp(cameraFreePosition.y,0,180);
+  }
   updateBuildGravity(delta);
   for(const group of buildGroups){if(group.userData.animalMixer){group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;const canWalk=!!(actions.walk||actions.run);if(canWalk){group.userData.roamTimer-=delta;if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;}const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22;if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:group.userData.buildRecord?.kind==="trex"?.55:.42;group.position.x+=dx/dist*speed*delta;group.position.z+=dz/dist*speed*delta;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=group.position.x;group.userData.buildRecord.z=group.position.z;}const next=moving?(actions.walk||actions.run||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraDistance;
-  // Pitch orbital compartido: permite mirar desde el suelo hasta el cielo
-  // en primera, segunda y tercera persona, sin límite superior artificial.
+  // La cámara libre tiene posición y orientación propias; nunca sigue al jugador.
   const cameraYaw = yaw;
   const targetX = focus.position.x + Math.sin(cameraYaw) * distance;
   const targetZ = focus.position.z + Math.cos(cameraYaw) * distance;
-  if (firstPerson) {
+  if(cameraFreeMode && cameraFreePosition){
+    camera.position.copy(cameraFreePosition);
+    const lookDistance=30;
+    camera.lookAt(
+      cameraFreePosition.x-Math.sin(cameraFreeYaw)*Math.cos(cameraFreePitch)*lookDistance,
+      cameraFreePosition.y+Math.sin(cameraFreePitch)*lookDistance,
+      cameraFreePosition.z-Math.cos(cameraFreeYaw)*Math.cos(cameraFreePitch)*lookDistance
+    );
+  } else if (firstPerson) {
     const eye = new THREE.Vector3(player.position.x,player.position.y+1.72,player.position.z);
     camera.position.copy(eye);
     const viewDistance = 10;
