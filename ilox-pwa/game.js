@@ -989,7 +989,7 @@ function addEvents() {
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
   });
-  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator||!activeElevator.userData.elevatorConsole)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
+  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator||!activeElevator.userData.elevatorConsole)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
   document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
@@ -1658,7 +1658,6 @@ function animateElevator(group,now=Date.now()){
     if(t>=1){
       rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;
       group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;
-      if(elevatorRiding&&activeElevator===group)elevatorPanelDismissed=false;
       if(!group.userData.elevatorRemoteTravel)persistBuilds();
       group.userData.elevatorRemoteTravel=false;
     }
