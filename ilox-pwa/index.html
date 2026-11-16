@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=ilox-v104-five-controls">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
-  <link rel="stylesheet" href="./styles.css?v=ilox-v104-3d-bottom-dock-d">
+  <link rel="stylesheet" href="./styles.css?v=ilox-v105-single-menu-camera-cycle">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -89,30 +89,33 @@
         <button id="elevator-ok" class="elevator-ok" type="button">OK · VIAJAR</button>
       </div>
     </section>
-    <div id="hud-dock" class="hud-dock hidden" aria-label="Barra de controles">
-      <button id="hud-dock-toggle" class="hud-dock-toggle" type="button" aria-label="Desplegar controles" aria-expanded="false">⌃</button>
-      <div id="hud-controls" class="hud-controls hidden" aria-label="Controles">
-        <button id="menu-toggle" class="hud-action hud-menu" type="button" aria-label="Menú" title="Menú" aria-expanded="false">☰</button>
+    <div id="hud-dock" class="hud-dock hidden" aria-label="Controles de partida">
+      <div class="touch-ui" id="touch-ui"><div class="move-pad" id="move-pad" aria-label="Control analógico para avanzar y dirigir"><div class="move-ring"></div><div class="move-knob" id="move-knob"></div></div></div>
+      <div id="hud-controls" class="hud-controls" aria-label="Accesos principales">
+        <button id="menu-toggle" class="hud-action hud-menu" type="button" aria-label="Menú" title="Menú" aria-expanded="false">☰<small>MENÚ</small></button>
         <div id="camera-controls" class="camera-controls">
-          <button id="camera-menu-toggle" class="hud-action hud-camera camera-menu-toggle" type="button" aria-label="Cámara" title="Cámara">◉</button>
+          <button id="camera-menu-toggle" class="hud-action hud-camera camera-menu-toggle" type="button" aria-label="Cambiar cámara" title="Cambiar cámara">◉<small>CÁMARA</small></button>
           <div id="camera-mode-panel" class="camera-mode-panel hidden">
             <button class="camera-mode" data-camera="first" type="button" aria-label="Primera persona" title="Primera persona">①</button><button class="camera-mode" data-camera="second" type="button" aria-label="Cámara cercana" title="Cámara cercana">②</button><button class="camera-mode selected" data-camera="third" type="button" aria-label="Tercera persona" title="Tercera persona">③</button><button class="camera-mode" data-camera="free" type="button" aria-label="Cámara aérea libre" title="Cámara libre">✥</button><button id="camera-lock" class="camera-lock" type="button" aria-label="Bloquear movimiento y girar cámara" aria-pressed="false">🔓</button>
           </div>
         </div>
-        <button id="hud-build" class="hud-action hud-build" type="button" aria-label="Construir" title="Construir">🔨</button>
-        <button id="hud-delete" class="hud-action hud-delete" type="button" aria-label="Eliminar" title="Eliminar">⌫</button>
-        <button id="hud-confirm" class="hud-action hud-confirm" type="button" aria-label="Terminar acción" title="Terminar acción" disabled>✓</button>
-        <button id="door-rotate-control" class="hud-action hud-rotate hidden" type="button" aria-label="Girar pieza" title="Girar pieza">↻</button>
-        <button id="elevator-call-button" class="hud-action hud-elevator hidden" type="button" aria-label="Llamar ascensor" title="Llamar ascensor">↕</button>
-        <button id="mp-chat-toggle" class="hud-action hud-chat hidden" type="button" aria-label="Chat del mundo" title="Chat del mundo">💬<span class="mp-chat-unread hidden" aria-live="polite">0</span></button>
-        <button id="quick-save" class="hud-action hud-save" type="button" aria-label="Guardar" title="Guardar">💾</button>
-        <button id="fullscreen" class="hud-action hud-fullscreen" type="button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button>
-        <button id="jump-button" class="hud-action hud-jump" type="button" aria-label="Saltar" title="Saltar">⬆</button>
-        <button id="run-button" class="hud-action hud-run" type="button" aria-label="Correr" title="Correr">🏃</button>
       </div>
-      <div class="touch-ui" id="touch-ui"><div class="move-pad" id="move-pad" aria-label="Joystick de movimiento"><div class="move-ring"></div><div class="move-knob" id="move-knob"></div></div></div>
+      <div class="right-play-controls">
+        <button id="jump-button" class="hud-action hud-jump" type="button" aria-label="Saltar" title="Saltar">⬆<small>SALTAR</small></button>
+        <button id="run-button" class="hud-action hud-run" type="button" aria-label="Correr" title="Correr">🏃<small>CORRER</small></button>
+      </div>
     </div>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
+      <div class="menu-section-title">HERRAMIENTAS DEL MUNDO</div>
+      <button id="hud-build" class="menu-action menu-tool-action" type="button">🔨 CONSTRUIR <span>›</span></button>
+      <button id="hud-delete" class="menu-action menu-tool-action" type="button">⌫ ELIMINAR PIEZAS</button>
+      <button id="hud-confirm" class="menu-action menu-tool-action" type="button" disabled>✓ TERMINAR ACCIÓN</button>
+      <button id="door-rotate-control" class="menu-action menu-tool-action hidden" type="button">↻ GIRAR PUERTA</button>
+      <button id="elevator-call-button" class="menu-action menu-tool-action hidden" type="button">↕ LLAMAR ASCENSOR</button>
+      <button id="mp-chat-toggle" class="menu-action menu-tool-action hidden" type="button">💬 CHAT DEL MUNDO<span class="mp-chat-unread hidden" aria-live="polite">0</span></button>
+      <button id="quick-save" class="menu-action menu-tool-action" type="button">💾 GUARDAR MUNDO</button>
+      <button id="fullscreen" class="menu-action menu-tool-action" type="button">⛶ PANTALLA COMPLETA</button>
+      <div class="menu-section-title">PARTIDA Y JUGADORES</div>
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
     </section>
     <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
@@ -208,6 +211,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-v104-3d-bottom-dock-d"></script>
+  <script type="module" src="./game.js?v=ilox-v105-single-menu-camera-cycleock-d"></script>
 </body>
 </html>
