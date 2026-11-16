@@ -134,6 +134,7 @@ function removeBuildSpatialGroup(group){const keys=group?.userData?.spatialCellK
 function updateBuildSpatialGroup(group){if(!group||group.parent!==scene)return;removeBuildSpatialGroup(group);group.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(group);if(bounds.isEmpty())bounds.setFromCenterAndSize(group.position,new THREE.Vector3(1.5,1.5,1.5));group.userData.spatialBounds=bounds;const keys=[],minX=Math.floor(bounds.min.x/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor(bounds.max.x/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor(bounds.min.z/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor(bounds.max.z/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const key=cx+":"+cz;let cell=buildSpatialCells.get(key);if(!cell){cell=new Set();buildSpatialCells.set(key,cell);}cell.add(group);keys.push(key);}group.userData.spatialCellKeys=keys;}
 function getNearbyBuildGroups(x,z,radius=.5){const found=new Set(),minX=Math.floor((x-radius)/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor((x+radius)/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor((z-radius)/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor((z+radius)/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const cell=buildSpatialCells.get(cx+":"+cz);if(!cell)continue;for(const group of cell){const b=group.userData.spatialBounds;if(b&&x+radius>=b.min.x-.02&&x-radius<=b.max.x+.02&&z+radius>=b.min.z-.02&&z-radius<=b.max.z+.02)found.add(group);}}return found;}
 function foundationAt(x,z){for(const g of getNearbyBuildGroups(x,z,0)){const r=g.userData.buildRecord;if(!r||(r.kind!=="platea"&&r.kind!=="pool"))continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
+function filledPoolAt(x,z){for(const g of getNearbyBuildGroups(x,z,13)){const p=g.userData.buildRecord;if(p?.kind!=="pool"||Math.abs(x-p.x)>=(p.poolWidth||6)/2-.48||Math.abs(z-p.z)>=(p.poolDepth||6)/2-.48)continue;for(const waterGroup of getNearbyBuildGroups(p.x,p.z,13)){const w=waterGroup.userData.buildRecord;if(w?.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)return p;}}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
   const dx=Math.abs(a.x-b.x),dz=Math.abs(a.z-b.z);
@@ -3605,7 +3606,6 @@ function animate() {
       );
       // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
       const playerSwimming=!!player.userData.isSwimming;
-      const filledPoolAtCandidate=buildRecords.some(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(z-p.z)<(p.poolDepth||6)/2-.48);
       for (const g of getNearbyBuildGroups(x,z,.4)) {
         const kind=g.userData.buildRecord?.kind;
         if (!SOLID_BUILD_KINDS.has(kind) || !g.visible) continue;
@@ -3630,7 +3630,7 @@ function animate() {
     };
     tryStepMove(nextX,player.position.z,"x");
     tryStepMove(player.position.x,nextZ,"z");
-    const pool=buildRecords.find(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(player.position.x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(player.position.z-p.z)<(p.poolDepth||6)/2-.48);
+    const pool=filledPoolAt(player.position.x,player.position.z);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(inWater){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
     else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
