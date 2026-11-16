@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-elevator-passenger-cargo-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-v110-physics-diagnostics-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -2229,14 +2229,50 @@ function updateElevatorCargo(group,offset){
     }
   }
 }
+function passengersCount(group){return group.userData.elevatorPassengers?.size||0;}
+function elevatorSweepBlocker(group,fromOffset,toOffset){
+  if(Math.abs(toOffset-fromOffset)<.0001||!player)return null;
+  const floorBottom=group.position.y+.18+Math.min(fromOffset,toOffset);
+  const floorTop=group.position.y+.18+Math.max(fromOffset,toOffset)+.16;
+  const passengers=group.userData.elevatorPassengers||new Map();
+  const overlaps=(position,id)=>{
+    if(!position||Math.abs(position.x-group.position.x)>=3.28||Math.abs(position.z-group.position.z)>=3.28)return null;
+    const bodyBottom=position.y+.08,bodyTop=position.y+PLAYER_HEIGHT;
+    if(floorBottom<bodyTop-.025&&floorTop>bodyBottom+.025)return {id,x:Number(position.x.toFixed(3)),y:Number(position.y.toFixed(3)),z:Number(position.z.toFixed(3)),floorBottom:Number(floorBottom.toFixed(3)),floorTop:Number(floorTop.toFixed(3))};
+    return null;
+  };
+  if(!(elevatorRiding&&activeElevator===group)){const hit=overlaps(player.position,multiplayerUserId||'local');if(hit)return hit;}
+  for(const [remoteId,avatar] of remotePlayers){if(passengers.has(remoteId))continue;const hit=overlaps(avatar.position,remoteId);if(hit)return hit;}
+  const botRiding=elevatorBot&&elevatorBotElevator===group&&['boardedWait','waitingTop','rideDown','exit'].includes(elevatorBotPhase);
+  if(elevatorBot&&!botRiding){const hit=overlaps(elevatorBot.position,'ilox-bot');if(hit)return hit;}
+  return null;
+}
 function animateElevator(group,now=Date.now()){
   const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
   const travel=group.userData.elevatorTravel;
   let offset=((rec.currentFloor||1)-1)*3;
+  const previousSafeOffset=Number.isFinite(group.userData.elevatorLastSafeOffset)?group.userData.elevatorLastSafeOffset:offset;
   if(travel){
     const t=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);
-    offset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
-    if(t>=1){
+    const candidateOffset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
+    const authoritative=!group.userData.elevatorRemoteTravel&&(!multiplayerSession||elevatorBotIsController(rec));
+    const blocker=authoritative?elevatorSweepBlocker(group,previousSafeOffset,candidateOffset):null;
+    if(blocker){
+      offset=previousSafeOffset;
+      const floors=travel.toFloor-travel.fromFloor;
+      const safeT=Math.abs(floors)>.0001?THREE.MathUtils.clamp((offset/3-(travel.fromFloor-1))/floors,0,1):0;
+      travel.startedAt=now-safeT*travel.duration;
+      group.userData.elevatorBlockedBy=blocker;
+      if(now-(group.userData.elevatorBlockReportAt||0)>10000){
+        group.userData.elevatorBlockReportAt=now;
+        window.__iloxReportRuntimeEvent?.('ELEVATOR_PLATFORM_BLOCKED','El piso móvil del ascensor iba a atravesar el cuerpo de una entidad; el viaje quedó pausado antes de la penetración.',{elevator:{x:rec.x,z:rec.z,fromFloor:travel.fromFloor,toFloor:travel.toFloor,offset:Number(offset.toFixed(3))},blocker,passengerCount:passengersCount(group)});
+      }
+      if(multiplayerSession&&now-(group.userData.elevatorBlockBroadcastAt||0)>900){
+        group.userData.elevatorBlockBroadcastAt=now;
+        multiplayerSession.sendElevatorState({action:'pause',x:rec.x,z:rec.z,startedAt:travel.startedAt}).catch(error=>console.warn('ILOX elevator pause sync:',error));
+      }
+    }else{offset=candidateOffset;group.userData.elevatorLastSafeOffset=offset;group.userData.elevatorBlockedBy=null;}
+    if(t>=1&&!blocker){
       rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;
       group.userData.elevatorTravel=null;
       group.userData.elevatorDoorOpen=false;
@@ -2252,6 +2288,7 @@ function animateElevator(group,now=Date.now()){
     else setElevatorDoorState(group,false,true,false);
   }
   cabin.position.y=.18+offset;
+  group.userData.elevatorLastSafeOffset=offset;
   updateElevatorCargo(group,offset);
   const currentFloor=rec.currentFloor||1;
   const open=!!group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,currentFloor);
@@ -2390,6 +2427,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   if(!setElevatorDoorState(group,false,broadcast,false))return false;
   const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
   prepareElevatorCargo(group,fromFloor);
+  group.userData.elevatorLastSafeOffset=(fromFloor-1)*3;
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   if(elevatorRiding&&activeElevator===group)startIloxElevatorParty();
   rec.targetFloor=toFloor;
@@ -2400,6 +2438,10 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
 function applyRemoteElevatorState(state){
   const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
   if(!group)return;
+  if(state.action==="pause"){
+    if(group.userData.elevatorTravel&&group.userData.elevatorRemoteTravel)group.userData.elevatorTravel.startedAt=Number(state.startedAt)||group.userData.elevatorTravel.startedAt;
+    return;
+  }
   if(state.action==="passenger"){
     const passengers=group.userData.elevatorPassengers||(group.userData.elevatorPassengers=new Map());
     if(state.joined===false)passengers.delete(state.passengerId);
@@ -2414,6 +2456,7 @@ function applyRemoteElevatorState(state){
   if(player&&Math.abs(player.position.x-group.position.x)<2.72&&Math.abs(player.position.z-group.position.z)<2.72&&Math.abs(player.position.y-(group.position.y+(group.userData.elevatorCabin?.position.y||.18)+.16))<1.5){activeElevator=group;elevatorRiding=true;playerVerticalVelocity=0;playerGrounded=true;}
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
   prepareElevatorCargo(group,state.fromFloor);
+  group.userData.elevatorLastSafeOffset=(state.fromFloor-1)*3;
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
   if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
 }
@@ -3793,7 +3836,7 @@ function animate() {
     const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
-    const collides = (x,z,feetOverride=player.position.y) => {
+    const collides = (x,z,feetOverride=player.position.y,ignoreRemoteId=null) => {
       const feet = feetOverride;
       const body = new THREE.Box3(
         new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
@@ -3813,35 +3856,60 @@ function animate() {
       }
       if(isIloxNightclubWall(x,z,feet))return true;
       // Separación física entre avatares: evita que los jugadores se fusionen.
-      for(const avatar of remotePlayers.values()){
+      for(const [remoteId,avatar] of remotePlayers){
+        if(remoteId===ignoreRemoteId)continue;
+        const sharesElevatorCabin=elevatorRiding&&activeElevator&&activeElevator.userData.elevatorPassengers?.has(remoteId);
+        if(sharesElevatorCabin)continue;
         if(Math.abs(avatar.position.y-feet)>1.55)continue;
         if(Math.hypot(avatar.position.x-x,avatar.position.z-z)<.72)return true;
       }
       return false;
     };
     const tryStepMove=(x,z,axis)=>{
-      if(!collides(x,z)){if(axis==="x")player.position.x=x;else player.position.z=z;return;}
-      const currentY=player.position.y,stepLimit=.42;
-      const candidateFloor=supportHeightAt(x,z,currentY+stepLimit+.02);
-      const rise=candidateFloor-currentY;
-      if(rise>.035&&rise<=stepLimit&&!collides(x,z,candidateFloor+.015)){
-        player.position.y=candidateFloor;playerVerticalVelocity=0;playerGrounded=true;
-        if(axis==="x")player.position.x=x;else player.position.z=z;
+      const start=axis==="x"?player.position.x:player.position.z;
+      const distance=x-start,steps=Math.max(1,Math.ceil(Math.abs(distance)/.12));
+      for(let i=1;i<=steps;i++){
+        const candidate=start+distance*i/steps;
+        const candidateX=axis==="x"?candidate:player.position.x;
+        const candidateZ=axis==="z"?candidate:player.position.z;
+        if(!collides(candidateX,candidateZ)){if(axis==="x")player.position.x=candidate;else player.position.z=candidate;continue;}
+        const currentY=player.position.y,stepLimit=.42;
+        const candidateFloor=supportHeightAt(candidateX,candidateZ,currentY+stepLimit+.02);
+        const rise=candidateFloor-currentY;
+        if(rise>.035&&rise<=stepLimit&&!collides(candidateX,candidateZ,candidateFloor+.015)){
+          player.position.y=candidateFloor;playerVerticalVelocity=0;playerGrounded=true;
+          if(axis==="x")player.position.x=candidate;else player.position.z=candidate;
+          continue;
+        }
+        break;
       }
     };
     tryStepMove(nextX,player.position.z,"x");
-    tryStepMove(player.position.x,nextZ,"z");
+    tryStepMove(nextZ,player.position.x,"z");
     // Si dos avatares ya llegaron superpuestos (por una entrada simultánea),
     // separarlos suavemente hasta recuperar una distancia corporal mínima.
-    for(const avatar of remotePlayers.values()){
+    for(const [remoteId,avatar] of remotePlayers){
       if(Math.abs(avatar.position.y-player.position.y)>1.55)continue;
       const sx=player.position.x-avatar.position.x,sz=player.position.z-avatar.position.z,d=Math.hypot(sx,sz);
-      if(d>0.001&&d<.76){const push=(.76-d)*Math.min(1,delta*5);player.position.x+=sx/d*push;player.position.z+=sz/d*push;}
+      if(d>0.001&&d<.76){
+        const push=(.76-d)*Math.min(1,delta*5),pushX=player.position.x+sx/d*push,pushZ=player.position.z+sz/d*push;
+        if(!collides(pushX,pushZ,player.position.y,remoteId)){player.position.x=pushX;player.position.z=pushZ;}
+      }
     }
     const pool=filledPoolAt(player.position.x,player.position.z);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(inWater){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
-    else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
+    else{
+      player.userData.isSwimming=false;
+      const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y),previousFeet=player.position.y;
+      playerVerticalVelocity-=20*delta;
+      const nextFeet=previousFeet+playerVerticalVelocity*delta;
+      if(nextFeet<groundY-.35&&previousFeet>=groundY-.02){
+        window.__iloxReportRuntimeEvent?.("PHYSICS_FLOOR_CROSSING","El movimiento vertical cruzó la superficie de apoyo antes de ser corregido.",{position:{x:Number(player.position.x.toFixed(3)),y:Number(nextFeet.toFixed(3)),z:Number(player.position.z.toFixed(3))},groundY:Number(groundY.toFixed(3)),penetration:Number((groundY-nextFeet).toFixed(3)),verticalVelocity:Number(playerVerticalVelocity.toFixed(3))});
+      }
+      player.position.y=nextFeet;
+      if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;
+    }
     const moving = inputLength > 0.08;
     if (player.userData.isRiggedAvatar) {
       player.userData.mixer?.update(delta);
