@@ -43,7 +43,7 @@ let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgai
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
-let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0;
+let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorPanelDismissed=false;
 const elevatorPanel=document.querySelector("#elevator-panel"),elevatorFloorSelect=document.querySelector("#elevator-floor"),elevatorStatus=document.querySelector("#elevator-status");
 const elevatorGoButton=document.querySelector("#elevator-go");
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
@@ -993,7 +993,7 @@ function addEvents() {
     }
     if(beginElevatorTravel(activeElevator,target))showToast("Puertas cerradas. Ascensor en marcha.");
   });
-  document.querySelector("#elevator-close")?.addEventListener("click",()=>elevatorPanel?.classList.add("hidden"));
+  document.querySelector("#elevator-close")?.addEventListener("click",()=>{elevatorPanelDismissed=true;elevatorPanel?.classList.add("hidden");});
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
@@ -1426,7 +1426,7 @@ function createBuildPiece(record, options = {}) {
     }
     box(3.25,.16,.16,steel,0,shaftHeight,0);
     const cabin=new THREE.Group();cabin.name="ilox-elevator-cabin";
-    const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(2.55,.16,2.55),cabinMat);cabinFloor.position.y=.08;cabin.add(cabinFloor);
+    const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(2.55,.16,2.55),cabinMat);cabinFloor.position.y=.08;cabinFloor.userData.elevatorFloor=true;cabin.add(cabinFloor);
     for(const sx of [-1.22,1.22]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,2.5),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
     const back=new THREE.Mesh(new THREE.BoxGeometry(2.5,2.65,.08),glassPanel);back.position.set(0,1.4,-1.22);cabin.add(back);
     const roof=new THREE.Mesh(new THREE.BoxGeometry(2.55,.12,2.55),cabinMat);roof.position.y=2.75;cabin.add(roof);
@@ -1594,7 +1594,11 @@ function animateElevator(group,now=Date.now()){
   const open=group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel;
   const left=cabin.userData.doorLeft,right=cabin.userData.doorRight;
   if(left&&right){const amount=open?1.22:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
-  if(elevatorRiding&&activeElevator===group&&player){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
+  if(elevatorRiding&&activeElevator===group&&player){
+    const wantsExit=!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
+    if(wantsExit)elevatorRiding=false;
+    else{player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
+  }
 }
 function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=true){
   const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
@@ -1628,7 +1632,8 @@ function updateElevators(delta){
     }
   }
   if(nearest!==activeElevator&&!elevatorRiding)activeElevator=nearest;
-  const panelOpen=!!nearest&&started&&!buildMode;
+  if(!nearest)elevatorPanelDismissed=false;
+  const panelOpen=!!nearest&&started&&!buildMode&&!elevatorPanelDismissed;
   elevatorPanel?.classList.toggle("hidden",!panelOpen);
   if(panelOpen&&nearest){
     activeElevator=nearest;
@@ -2582,7 +2587,7 @@ function animate() {
         // se permite cruzar el borde desde un salto, y al nadar se puede salir.
         if(kind==="pool"&&player.position.y>=(g.userData.buildRecord.y||0)+.22)continue;
         g.updateMatrixWorld(true);
-        let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
+        let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
       return false;
     };
