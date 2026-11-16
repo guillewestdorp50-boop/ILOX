@@ -50,7 +50,7 @@ let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplaye
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
-const elevatorPanel=document.querySelector("#elevator-panel"),elevatorStatus=document.querySelector("#elevator-status"),elevatorDisplay=document.querySelector("#elevator-display");
+let elevatorCanvas=null,elevatorKeypadOpen=false;
 const elevatorCallButton=document.querySelector("#elevator-call-button");
 const elevatorDoorOpenButton=document.querySelector("#elevator-door-open-button");
 const elevatorDoorCloseButton=document.querySelector("#elevator-door-close-button");
@@ -1091,6 +1091,7 @@ function init() {
   game.insertBefore(renderer.domElement, game.firstChild);
   createJumpCanvasControl();
   createRunCanvasControl();
+  createElevatorCanvasControl();
   scene.add(new THREE.HemisphereLight(0xeaf3ed, 0x46533c, 1.8));
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
@@ -1296,7 +1297,7 @@ function addEvents() {
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if (e.target.closest("#ilox-jump-canvas") || e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
+    if (e.target.closest("#ilox-jump-canvas") || e.target.closest("#ilox-elevator-canvas") || e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraFreeMode?cameraFreeZoom:cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
@@ -1326,8 +1327,6 @@ function addEvents() {
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
   });
-  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(Math.round(Number(key.dataset.floor)||1),1,max);elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok"))confirmElevatorTravel(activeElevator);});
-  document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
   elevatorCallButton?.addEventListener("click",()=>{callElevator(activeElevator);setHudDockOpen(false);});
   elevatorDoorOpenButton?.addEventListener("click",()=>{if(setElevatorDoorState(activeElevator,true,true,true))showToast("Puertas abiertas.");});
   elevatorDoorCloseButton?.addEventListener("click",()=>{if(setElevatorDoorState(activeElevator,false,true,true))showToast("Puertas cerradas.");});
@@ -2258,11 +2257,52 @@ function applyRemoteElevatorState(state){
   group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
   if(state.fromFloor===12&&state.toFloor===1&&elevatorBotIsController(rec)&&["waitingTop","rideDown"].includes(elevatorBotPhase))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
 }
-function updateElevatorDisplay(){if(elevatorDisplay)elevatorDisplay.textContent=String(elevatorSelectedFloor);}
-function openElevatorKeypad(group){if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);const keys=elevatorPanel?.querySelector(".elevator-keys");if(!keys)return;keys.innerHTML="";for(let floor=1;floor<=count;floor++){const b=document.createElement("button");b.type="button";b.className="elevator-key";b.dataset.floor=String(floor);b.textContent=String(floor);if(floor===elevatorSelectedFloor)b.classList.add("selected");keys.appendChild(b);}elevatorStatus.textContent="Elegí el piso de destino";elevatorPanel.classList.remove("hidden");updateElevatorDisplay();}
-function closeElevatorKeypad(){elevatorPanel?.classList.add("hidden");}
-function confirmElevatorTravel(group){if(!elevatorRiding||!group||activeElevator!==group)return false;const target=THREE.MathUtils.clamp(Math.round(elevatorSelectedFloor||1),1,Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)));const started=beginElevatorTravel(group,target);if(started){elevatorStatus.textContent="Viajando al piso "+target;closeElevatorKeypad();}else{elevatorStatus.textContent="No se pudo iniciar el viaje. Revisá el estado del ascensor.";showToast("No se pudo iniciar el viaje.");}return started;}
-function tryElevatorConsoleAtPointer(event){if(!elevatorRiding||!activeElevator?.userData.elevatorConsole||activeElevator.userData.elevatorTravel)return false;const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);activeElevator.updateMatrixWorld(true);const hit=raycaster.intersectObject(activeElevator.userData.elevatorConsole,true)[0];if(!hit)return false;if(elevatorPanel&&!elevatorPanel.classList.contains("hidden"))confirmElevatorTravel(activeElevator);else openElevatorKeypad(activeElevator);return true;}
+function drawElevatorCanvas(){
+  if(!elevatorCanvas)return;
+  const ctx=elevatorCanvas.getContext("2d");if(!ctx)return;
+  ctx.clearRect(0,0,600,880);
+  const count=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
+  const rounded=(x,y,w,h,r,fill,stroke,line=1)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}};
+  ctx.save();const panel=ctx.createLinearGradient(0,0,600,880);panel.addColorStop(0,"#183d35f7");panel.addColorStop(1,"#071d18f7");
+  ctx.shadowColor="#000b";ctx.shadowBlur=30;ctx.shadowOffsetY=12;rounded(12,12,576,856,30,panel,"#75d8c5",5);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.fillStyle="#effff8";ctx.font="1000 31px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("MANDO DEL ASCENSOR",42,65);
+  rounded(505,34,58,58,14,"#ffffff20","#ffffff70",2);ctx.fillStyle="#fff";ctx.font="bold 48px system-ui";ctx.textAlign="center";ctx.fillText("×",534,64);
+  ctx.fillStyle="#a9d7cc";ctx.font="600 20px system-ui";ctx.textAlign="left";ctx.fillText("ELEGÍ EL PISO DE DESTINO",42,132);
+  rounded(32,160,536,66,12,"#061710","#70bca8",3);ctx.fillStyle="#9bbab1";ctx.font="800 17px system-ui";ctx.fillText("DESTINO",54,193);
+  ctx.fillStyle="#a6ffd7";ctx.textAlign="right";ctx.font="1000 38px system-ui";ctx.fillText(String(elevatorSelectedFloor).padStart(2,"0"),545,194);
+  for(let floor=1;floor<=40;floor++){const col=(floor-1)%5,row=Math.floor((floor-1)/5),x=30+col*108,y=250+row*64,selected=floor===elevatorSelectedFloor,disabled=floor>count;
+    rounded(x+5,y+4,98,56,11,disabled?"#263b36":selected?"#dfffee":"#245b4c",selected?"#fff":"#83cdb4",selected?4:2);
+    ctx.fillStyle=disabled?"#73847e":selected?"#073324":"#fff";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText(String(floor),x+54,y+33);}
+  rounded(32,790,536,64,14,"#8dffd0","#d2ffeb",3);ctx.fillStyle="#063523";ctx.textAlign="center";ctx.font="1000 24px system-ui";ctx.fillText("VIAJAR AL PISO "+elevatorSelectedFloor,300,823);ctx.restore();
+}
+function createElevatorCanvasControl(){
+  const canvas=document.createElement("canvas");canvas.id="ilox-elevator-canvas";
+  for(const [prop,value] of Object.entries({position:"absolute",left:"50%",top:"50%",right:"auto",bottom:"auto",transform:"translate(-50%,-50%)",width:"min(300px, calc(100vw - 24px))",height:"min(440px, calc(100dvh - 28px))",maxWidth:"300px",maxHeight:"440px",zIndex:"65",pointerEvents:"auto",touchAction:"none",display:"none",userSelect:"none"}))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.width=600;canvas.height=880;canvas.setAttribute("role","img");canvas.setAttribute("aria-label","Mando gráfico del ascensor: elegir piso del 1 al 40");
+  canvas.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();if(!elevatorKeypadOpen||!started)return;
+    const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*880;
+    if(x>=495&&y<=105){closeElevatorKeypad();return;}if(y>=780&&y<=865){confirmElevatorTravel(activeElevator);return;}
+    if(x>=30&&x<570&&y>=250&&y<762){const col=Math.max(0,Math.min(4,Math.floor((x-30)/108))),row=Math.max(0,Math.min(7,Math.floor((y-250)/64))),floor=row*5+col+1,max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));if(floor<=max){elevatorSelectedFloor=floor;drawElevatorCanvas();}}
+  });
+  canvas.addEventListener("contextmenu",e=>e.preventDefault());game.appendChild(canvas);elevatorCanvas=canvas;return canvas;
+}
+function openElevatorKeypad(group){
+  if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;
+  const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);
+  elevatorKeypadOpen=true;if(elevatorCanvas){elevatorCanvas.style.setProperty("display","block","important");drawElevatorCanvas();}
+}
+function closeElevatorKeypad(){elevatorKeypadOpen=false;if(elevatorCanvas)elevatorCanvas.style.setProperty("display","none","important");}
+function confirmElevatorTravel(group){
+  if(!elevatorRiding||!group||activeElevator!==group)return false;
+  const target=THREE.MathUtils.clamp(Math.round(elevatorSelectedFloor||1),1,Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)));
+  const started=beginElevatorTravel(group,target);if(started)closeElevatorKeypad();else showToast("No se pudo iniciar el viaje.");return started;
+}
+function tryElevatorConsoleAtPointer(event){
+  if(!elevatorRiding||!activeElevator?.userData.elevatorConsole||activeElevator.userData.elevatorTravel)return false;
+  const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();
+  raycaster.setFromCamera(pointer,camera);activeElevator.updateMatrixWorld(true);const hit=raycaster.intersectObject(activeElevator.userData.elevatorConsole,true)[0];if(!hit)return false;
+  if(elevatorKeypadOpen)confirmElevatorTravel(activeElevator);else openElevatorKeypad(activeElevator);return true;
+}
 function elevatorCabinOccupied(group){
   if(!group)return false;
   const cabin=group.userData.elevatorCabin;
