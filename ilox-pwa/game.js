@@ -2607,7 +2607,7 @@ function updateElevatorBot(delta){
     }
   }
   const actions=elevatorBot.userData.animalActions,moving=movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
-  if(elevatorBotPhase!=="clubDance")updateIloxLivingDance(elevatorBot,delta);
+  updateIloxLivingDance(elevatorBot,delta);
   const next=moving?(actions?.run||actions?.walk||actions?.idle):(actions?.idle||actions?.walk);
   if(next&&next!==actions.current&&elevatorBotPhase!=="clubDance"){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
   if(multiplayerSession&&performance.now()-elevatorBotLastBroadcast>120){
