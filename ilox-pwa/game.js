@@ -1087,6 +1087,7 @@ function init() {
   renderer.toneMappingExposure = 1.18;
   game.insertBefore(renderer.domElement, game.firstChild);
   createMenuCanvasControl();
+  createCameraCanvasControls();
   createJumpCanvasControl();
   createRunCanvasControl();
   createElevatorCanvasControl();
