@@ -2238,7 +2238,7 @@ function animateElevator(group,now=Date.now()){
     if(wantsExit){
       elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();
       const passengerId=multiplayerUserId||"local";group.userData.elevatorPassengers?.delete(passengerId);
-      if(multiplayerSession)multiplayerSession.sendElevatorState({action:"passenger",x:group.userData.buildRecord.x,z:group.userData.buildRecord.z,passengerId,joined:false}).catch(error=>console.warn("ILOX elevator exit:",error));
+      if(multiplayerSession)multiplayerSession.updatePresence({userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,elevatorX:null,elevatorZ:null,elevatorJoinedAt:null}).catch(error=>console.warn("ILOX elevator presence:",error));
       const ordered=[...(group.userData.elevatorPassengers||new Map()).entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
       group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
     }
@@ -2483,8 +2483,9 @@ function updateElevators(delta){
       const passengerId=multiplayerUserId||"local";passengers.set(passengerId,{joinedAt:elevatorBoardedAt});
       const ordered=[...passengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
       group.userData.elevatorCaptainId=ordered[0]?.[0]||passengerId;
-      if(multiplayerSession)multiplayerSession.sendElevatorState({action:"passenger",x:group.userData.buildRecord.x,z:group.userData.buildRecord.z,passengerId,joinedAt:elevatorBoardedAt,joined:true}).catch(error=>console.warn("ILOX elevator passenger:",error));
-      if(!multiplayerSession||group.userData.elevatorCaptainId===passengerId)openElevatorKeypad(group);
+      if(multiplayerSession){
+        multiplayerSession.updatePresence({userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,elevatorX:group.userData.buildRecord.x,elevatorZ:group.userData.buildRecord.z,elevatorJoinedAt:elevatorBoardedAt}).catch(error=>console.warn("ILOX elevator presence:",error));
+      }else openElevatorKeypad(group);
     }
   }
   if(!elevatorRiding){
@@ -2974,14 +2975,28 @@ function startMultiplayerFallbackSync(worldId){
 }
 function syncRemotePresence(state){
   const seen=new Set();multiplayerPresentUserIds.clear();
+  const elevators=buildGroups.filter(group=>group.userData.buildRecord?.kind==="elevator");
+  for(const group of elevators)group.userData.elevatorPassengers=new Map();
   for(const entries of Object.values(state||{})){
     for(const entry of entries||[]){
       const userId=entry.user_id||entry.userId;
       if(!userId)continue;
       multiplayerPresentUserIds.add(userId);
+      if(entry.elevatorX!=null&&entry.elevatorZ!=null){
+        const group=elevators.find(item=>Math.abs(item.userData.buildRecord.x-Number(entry.elevatorX))<.1&&Math.abs(item.userData.buildRecord.z-Number(entry.elevatorZ))<.1);
+        if(group)group.userData.elevatorPassengers.set(userId,{joinedAt:Number(entry.elevatorJoinedAt)||0});
+      }
       if(userId===multiplayerUserId)continue;
       seen.add(userId);
       updateRemotePlayer({userId,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
+    }
+  }
+  for(const group of elevators){
+    const ordered=[...group.userData.elevatorPassengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
+    group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
+    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel){
+      if(group.userData.elevatorCaptainId===multiplayerUserId)openElevatorKeypad(group);
+      else closeElevatorKeypad();
     }
   }
   for(const userId of remotePlayers.keys())if(!seen.has(userId))removeRemotePlayer(userId);
@@ -3974,7 +3989,10 @@ function animate() {
       multiplayerLastDbState=now;
       const state={userId:multiplayerUserId,x:player.position.x,y:player.position.y,z:player.position.z,rotation:player.rotation.y,avatar:selectedAvatar,moving:localMoving,swimming:!!player.userData.isSwimming,jumping:!playerGrounded};
       multiplayerSession.sendPlayerState(state).catch(error=>console.warn("ILOX multiplayer: sincronización de jugador falló",error));
-      if(now-multiplayerLastPresence>1000){multiplayerLastPresence=now;multiplayerSession.updatePresence(state).catch(error=>console.warn(error));}
+      if(now-multiplayerLastPresence>1000){
+        multiplayerLastPresence=now;
+        multiplayerSession.updatePresence({...state,elevatorX:elevatorRiding&&activeElevator?activeElevator.userData.buildRecord.x:null,elevatorZ:elevatorRiding&&activeElevator?activeElevator.userData.buildRecord.z:null,elevatorJoinedAt:elevatorRiding?elevatorBoardedAt:null}).catch(error=>console.warn(error));
+      }
     }
   }
   renderer.render(scene, camera);
