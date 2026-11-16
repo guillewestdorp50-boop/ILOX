@@ -178,7 +178,7 @@ function supportHeightAt(x,z,feet=Infinity,ignore=null){
   }
   if(Math.abs(x-ILOX_NIGHTCLUB.x)<20.4&&Math.abs(z-ILOX_NIGHTCLUB.z)<15.4){
     const onDanceFloor=Math.abs(x-ILOX_NIGHTCLUB.x)<10&&Math.abs(z-ILOX_NIGHTCLUB.z)<7.6;
-    top=Math.max(top,onDanceFloor?.325:.16);
+    top=Math.max(top,onDanceFloor ? 0.325 : 0.16);
   }
   return top;
 }
