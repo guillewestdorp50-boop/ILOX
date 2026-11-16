@@ -457,3 +457,6 @@ body{background:#201747;color:#fff}
 @media(max-width:600px){#menu-toggle{left:auto;top:auto;width:46px;height:49px;min-width:46px}}
 
 #door-rotate-control.hidden{display:none!important}
+
+/* La barra no captura gestos; el desplegable de cámara sí debe recibir toques. */
+.camera-mode-panel{pointer-events:auto}
