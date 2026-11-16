@@ -61,13 +61,13 @@ jobs:
       - name: Descargar recursos 3D
         run: python3 scripts/fetch_polyhaven_assets.py
 
-      - name: Verificar identidad de ILOX v102
+      - name: Verificar identidad de ILOX v103
         run: |
           grep -q "versionCode 102" app/build.gradle
-          grep -q "versionName 'V102'" app/build.gradle
-          grep -q "ILOX v102" ilox-pwa/index.html
+          grep -q "versionName 'V103'" app/build.gradle
+          grep -q "ILOX v103" ilox-pwa/index.html
 
-      - name: Empaquetar la versión web ILOX v102 dentro del APK
+      - name: Empaquetar la versión web ILOX v103 dentro del APK
         run: |
           node --check ilox-pwa/game.js
           node --check ilox-pwa/multiplayer.js
@@ -82,8 +82,8 @@ jobs:
       - name: Publicar instalador APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ilox-v102-android
-          name: ILOX v102 — Instalador Android
-          body: Instalador Android de ILOX v102. Incluye la versión visible en la pantalla de inicio.
+          tag_name: ilox-v103-android
+          name: ILOX v103 — Instalador Android
+          body: Instalador Android de ILOX v103. Incluye la versión visible en la pantalla de inicio.
           files: app/build/outputs/apk/debug/app-debug.apk
           make_latest: true
