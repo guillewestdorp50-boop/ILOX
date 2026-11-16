@@ -63,7 +63,7 @@ jobs:
 
       - name: Verificar identidad de ILOX v103
         run: |
-          grep -q "versionCode 102" app/build.gradle
+          grep -q "versionCode 103" app/build.gradle
           grep -q "versionName 'V103'" app/build.gradle
           grep -q "ILOX v103" ilox-pwa/index.html
 
