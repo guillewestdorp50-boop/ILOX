@@ -44,6 +44,8 @@ let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplaye
 let multiplayerLastBroadcast = 0, multiplayerLastPresence = 0, multiplayerLastDbState = 0, multiplayerLastStructurePoll = 0;
 let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0;
+const elevatorPanel=document.querySelector("#elevator-panel"),elevatorFloorSelect=document.querySelector("#elevator-floor"),elevatorStatus=document.querySelector("#elevator-status");
+const elevatorGoButton=document.querySelector("#elevator-go");
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -983,6 +985,15 @@ function addEvents() {
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
   });
+  elevatorGoButton?.addEventListener("click",()=>{
+    if(!activeElevator)return;
+    const target=Number(elevatorFloorSelect.value)||1;
+    if(!elevatorRiding){
+      showToast("Entrá en la cabina antes de elegir destino.");return;
+    }
+    if(beginElevatorTravel(activeElevator,target))showToast("Puertas cerradas. Ascensor en marcha.");
+  });
+  document.querySelector("#elevator-close")?.addEventListener("click",()=>elevatorPanel?.classList.add("hidden"));
   game.addEventListener("pointerup", e => {
     activePointers.delete(e.pointerId);
     if (lookPointer !== e.pointerId) return;
@@ -1325,7 +1336,7 @@ function addEvents() {
       if(!Array.isArray(structures)||structures.length>1200)throw new Error("El archivo no contiene un mundo ILOX válido (máximo 1200 piezas).");
       if(parsed?.format&&parsed.format!=="ILOX_WORLD")throw new Error("Este archivo no es una copia JSON de ILOX.");
       if(parsed?.worldId&&activeMultiplayerWorldId&&parsed.worldId!==activeMultiplayerWorldId)throw new Error("Esta copia pertenece a otra partida compartida.");
-      const allowed=new Set(["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]);
+      const allowed=new Set(["block","brick","platea","floor","wall","door","window","roof","stairs","elevator","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]);
       const clean=structures.filter(record=>record&&allowed.has(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)).map(record=>{
         const copy={...record};
         if(!activeMultiplayerWorldId){delete copy.cloudId;delete copy.cloudOwnerId;}
@@ -1566,10 +1577,72 @@ function loadBuilds() {
   if(buildRecords.length) return;
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
-    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62,fox:.9,person:1.75,robot:1.8,trex:3.2};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+    if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","elevator","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,elevator:120,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62,fox:.9,person:1.75,robot:1.8,trex:3.2};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
+function animateElevator(group,now=Date.now()){
+  const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
+  const travel=group.userData.elevatorTravel;
+  let offset=((rec.currentFloor||1)-1)*3;
+  if(travel){
+    const t=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);
+    offset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
+    if(t>=1){rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;persistBuilds();}
+  }
+  cabin.position.y=.18+offset;
+  const open=group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel;
+  const left=cabin.userData.doorLeft,right=cabin.userData.doorRight;
+  if(left&&right){const amount=open?1.22:0;left.position.x=-.61-amount;right.position.x=.61+amount;}
+  if(elevatorRiding&&activeElevator===group&&player){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
+}
+function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=true){
+  const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
+  const fromFloor=rec.currentFloor||1,toFloor=THREE.MathUtils.clamp(Math.round(targetFloor),1,rec.floorCount||40);
+  if(fromFloor===toFloor){group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=Date.now();return true;}
+  group.userData.elevatorDoorOpen=false;
+  const duration=Math.max(1200,Math.abs(toFloor-fromFloor)*1250);
+  group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
+  rec.targetFloor=toFloor;
+  if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration}).catch(error=>console.warn("ILOX elevator sync:",error));
+  return true;
+}
+function applyRemoteElevatorState(state){
+  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
+  if(!group)return;
+  const rec=group.userData.buildRecord;
+  rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;
+  group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};
+}
+function updateElevators(delta){
+  const elevators=buildGroups.filter(g=>g.userData.buildRecord?.kind==="elevator");
+  let nearest=null,nearestDistance=Infinity;
+  for(const group of elevators){
+    animateElevator(group);
+    const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
+    if(d<5.5&&d<nearestDistance){nearest=group;nearestDistance=d;}
+    const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
+    if(!elevatorRiding&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.02&&Math.abs(player.position.y-level)<.8){
+      activeElevator=group;elevatorRiding=true;player.position.set(group.position.x,level,group.position.z);
+      showToast("Entraste en la cabina. Elegí tu planta.");
+    }
+  }
+  if(nearest!==activeElevator&&!elevatorRiding)activeElevator=nearest;
+  const panelOpen=!!nearest&&started&&!buildMode;
+  elevatorPanel?.classList.toggle("hidden",!panelOpen);
+  if(panelOpen&&nearest){
+    activeElevator=nearest;
+    const rec=nearest.userData.buildRecord;
+    if(elevatorFloorSelect.options.length!==rec.floorCount){
+      elevatorFloorSelect.innerHTML="";
+      for(let floor=1;floor<=(rec.floorCount||40);floor++){const option=document.createElement("option");option.value=String(floor);option.textContent=floor===1?"PLANTA 1 · BAJA":("PLANTA "+floor);elevatorFloorSelect.appendChild(option);}
+    }
+    if(!nearest.userData.elevatorTravel)elevatorFloorSelect.value=String(rec.currentFloor||1);
+    elevatorStatus.textContent=nearest.userData.elevatorTravel?"Ascensor en movimiento…":elevatorRiding?"Estás dentro de la cabina. Elegí destino.":"Ascensor detenido. Acercate a la puerta para entrar.";
+    elevatorGoButton.disabled=!!nearest.userData.elevatorTravel;
+    elevatorGoButton.textContent=nearest.userData.elevatorTravel?"EN MOVIMIENTO":"CERRAR PUERTAS Y VIAJAR";
+  }
+}
 function multiplayerPayload(record){
   const payload={...record};
   delete payload.cloudId;delete payload.cloudOwnerId;delete payload.pin;
@@ -1831,6 +1904,7 @@ async function enterMultiplayerWorld(worldId){
     const count=await loadMultiplayerStructures(worldId);
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
       onPlayerState:updateRemotePlayer,
+      onElevatorState:applyRemoteElevatorState,
       onPlayerStateChange:payload=>{
         if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
         else updateRemotePlayer(payload.new);
@@ -2275,6 +2349,19 @@ function placeBuildAtPointer(event){
   if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
+  if(buildTool==="elevator"){
+    const x=Math.round(point.x/3)*3,z=Math.round(point.z/3)*3;
+    const foundation=foundationAt(x,z);
+    if(!foundation||foundation.kind!=="platea"||!foundationContainsFootprint(x,z,"elevator",buildRotation)){
+      showToast("El ascensor necesita una platea libre de al menos 3,2 × 3,2 metros.");return;
+    }
+    if(buildRecords.some(r=>r.kind==="elevator"&&Math.hypot(r.x-x,r.z-z)<3.1)){
+      showToast("Ya hay un ascensor en ese hueco.");return;
+    }
+    const record={kind:"elevator",x,z,y:supportHeightAt(x,z),rotation:buildRotation,floorCount:40,currentFloor:1,targetFloor:1};
+    buildRecords.push(record);createBuildPiece(record);persistBuilds();
+    showToast("Ascensor instalado: 40 plantas disponibles.");return;
+  }
   if(buildTool==="door"||buildTool==="door-solid"||buildTool==="door-brick"){
     const snap=snapDoorToPlateaGrid(point.x,point.z,buildRotation);
     const x=snap.x,z=snap.z,rotation=snap.rotation;
@@ -2485,7 +2572,7 @@ function animate() {
         new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
         new THREE.Vector3(x+0.28, feet+PLAYER_HEIGHT, z+0.28)
       );
-      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]); // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
+      const solidKinds = new Set(["block","brick","platea","pool","floor","wall","door","window","roof","elevator","tree","rock","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"]); // Las escaleras se resuelven como superficie transitable, no como una caja que bloquea.
       const playerSwimming=!!player.userData.isSwimming;
       const filledPoolAtCandidate=buildRecords.some(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(z-p.z)<(p.poolDepth||6)/2-.48);
       for (const g of buildGroups) {
@@ -2604,6 +2691,7 @@ function animate() {
       }
     }
   }
+  if(started&&player)updateElevators(delta);
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
   if(cameraFreeMode && cameraFreePosition){
