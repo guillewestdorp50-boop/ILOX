@@ -63,7 +63,7 @@ let yaw = 0, playerHeading = 0, pitch = 0;
 let cameraMode = "third", cameraLocked = false, cameraFreeMode = false;
 let cameraFreePointer = null;
 let cameraFreeStick = {x:0,y:0};
-let cameraFreePosition = null, cameraFreeYaw = 0, cameraFreePitch = 0;
+let cameraFreePosition = null, cameraFreeYaw = 0, cameraFreePitch = 0, cameraFreeZoom = 30;
 let cameraFreeVertical = 0;
 // Nueva movilidad estilo Free Fire: joystick izquierdo y cámara libre independiente.
 
@@ -958,7 +958,7 @@ function addEvents() {
     buildPointer={x:e.clientX,y:e.clientY};
     if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraDistance;pointerDragged=true;}
+    if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraFreeMode?cameraFreeZoom:cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
     lastLookX = lookStartX = e.clientX;
     lastLookY = lookStartY = e.clientY;
@@ -968,7 +968,7 @@ function addEvents() {
   game.addEventListener("pointermove", e => {
     buildPointer={x:e.clientX,y:e.clientY};
     if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);cameraDistance=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),1.2,40);return;}
+    if(activePointers.size>=2){const p=[...activePointers.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);const zoom=THREE.MathUtils.clamp(pinchStartZoom*(pinchStartDistance/Math.max(1,d)),4,100);if(cameraFreeMode)cameraFreeZoom=zoom;else cameraDistance=zoom;return;}
     if (lookPointer !== e.pointerId || !started) return;
     const dx = e.clientX - lastLookX;
     const dy = e.clientY - lastLookY;
@@ -978,10 +978,13 @@ function addEvents() {
     // Cámara libre compartida por primera, segunda, tercera persona y bloqueo.
     // Arrastrar el dedo hacia arriba mira al cielo; hacia abajo, al suelo.
     // Giro horizontal completo y vertical casi de cenit a nadir, en las tres vistas.
-    if(cameraFreeMode){
-      cameraFreeYaw -= dx * 0.0048;
-      cameraFreePitch = THREE.MathUtils.clamp(cameraFreePitch - dy * 0.0048, -1.52, 1.52);
-    }else{
+    if(cameraFreeMode&&cameraFreePosition&&activePointers.size===1){
+      const rightX=Math.cos(cameraFreeYaw),rightZ=-Math.sin(cameraFreeYaw);
+      const speed=Math.max(0.012,cameraFreeZoom*0.0018);
+      cameraFreePosition.x+=(-rightX*dx+Math.sin(cameraFreeYaw)*dy)*speed;
+      cameraFreePosition.z+=(-rightZ*dx+Math.cos(cameraFreeYaw)*dy)*speed;
+      cameraFreePosition.y=THREE.MathUtils.clamp(cameraFreePosition.y+dy*speed*.7,0,180);
+    }else if(!cameraFreeMode){
       yaw -= dx * 0.0048;
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
@@ -2612,9 +2615,9 @@ function animate() {
     // Entrada nueva: el joystick da un vector 360°. La cámara define el frente;
     // por eso, al mantener el joystick arriba y arrastrar la vista a la derecha,
     // el personaje sigue avanzando y curva su trayectoria con la cámara.
-    let forward = cameraLocked ? 0 : (-moveStick.y + (keys.has("w") && !cameraFreeMode ? 1 : 0) - (keys.has("s") && !cameraFreeMode ? 1 : 0)
+    let forward = (cameraLocked||cameraFreeMode) ? 0 : (-moveStick.y + (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)
       + (keys.has("arrowup") ? 1 : 0) - (keys.has("arrowdown") ? 1 : 0));
-    let strafe = cameraLocked ? 0 : (moveStick.x + (keys.has("d") && !cameraFreeMode ? 1 : 0) - (keys.has("a") && !cameraFreeMode ? 1 : 0)
+    let strafe = (cameraLocked||cameraFreeMode) ? 0 : (moveStick.x + (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0)
       + (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0));
     const inputLength = Math.hypot(forward, strafe);
     localMoving = inputLength > 0.08;
@@ -2771,7 +2774,7 @@ function animate() {
     cameraFreePosition.y=THREE.MathUtils.clamp(cameraFreePosition.y,0,180);
   }
   updateBuildGravity(delta);
-  for(const group of buildGroups){if(group.userData.animalMixer){group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;const canWalk=!!(actions.walk||actions.run);if(canWalk){group.userData.roamTimer-=delta;if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;}const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22;if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:group.userData.buildRecord?.kind==="trex"?.55:.42;group.position.x+=dx/dist*speed*delta;group.position.z+=dz/dist*speed*delta;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=group.position.x;group.userData.buildRecord.z=group.position.z;}const next=moving?(actions.walk||actions.run||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}}}
+  for(const group of buildGroups){if(group.userData.animalMixer){group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;const canWalk=!!(actions.walk||actions.run);if(canWalk){group.userData.roamTimer-=delta;if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;}const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22;if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:group.userData.buildRecord?.kind==="trex"?.55:.42;const nx=group.position.x+dx/dist*speed*delta,nz=group.position.z+dz/dist*speed*delta;const body=new THREE.Box3(new THREE.Vector3(nx-.42,group.position.y+.04,nz-.42),new THREE.Vector3(nx+.42,group.position.y+Math.max(.55,group.userData.buildHeight||1),nz+.42));let blocked=false;for(const obstacle of buildGroups){if(blocked||obstacle===group||!obstacle.visible)continue;const obstacleKind=obstacle.userData.buildRecord?.kind;if(!["block","brick","wall","door","window","roof","platea","floor","gate","fence","pen","tree","rock","elevator","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(obstacleKind))continue;obstacle.updateMatrixWorld(true);obstacle.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bounds=geo.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y>body.min.y+.05&&bounds.min.y<body.max.y-.05&&body.intersectsBox(bounds))blocked=true;});}if(!blocked){group.position.x=nx;group.position.z=nz;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=nx;group.userData.buildRecord.z=nz;}else{group.userData.roamTarget.copy(group.position);group.userData.roamTimer=1;}}const next=moving?(actions.walk||actions.run||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}}}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
   const distance = cameraDistance;
@@ -2781,7 +2784,7 @@ function animate() {
   const targetZ = focus.position.z + Math.cos(cameraYaw) * distance;
   if(cameraFreeMode && cameraFreePosition){
     camera.position.copy(cameraFreePosition);
-    const lookDistance=30;
+    const lookDistance=cameraFreeZoom;
     camera.lookAt(
       cameraFreePosition.x-Math.sin(cameraFreeYaw)*Math.cos(cameraFreePitch)*lookDistance,
       cameraFreePosition.y+Math.sin(cameraFreePitch)*lookDistance,
