@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-elevator-interaction-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-step-access-20261116";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -1888,7 +1888,7 @@ function updateElevatorBot(delta){
   }
   if(!elevatorBotElevator){
     elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
-    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,group.position.y+.34,group.position.z+4.35));
+    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35));
   }
   const cabin=group.userData.elevatorCabin;if(!cabin)return;
   const floorOneY=group.position.y+.34;
@@ -1896,7 +1896,7 @@ function updateElevatorBot(delta){
   const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
   const outside=new THREE.Vector3(group.position.x,floorOneY,group.position.z+4.35);
   if(elevatorBotPhase==="approach"){
-    elevatorBotTarget.set(group.position.x-4.5,floorOneY,group.position.z+4.35);
+    elevatorBotTarget.set(group.position.x-4.5,terrainHeight(group.position.x-4.5,group.position.z+4.35),group.position.z+4.35);
     if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
   }else if(elevatorBotPhase==="approachFront"){
     elevatorBotTarget=outside;
@@ -1925,7 +1925,7 @@ function updateElevatorBot(delta){
   }
   if(elevatorBotTarget&&elevatorBotPhase!=="waitingTop"&&elevatorBotPhase!=="rideDown"){
     const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
-    if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y=elevatorBotTarget.y;elevatorBot.rotation.y=Math.atan2(dx,dz);}
+    if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y+=THREE.MathUtils.clamp(elevatorBotTarget.y-elevatorBot.position.y,-1.8*delta,1.8*delta);elevatorBot.rotation.y=Math.atan2(dx,dz);}
   }
   const actions=elevatorBot.userData.animalActions,moving=["approach","approachFront","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
   const next=moving?(actions?.walk||actions?.run||actions?.idle):(actions?.idle||actions?.walk);
@@ -2886,8 +2886,8 @@ function animate() {
     const dz = (-Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * strafe) * speed * delta;
     const nextX = THREE.MathUtils.clamp(player.position.x + dx, -worldSize / 2 + 4, worldSize / 2 - 4);
     const nextZ = THREE.MathUtils.clamp(player.position.z + dz, -worldSize / 2 + 4, worldSize / 2 - 4);
-    const collides = (x,z) => {
-      const feet = player.position.y;
+    const collides = (x,z,feetOverride=player.position.y) => {
+      const feet = feetOverride;
       const body = new THREE.Box3(
         new THREE.Vector3(x-0.28, feet+0.08, z-0.28),
         new THREE.Vector3(x+0.28, feet+PLAYER_HEIGHT, z+0.28)
@@ -2906,8 +2906,18 @@ function animate() {
       }
       return false;
     };
-    if (!collides(nextX, player.position.z)) player.position.x = nextX;
-    if (!collides(player.position.x, nextZ)) player.position.z = nextZ;
+    const tryStepMove=(x,z,axis)=>{
+      if(!collides(x,z)){if(axis==="x")player.position.x=x;else player.position.z=z;return;}
+      const currentY=player.position.y,stepLimit=.42;
+      const candidateFloor=supportHeightAt(x,z,currentY+stepLimit+.02);
+      const rise=candidateFloor-currentY;
+      if(rise>.035&&rise<=stepLimit&&!collides(x,z,candidateFloor+.015)){
+        player.position.y=candidateFloor;playerVerticalVelocity=0;playerGrounded=true;
+        if(axis==="x")player.position.x=x;else player.position.z=z;
+      }
+    };
+    tryStepMove(nextX,player.position.z,"x");
+    tryStepMove(player.position.x,nextZ,"z");
     const pool=buildRecords.find(p=>p.kind==="pool"&&buildRecords.some(w=>w.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)&&Math.abs(player.position.x-p.x)<(p.poolWidth||6)/2-.48&&Math.abs(player.position.z-p.z)<(p.poolDepth||6)/2-.48);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
     if(inWater){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
