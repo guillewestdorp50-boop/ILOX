@@ -713,3 +713,15 @@ body{background:#201747;color:#fff}
 @media(pointer:coarse){#game.playing #ilox-jump-canvas{display:block!important}}
 @media(max-width:390px){#game #ilox-jump-canvas{width:68px!important;height:68px!important;min-width:68px!important;min-height:68px!important;max-width:68px!important;max-height:68px!important}}
 @media(orientation:landscape) and (max-height:520px){#game #ilox-jump-canvas{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;max-width:64px!important;max-height:64px!important;right:max(14px,env(safe-area-inset-right))!important;bottom:max(10px,env(safe-area-inset-bottom))!important}}
+
+
+/* ILOX — CORRER en Canvas real, arriba y a la izquierda del SALTAR, en diagonal. */
+#game #ilox-run-canvas{
+  position:absolute!important;
+  inset:auto calc(max(12px,env(safe-area-inset-right)) + 52px) calc(max(14px,env(safe-area-inset-bottom)) + 52px) auto!important;
+  z-index:46!important;width:68px!important;height:68px!important;
+  min-width:68px!important;min-height:68px!important;max-width:68px!important;max-height:68px!important;
+  display:none;pointer-events:auto;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+@media(pointer:coarse){#game.playing #ilox-run-canvas{display:block!important}}
