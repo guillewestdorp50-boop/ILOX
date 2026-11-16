@@ -2405,6 +2405,8 @@ function updateBuildPlacementGuide(){
   const doorReady=foundationHasDoor(activeFoundation);
   const roofAligned=!!roofArea&&Math.abs(x-roofArea.x)<.9&&Math.abs(z-roofArea.z)<.9;
   const roofSupported=roofHasFourWalls(roofArea);
+  const roofPreviewTops=roofArea?buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2&&(Math.abs(item.x-(roofArea.x-roofArea.width/2))<1.1||Math.abs(item.x-(roofArea.x+roofArea.width/2))<1.1||Math.abs(item.z-(roofArea.z-roofArea.depth/2))<1.1||Math.abs(item.z-(roofArea.z+roofArea.depth/2))<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5)):[];
+  const roofPreviewY=roofPreviewTops.length?Math.max(...roofPreviewTops):null;
   const valid=buildTool==="platea"||poolTool||buildTool==="water"||((buildTool==="roof"||buildTool==="roof-hole")?(roofAligned&&roofSupported):(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
@@ -2425,7 +2427,7 @@ function updateBuildPlacementGuide(){
     addSegment(BLOCK_SIZE/2,-d/2,BLOCK_SIZE/2,d/2);
   }
   buildGuide.geometry.dispose();buildGuide.geometry=new THREE.BufferGeometry().setFromPoints(pts);
-  buildGuide.position.set(x,buildTool==="platea"?terrainHeight(x,z)+.05:supportHeightAt(x,z)+.035,z);
+  buildGuide.position.set(x,buildTool==="platea"?terrainHeight(x,z)+.05:(roofPreviewY!==null?roofPreviewY:supportHeightAt(x,z))+.035,z);
   buildGuide.material.color.setHex(valid?0x22ee66:0xff3333);
   buildGuide.visible=true;
 }
