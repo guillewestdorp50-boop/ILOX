@@ -367,6 +367,8 @@ function updateIloxNightclub(delta){
   if(!started||!player)return;
   const dx=player.position.x-ILOX_NIGHTCLUB.x,dz=player.position.z-ILOX_NIGHTCLUB.z;
   const inside=Math.abs(dx)<18.9&&dz<15.1&&dz>-14.9;
+  // Todo ser vivo colocado dentro del salón entra automáticamente en modo fiesta.
+  for(const group of buildGroups){const kind=group.userData.buildRecord?.kind;if(!isLivingBuildKind(kind))continue;const gx=group.position.x-ILOX_NIGHTCLUB.x,gz=group.position.z-ILOX_NIGHTCLUB.z;group.userData.iloxClubDancing=Math.abs(gx)<18.9&&gz<15.1&&gz>-14.9;}
   if(inside&&!iloxNightclub.inside){
     iloxNightclub.inside=true;
     if(!iloxClubTrack){
@@ -390,6 +392,45 @@ function updateIloxNightclub(delta){
     iloxNightclub.dancing=false;player.userData.iloxClubDancing=false;player.userData.iloxDancing=false;
     if(player.userData.iloxEmote){player.remove(player.userData.iloxEmote);player.userData.iloxEmote.material.map?.dispose();player.userData.iloxEmote.material.dispose();player.userData.iloxEmote=null;}
   }
+}
+
+function updateIloxLivingDance(group,delta){
+  const model=group.userData.animalModel,actions=group.userData.animalActions;
+  if(!model)return false;
+  const dancing=!!group.userData.iloxClubDancing;
+  if(dancing){
+    if(!group.userData.iloxDanceActive){
+      group.userData.iloxDanceActive=true;group.userData.iloxDanceStarted=clock.elapsedTime;
+      group.userData.iloxDanceBase={position:model.position.clone(),rotation:model.rotation.clone()};
+      model.traverse(bone=>{if(bone.isBone)bone.userData.iloxDanceBase=bone.rotation.clone();});
+      const next=actions?.dance;
+      if(next&&next!==actions.current){next.reset().fadeIn(.25).play();if(actions.current)actions.current.fadeOut(.25);actions.current=next;}
+    }
+    const t=clock.elapsedTime-group.userData.iloxDanceStarted,phase=t*Math.PI*2*1.92,base=group.userData.iloxDanceBase;
+    // Baile universal: rebote, balanceo y giro suave, incluso en modelos sin clips de baile.
+    model.position.y=base.position.y+Math.abs(Math.sin(phase))*.105;
+    model.rotation.x=base.rotation.x+Math.sin(phase)*.075;
+    model.rotation.z=base.rotation.z+Math.sin(phase*.5)*.17;
+    model.rotation.y=base.rotation.y+Math.sin(phase*.5)*.16;
+    model.traverse(bone=>{
+      if(!bone.isBone||!bone.userData.iloxDanceBase)return;
+      const name=bone.name.toLowerCase(),b=bone.userData.iloxDanceBase;
+      if(/tail|cola/.test(name))bone.rotation.y=b.y+Math.sin(phase*.5)*.48;
+      else if(/arm|hand|wing|ala/.test(name)){const side=/left|izq/.test(name)?-1:1;bone.rotation.x=b.x+Math.sin(phase+side)*.48;bone.rotation.z=b.z+side*(.16+Math.max(0,Math.sin(phase*.5+side))*.42);}
+      else if(/leg|foot|paw|pierna|pata/.test(name))bone.rotation.x=b.x+Math.sin(phase+(/left|izq/.test(name)?0:Math.PI))*.36;
+      else if(/neck|head|cuello|cabeza/.test(name))bone.rotation.z=b.z+Math.sin(phase*.5)*.08;
+    });
+    return true;
+  }
+  if(group.userData.iloxDanceActive){
+    group.userData.iloxDanceActive=false;
+    const base=group.userData.iloxDanceBase||group.userData.animalModelBase;
+    if(base){model.position.copy(base.position);model.rotation.copy(base.rotation);}
+    model.traverse(bone=>{if(bone.isBone&&bone.userData.iloxDanceBase){bone.rotation.copy(bone.userData.iloxDanceBase);delete bone.userData.iloxDanceBase;}});
+    const next=actions?.idle||actions?.walk;
+    if(next&&next!==actions.current){next.reset().fadeIn(.3).play();if(actions.current)actions.current.fadeOut(.3);actions.current=next;}
+  }
+  return false;
 }
 
 function makeTree(x, z, scale, random) {
@@ -1748,9 +1789,9 @@ async function loadAnimalModel(group,kind,notify=false){
     model.traverse(o=>{if(o.isMesh){o.visible=true;o.castShadow=true;o.receiveShadow=true;if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){m.visible=true;m.needsUpdate=true;}}}});
     group.add(model);group.updateMatrixWorld(true);
     const mixer=new THREE.AnimationMixer(model),actions={};
-    for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(name.includes("idle"))actions.idle=mixer.clipAction(clip);else if(name.includes("walk"))actions.walk=mixer.clipAction(clip);else if(name.includes("run"))actions.run=mixer.clipAction(clip);else if(!actions.idle&&(name.includes("look")||name.includes("tail")||name.includes("wag")))actions.idle=mixer.clipAction(clip);}
+    for(const clip of gltf.animations){const name=clip.name.toLowerCase();if(/dance|disco|hip.?hop|party|salsa/.test(name))actions.dance=mixer.clipAction(clip);else if(name.includes("idle"))actions.idle=mixer.clipAction(clip);else if(name.includes("walk"))actions.walk=mixer.clipAction(clip);else if(name.includes("run"))actions.run=mixer.clipAction(clip);else if(!actions.idle&&(name.includes("look")||name.includes("tail")||name.includes("wag")))actions.idle=mixer.clipAction(clip);}
     const idle=actions.idle||(actions.walk)||(gltf.animations[0]&&mixer.clipAction(gltf.animations[0]));if(idle){idle.play();actions.current=idle;}
-    group.userData.animalMixer=mixer;group.userData.animalActions=actions;group.userData.buildHeight=targetHeight;group.userData.roamOrigin=group.position.clone();group.userData.roamTarget=group.position.clone().add(new THREE.Vector3((Math.random()-.5)*5,0,(Math.random()-.5)*5));group.userData.roamTimer=2+Math.random()*3;
+    group.userData.animalMixer=mixer;group.userData.animalActions=actions;group.userData.animalModel=model;group.userData.animalModelBase={position:model.position.clone(),rotation:model.rotation.clone()};group.userData.buildHeight=targetHeight;group.userData.roamOrigin=group.position.clone();group.userData.roamTarget=group.position.clone().add(new THREE.Vector3((Math.random()-.5)*5,0,(Math.random()-.5)*5));group.userData.roamTimer=2+Math.random()*3;
     if(notify)showToast("Animal 3D cargado y visible");
   }catch(error){
     console.error("ILOX: falló la carga del animal 3D",kind,url,error);
@@ -3303,7 +3344,25 @@ function animate() {
     cameraFreePosition.y=THREE.MathUtils.clamp(cameraFreePosition.y,0,180);
   }
   updateBuildGravity(delta);
-  for(const group of buildGroups){if(group.userData.animalMixer){group.userData.animalMixer.update(delta);const actions=group.userData.animalActions;const canWalk=!!(actions.walk||actions.run);if(canWalk){group.userData.roamTimer-=delta;if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;}const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22;if(moving){const speed=group.userData.buildRecord?.kind==="horse"?.72:group.userData.buildRecord?.kind==="trex"?.55:.42;const nx=group.position.x+dx/dist*speed*delta,nz=group.position.z+dz/dist*speed*delta;const body=new THREE.Box3(new THREE.Vector3(nx-.42,group.position.y+.04,nz-.42),new THREE.Vector3(nx+.42,group.position.y+Math.max(.55,group.userData.buildHeight||1),nz+.42));let blocked=false;for(const obstacle of buildGroups){if(blocked||obstacle===group||!obstacle.visible)continue;const obstacleKind=obstacle.userData.buildRecord?.kind;if(!["block","brick","wall","door","window","roof","platea","floor","gate","fence","pen","tree","rock","elevator","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(obstacleKind))continue;obstacle.updateMatrixWorld(true);obstacle.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bounds=geo.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y>body.min.y+.05&&bounds.min.y<body.max.y-.05&&body.intersectsBox(bounds))blocked=true;});}if(!blocked){group.position.x=nx;group.position.z=nz;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=nx;group.userData.buildRecord.z=nz;animalPositionsDirty=true;}else{group.userData.roamTarget.copy(group.position);group.userData.roamTimer=1;}}const next=moving?(actions.walk||actions.run||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}}}}
+  for(const group of buildGroups){
+    if(!group.userData.animalMixer)continue;
+    group.userData.animalMixer.update(delta);
+    const actions=group.userData.animalActions;
+    if(updateIloxLivingDance(group,delta))continue;
+    const canWalk=!!(actions.walk||actions.run);
+    if(canWalk){
+      group.userData.roamTimer-=delta;
+      if(group.userData.roamTimer<=0){const origin=group.userData.roamOrigin;group.userData.roamTarget.set(origin.x+(Math.random()-.5)*7,0,origin.z+(Math.random()-.5)*7);group.userData.roamTimer=5+Math.random()*6;}
+      const target=group.userData.roamTarget,dx=target.x-group.position.x,dz=target.z-group.position.z,dist=Math.hypot(dx,dz),moving=dist>.22;
+      if(moving){
+        const speed=group.userData.buildRecord?.kind==="horse"?.72:group.userData.buildRecord?.kind==="trex"?.55:.42,nx=group.position.x+dx/dist*speed*delta,nz=group.position.z+dz/dist*speed*delta;
+        const body=new THREE.Box3(new THREE.Vector3(nx-.42,group.position.y+.04,nz-.42),new THREE.Vector3(nx+.42,group.position.y+Math.max(.55,group.userData.buildHeight||1),nz+.42));let blocked=false;
+        for(const obstacle of buildGroups){if(blocked||obstacle===group||!obstacle.visible)continue;const obstacleKind=obstacle.userData.buildRecord?.kind;if(!["block","brick","wall","door","window","roof","platea","floor","gate","fence","pen","tree","rock","elevator","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(obstacleKind))continue;obstacle.updateMatrixWorld(true);obstacle.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geo=mesh.geometry;if(!geo.boundingBox)geo.computeBoundingBox();const bounds=geo.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y>body.min.y+.05&&bounds.min.y<body.max.y-.05&&body.intersectsBox(bounds))blocked=true;});}
+        if(!blocked){group.position.x=nx;group.position.z=nz;group.rotation.y=Math.atan2(dx,dz);group.userData.buildRecord.x=nx;group.userData.buildRecord.z=nz;animalPositionsDirty=true;}else{group.userData.roamTarget.copy(group.position);group.userData.roamTimer=1;}
+      }
+      const next=moving?(actions.walk||actions.run||actions.idle):(actions.idle||actions.walk);if(next&&next!==actions.current){next.reset().fadeIn(.35).play();if(actions.current)actions.current.fadeOut(.35);actions.current=next;}
+    }
+  }
   if(animalPositionsDirty&&Date.now()-lastAnimalPositionSave>5000){lastAnimalPositionSave=Date.now();animalPositionsDirty=false;persistBuilds();}
   if (player) player.visible = !firstPerson;
   if (viewHands) viewHands.visible = !!firstPerson && buildMode && buildTool !== "erase";
