@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=ilox-v103-elevator-fix">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
-  <link rel="stylesheet" href="./styles.css?v=ilox-controls-layout-20261116-1">
+  <link rel="stylesheet" href="./styles.css?v=ilox-hud-v104-bright-square-buttons">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -81,7 +81,7 @@
       <div class="build-help" id="build-help">Elegí una pieza y tocá el terreno para colocarla.</div>
       <small class="build-attribution">Modelos “Fox”, “Robot”, “Old Man” y “T. rex” por <a href="https://bake3d.ai" target="_blank" rel="noopener">Bake3D</a>, licenciados bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Escala ajustada para ILOX.</small>
     </section>
-    <button id="door-rotate-control" class="door-rotate-control hidden" type="button" aria-label="Girar la puerta 90 grados">↻ GIRAR 90°</button>
+    <button id="door-rotate-control" class="door-rotate-control hidden" type="button" aria-label="Girar la puerta 90 grados" title="Girar puerta">↻</button>
     <section id="elevator-panel" class="elevator-keypad hidden" role="dialog" aria-modal="false" aria-labelledby="elevator-title">
       <div class="elevator-keypad-card">
         <header><span>MANDO DEL ASCENSOR</span><button id="elevator-keypad-close" type="button" aria-label="Cerrar tablero">×</button></header>
@@ -91,8 +91,8 @@
         <button id="elevator-ok" class="elevator-ok" type="button">OK · VIAJAR</button>
       </div>
     </section>
-    <button id="elevator-call-button" class="elevator-call-button hidden" type="button">LLAMAR ASCENSOR</button>
-    <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-expanded="false">☰ MENÚ</button>
+    <button id="elevator-call-button" class="elevator-call-button hidden" type="button" aria-label="Llamar ascensor" title="Llamar ascensor">↕</button>
+    <button id="menu-toggle" class="menu-toggle hidden" type="button" aria-label="Abrir menú" title="Menú" aria-expanded="false">☰</button>
     <section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button>
       <button id="build-toggle" class="menu-action" type="button">🧱 Construir</button>
