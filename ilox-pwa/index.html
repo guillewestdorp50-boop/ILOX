@@ -100,8 +100,14 @@
         <button class="camera-mode" data-camera="first" type="button" aria-label="Primera persona" title="Primera persona">◉</button>
         <button class="camera-mode" data-camera="second" type="button" aria-label="Cámara cercana" title="Cámara cercana">◎</button>
         <button class="camera-mode selected" data-camera="third" type="button" aria-label="Tercera persona" title="Tercera persona">🎥</button>
+        <button class="camera-mode" data-camera="free" type="button" aria-label="Cámara aérea libre" title="Cámara aérea libre">✈</button>
         <button id="camera-lock" class="camera-lock" type="button" aria-label="Bloquear movimiento y girar cámara" aria-pressed="false">🔓</button>
       </div>
+    </div>
+    <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
+      <div class="camera-free-vertical"><button id="camera-free-up" type="button" aria-label="Elevar cámara">＋</button><button id="camera-free-down" type="button" aria-label="Bajar cámara">−</button></div>
+      <div id="camera-free-pad" class="camera-free-pad" aria-label="Desplazar cámara"><div class="camera-free-ring"></div><div id="camera-free-knob" class="camera-free-knob"></div></div>
+      <small>VOLAR CÁMARA</small>
     </div>
     <div class="touch-ui" id="touch-ui">
       <div class="move-pad" id="move-pad" aria-label="Joystick de movimiento">
