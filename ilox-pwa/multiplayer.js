@@ -69,6 +69,13 @@ export async function joinWorld(inviteCode) {
   return data;
 }
 
+export async function deleteWorld(worldId) {
+  const { data, error } = await client.rpc("multiplayer_delete_world", { p_world_id: worldId });
+  if (error) throw error;
+  if (data !== true) throw new Error("El servidor no confirmó la eliminación del mundo.");
+  return true;
+}
+
 export async function getChatMessages(worldId) {
   const { data, error } = await client.from("multiplayer_chat_messages")
     .select("id,world_id,user_id,display_name,message,created_at")
