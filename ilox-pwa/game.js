@@ -1092,7 +1092,7 @@ function addEvents() {
     if (renderer?.domElement) renderer.domElement.style.visibility = "visible";
     hudDock.classList.remove("hidden");
     cameraControls.classList.add("hidden");
-    hudDockToggle.setAttribute("aria-expanded","false");
+    // El control plegable fue eliminado: el zócalo queda siempre visible.
     loadRiggedAvatar(selectedAvatar);
     if(multiplayerSession) Multiplayer.updateMyAvatar(selectedAvatar).catch(error=>console.warn("ILOX multiplayer: no se pudo actualizar el avatar",error));
     avatarSelect.classList.add("hidden");
