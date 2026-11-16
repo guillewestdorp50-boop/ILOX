@@ -1207,11 +1207,20 @@ function createCameraCanvasControls(){
   };
   cameraViewCanvas=makeCanvas("ilox-camera-view-canvas","calc(max(16px, env(safe-area-inset-right)) + 92px)","Cambiar entre primera, segunda y tercera persona","◉");
   cameraFreeCanvas=makeCanvas("ilox-camera-free-canvas","calc(max(16px, env(safe-area-inset-right)) + 8px)","Activar o desactivar cámara libre","✥");
+  const fullscreenCanvas=makeCanvas("ilox-fullscreen-canvas","calc(max(16px, env(safe-area-inset-right)) + 176px)","Activar o salir de pantalla completa","⛶");
+  const refreshFullscreen=()=>fullscreenCanvas?.drawState("PANTALLA",document.fullscreenElement?"NORMAL":"COMPLETA",!!document.fullscreenElement);
+  fullscreenCanvas?.addEventListener("pointerup",async e=>{
+    e.preventDefault();e.stopPropagation();if(!started)return;
+    try{if(!document.fullscreenElement)await game.requestFullscreen();else await document.exitFullscreen();}
+    catch{showToast("La pantalla completa no está disponible en este navegador.");}
+  });
+  document.addEventListener("fullscreenchange",refreshFullscreen);
   cameraCanvasRefresh=()=>{
     const labels={first:"1ª PERSONA",second:"2ª PERSONA",third:"3ª PERSONA"};
     cameraViewCanvas?.drawState("VISTA",labels[cameraMode]||"CAMBIAR",cameraMode!=="free");
     cameraFreeCanvas?.drawState("LIBRE",cameraFreeMode?"ACTIVA":"INDEPENDIENTE",cameraFreeMode);
     cameraFreeCanvas?.setAttribute("aria-pressed",String(cameraFreeMode));
+    refreshFullscreen();
     cameraViewCanvas?.setAttribute("aria-label","Cambiar vista. Actual: "+(labels[cameraMode]||"cámara libre"));
   };
   cameraCanvasRefresh();
@@ -1652,7 +1661,7 @@ function addEvents() {
       button.textContent="⚡ FORZAR ACTUALIZACIÓN";
     }
   });
-   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#fullscreen,#force-app-update")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");}});
+   menuPanel.addEventListener("click",event=>{if(event.target.closest("#hud-build,#hud-delete,#hud-confirm,#door-rotate-control,#elevator-call-button,#mp-chat-toggle,#quick-save,#force-app-update")){menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Abrir menú del juego");}});
   document.querySelector("#multiplayer-open")?.addEventListener("click",()=>{menuPanel.classList.add("hidden");openMultiplayerDialog();});
   document.querySelector("#mp-branch-load")?.addEventListener("click",()=>showMultiplayerBranch("load"));
   document.querySelector("#mp-branch-create")?.addEventListener("click",()=>showMultiplayerBranch("create"));
@@ -1825,12 +1834,6 @@ function addEvents() {
       showToast("Copia cargada en este teléfono. Pulsá GUARDAR para sincronizar el mundo compartido.");
     }catch(error){showToast(error.message||"No se pudo importar el archivo JSON.");}
     finally{worldJsonInput.value="";}
-  });
-  document.querySelector("#fullscreen").addEventListener("click", async () => {
-    try {
-      if (!document.fullscreenElement) await game.requestFullscreen();
-      else await document.exitFullscreen();
-    } catch { showToast("La pantalla completa no está disponible en este navegador."); }
   });
 }
 
@@ -2150,7 +2153,7 @@ function elevatorDoorAreaOccupied(group){
   const floorY=group.position.y+((group.userData.buildRecord?.currentFloor||1)-1)*3+.34;
   const playerNear=Math.hypot(player.position.x-group.position.x,player.position.z-(group.position.z+3.1))<2.25&&Math.abs(player.position.y-floorY)<1.4;
   if(playerNear)return true;
-  if(elevatorBot&&elevatorBotElevator===group&&["approachFront","board","waitingTop","rideDown","exit"].includes(elevatorBotPhase)){
+  if(elevatorBot&&elevatorBotElevator===group&&["approachFront","board","boardedWait","waitingTop","rideDown","exit"].includes(elevatorBotPhase)){
     const cabin=group.userData.elevatorCabin,insideY=group.position.y+(cabin?.position.y||0)+.16;
     const outside=new THREE.Vector3(group.position.x, floorY, group.position.z+4.35);
     const inside=new THREE.Vector3(group.position.x, insideY, group.position.z);
@@ -2220,9 +2223,17 @@ function animateElevator(group,now=Date.now()){
     landing.left.position.x=-1.45-landingSlide;landing.right.position.x=1.45+landingSlide;
   }
   if(elevatorRiding&&activeElevator===group&&player){
-    const wantsExit=open&&doorProgress>=.98&&(Math.hypot(moveStick.x,moveStick.y)>.12||keys.has("arrowup")||keys.has("arrowdown")||keys.has("arrowleft")||keys.has("arrowright"));
+    const atDoor=player.position.z>group.position.z+2.15&&Math.abs(player.position.x-group.position.x)<2.2;
+    const wantsExit=open&&doorProgress>=.98&&atDoor;
     if(wantsExit){elevatorRiding=false;elevatorJustExitedAt=now;stopIloxElevatorParty();group.userData.elevatorDoorCloseAt=now+900;closeElevatorKeypad();}
-    else if(elevatorRiding){player.position.set(group.position.x,group.position.y+cabin.position.y+.16,group.position.z);playerVerticalVelocity=0;playerGrounded=true;}
+    else if(elevatorRiding){
+      // La cabina acompaña la altura, pero el pasajero conserva el joystick y
+      // puede caminar libremente dentro del espacio interior.
+      player.position.y=group.position.y+cabin.position.y+.16;
+      player.position.x=THREE.MathUtils.clamp(player.position.x,group.position.x-2.12,group.position.x+2.12);
+      player.position.z=THREE.MathUtils.clamp(player.position.z,group.position.z-2.12,group.position.z+2.12);
+      playerVerticalVelocity=0;playerGrounded=true;
+    }
   }
 }
 
@@ -2408,7 +2419,7 @@ function elevatorCabinOccupied(group){
   const inside=actor=>!!actor&&Math.abs(actor.position.x-group.position.x)<2.72&&Math.abs(actor.position.z-group.position.z)<2.72&&Math.abs(actor.position.y-floorY)<1.35;
   if(elevatorRiding&&activeElevator===group)return true;
   if(inside(player))return true;
-  if(elevatorBot&&elevatorBotElevator===group&&["board","waitingTop","rideDown"].includes(elevatorBotPhase)&&inside(elevatorBot))return true;
+  if(elevatorBot&&elevatorBotElevator===group&&["board","boardedWait","waitingTop","rideDown"].includes(elevatorBotPhase)&&inside(elevatorBot))return true;
   for(const avatar of remotePlayers.values())if(inside(avatar))return true;
   return false;
 }
@@ -2512,7 +2523,7 @@ function isElevatorBotBlocked(x,z,feet){
     // Con las puertas completamente abiertas, el hueco del ascensor es transitable.
     // En board/exit el bot ya está alineado con la entrada: no debe chocar contra
     // las hojas móviles ni contra el piso/cabina que forman parte del propio ascensor.
-    if(kind==="elevator"&&elevatorBotElevator===g&&["board","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel&&Number(g.userData.elevatorDoorProgress||0)>=.98)continue;
+    if(kind==="elevator"&&elevatorBotElevator===g&&["board","boardedWait","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel&&Number(g.userData.elevatorDoorProgress||0)>=.98)continue;
     if(kind==="pool"&&feet>=(g.userData.buildRecord.y||0)+.22)continue;
     g.updateMatrixWorld(true);
     let blocked=false;
@@ -2595,8 +2606,14 @@ function updateElevatorBot(delta){
     elevatorBotTarget=inside;
     if(elevatorBot.position.distanceTo(inside)<.48&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
-      if(!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+      setElevatorBotPhase("boardedWait",group,inside);
+      elevatorBotWaitUntil=Date.now()+1100;
     }
+  }else if(elevatorBotPhase==="boardedWait"){
+    // Permanecer quieto en el centro de la cabina para que el sensor de ocupación
+    // registre al pasajero antes de solicitar el viaje.
+    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    if(Date.now()>=elevatorBotWaitUntil&&elevatorCabinOccupied(group)&&!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
   }else if(elevatorBotPhase==="waitingTop"){
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
     if((record.currentFloor||1)===12&&!group.userData.elevatorTravel){
@@ -3653,6 +3670,7 @@ function animate() {
       for (const g of getNearbyBuildGroups(x,z,.4)) {
         const kind=g.userData.buildRecord?.kind;
         if (!SOLID_BUILD_KINDS.has(kind) || !g.visible) continue;
+        if(kind==="elevator"&&elevatorRiding&&activeElevator===g)continue;
         // Dentro del agua, las paredes dejan de bloquear al nadador; al entrar
         // se permite cruzar el borde desde un salto, y al nadar se puede salir.
         if(kind==="pool"&&player.position.y>=(g.userData.buildRecord.y||0)+.22)continue;
@@ -3660,6 +3678,11 @@ function animate() {
         let blocked=false;g.traverse(mesh=>{if(blocked||!mesh.isMesh||!mesh.visible||mesh.userData.water||mesh.userData.elevatorFloor)return;const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);if(bounds.max.y<=feet+.08||bounds.min.y>=feet+PLAYER_HEIGHT)return;if(body.intersectsBox(bounds))blocked=true;});if(blocked)return true;
       }
       if(isIloxNightclubWall(x,z,feet))return true;
+      // Separación física entre avatares: evita que los jugadores se fusionen.
+      for(const avatar of remotePlayers.values()){
+        if(Math.abs(avatar.position.y-feet)>1.55)continue;
+        if(Math.hypot(avatar.position.x-x,avatar.position.z-z)<.72)return true;
+      }
       return false;
     };
     const tryStepMove=(x,z,axis)=>{
