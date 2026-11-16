@@ -54,6 +54,7 @@ let multiplayerUnreadMessages = 0, multiplayerChatAudio = null;
 let activeElevator=null,elevatorRiding=false,elevatorUiTimer=0,elevatorJustExitedAt=0,elevatorSelectedFloor=1;
 const elevatorPanel=document.querySelector("#elevator-panel"),elevatorStatus=document.querySelector("#elevator-status"),elevatorDisplay=document.querySelector("#elevator-display");
 const elevatorCallButton=document.querySelector("#elevator-call-button");
+let elevatorBot=null,elevatorBotRemoteState=null,elevatorBotTarget=null,elevatorBotPhase="idle",elevatorBotElevator=null,elevatorBotLastBroadcast=0,elevatorBotWaitUntil=0;
 const multiplayerCloudSnapshot = new Map(), remotePlayers = new Map();
 const remoteAvatarModelPromises = new Map();
 const multiplayerChatSeen = new Set();
@@ -1745,6 +1746,7 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   group.userData.elevatorTravel={fromFloor,toFloor,startedAt,duration};
   rec.targetFloor=toFloor;
   if(broadcast&&multiplayerSession)multiplayerSession.sendElevatorState({x:rec.x,z:rec.z,y:rec.y,fromFloor,toFloor,startedAt,duration}).catch(error=>console.warn("ILOX elevator sync:",error));
+  if(fromFloor===12&&toFloor===1&&elevatorBotIsController(rec))setElevatorBotPhase("rideDown",group,new THREE.Vector3(group.position.x,group.position.y+group.userData.elevatorCabin.position.y+.16,group.position.z));
   return true;
 }
 function applyRemoteElevatorState(state){
@@ -1790,6 +1792,98 @@ function updateElevators(delta){
   if(!elevatorRiding)closeElevatorKeypad();
   if(elevatorRiding&&activeElevator?.userData.elevatorTravel)closeElevatorKeypad();
 }
+function ensureElevatorBot(){
+  if(elevatorBot||!scene)return;
+  elevatorBot=new THREE.Group();elevatorBot.name="ilox-shared-elevator-bot";
+  elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+  elevatorBot.userData.buildHeight=1.9;
+  scene.add(elevatorBot);
+  loadAnimalModel(elevatorBot,"robot",false);
+}
+function applyRemoteElevatorBotState(state){
+  if(!state||state.userId===multiplayerUserId)return;
+  if(!elevatorBot)ensureElevatorBot();
+  if(!elevatorBot)return;
+  elevatorBotRemoteState={...state};
+  elevatorBotTarget=new THREE.Vector3(Number(state.x)||0,Number(state.y)||0,Number(state.z)||0);
+  elevatorBot.rotation.y=Number(state.rotation)||0;
+  elevatorBotPhase=String(state.phase||"idle");
+}
+function elevatorBotIsController(record){
+  if(!multiplayerSession)return true;
+  return !!record?.cloudOwnerId&&record.cloudOwnerId===multiplayerUserId;
+}
+function setElevatorBotPhase(phase,group,target){
+  elevatorBotPhase=phase;elevatorBotElevator=group;elevatorBotTarget=target?target.clone():null;
+  if(phase!=="waitingTop")elevatorBotWaitUntil=0;
+}
+function updateElevatorBot(delta){
+  if(!elevatorBot)return;
+  if(elevatorBot.userData.animalMixer)elevatorBot.userData.animalMixer.update(delta);
+  if(elevatorBotElevator&&!buildGroups.includes(elevatorBotElevator)){
+    elevatorBotElevator=null;elevatorBotPhase="idle";elevatorBotTarget=null;elevatorBotWaitUntil=0;
+  }
+  const group=elevatorBotElevator||buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator");
+  if(!group){
+    if(elevatorBotRemoteState&&elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
+    return;
+  }
+  const record=group.userData.buildRecord,controller=elevatorBotIsController(record);
+  if(!controller){
+    if(elevatorBotTarget)elevatorBot.position.lerp(elevatorBotTarget,Math.min(1,delta*8));
+    const remoteActions=elevatorBot.userData.animalActions,remoteMoving=!!elevatorBotRemoteState?.moving;
+    const remoteNext=remoteMoving?(remoteActions?.walk||remoteActions?.run):(remoteActions?.idle||remoteActions?.walk);
+    if(remoteNext&&remoteNext!==remoteActions.current){remoteNext.reset().fadeIn(.2).play();if(remoteActions.current)remoteActions.current.fadeOut(.2);remoteActions.current=remoteNext;}
+    return;
+  }
+  if(!elevatorBotElevator){
+    elevatorBot.position.set(-6,terrainHeight(-6,-6),-6);
+    setElevatorBotPhase("approach",group,new THREE.Vector3(group.position.x-4.5,group.position.y+.34,group.position.z+4.35));
+  }
+  const cabin=group.userData.elevatorCabin;if(!cabin)return;
+  const floorY=group.position.y+cabin.position.y+.16;
+  const inside=new THREE.Vector3(group.position.x,floorY,group.position.z);
+  const outside=new THREE.Vector3(group.position.x,floorY,group.position.z+4.35);
+  if(elevatorBotPhase==="approach"){
+    elevatorBotTarget.set(group.position.x-4.5,floorY,group.position.z+4.35);
+    if(elevatorBot.position.distanceTo(elevatorBotTarget)<.35)setElevatorBotPhase("approachFront",group,outside);
+  }else if(elevatorBotPhase==="approachFront"){
+    elevatorBotTarget=outside;
+    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel&&elevatorLandingExists(group,12))setElevatorBotPhase("board",group,inside);
+  }else if(elevatorBotPhase==="board"){
+    elevatorBotTarget=inside;
+    if(elevatorBot.position.distanceTo(inside)<.32&&elevatorLandingExists(group,12)){
+      elevatorBot.position.copy(inside);
+      if(!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
+    }
+  }else if(elevatorBotPhase==="waitingTop"){
+    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    if((record.currentFloor||1)===12&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,12)){
+      if(!elevatorBotWaitUntil)elevatorBotWaitUntil=Date.now()+6500;
+      if(Date.now()>=elevatorBotWaitUntil&&elevatorLandingExists(group,1)&&beginElevatorTravel(group,1,Date.now(),true))setElevatorBotPhase("rideDown",group,inside);
+    }
+  }else if(elevatorBotPhase==="rideDown"){
+    elevatorBotTarget=inside;elevatorBot.position.copy(inside);
+    if((record.currentFloor||1)===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
+  }else if(elevatorBotPhase==="exit"){
+    elevatorBotTarget=outside;
+    if(elevatorBot.position.distanceTo(outside)<.35){elevatorBot.position.copy(outside);setElevatorBotPhase("done",group,outside);}
+  }else if(elevatorBotPhase==="done"){
+    elevatorBotTarget=outside;elevatorBot.position.lerp(outside,Math.min(1,delta*4));
+  }
+  if(elevatorBotTarget&&elevatorBotPhase!=="waitingTop"&&elevatorBotPhase!=="rideDown"){
+    const dx=elevatorBotTarget.x-elevatorBot.position.x,dz=elevatorBotTarget.z-elevatorBot.position.z,dist=Math.hypot(dx,dz);
+    if(dist>.08){const step=Math.min(dist,1.45*delta);elevatorBot.position.x+=dx/dist*step;elevatorBot.position.z+=dz/dist*step;elevatorBot.position.y=elevatorBotTarget.y;elevatorBot.rotation.y=Math.atan2(dx,dz);}
+  }
+  const actions=elevatorBot.userData.animalActions,moving=["approach","approachFront","board","exit"].includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
+  const next=moving?(actions?.walk||actions?.run||actions?.idle):(actions?.idle||actions?.walk);
+  if(next&&next!==actions.current){next.reset().fadeIn(.2).play();if(actions.current)actions.current.fadeOut(.2);actions.current=next;}
+  if(multiplayerSession&&performance.now()-elevatorBotLastBroadcast>120){
+    elevatorBotLastBroadcast=performance.now();
+    multiplayerSession.sendBotState({x:elevatorBot.position.x,y:elevatorBot.position.y,z:elevatorBot.position.z,rotation:elevatorBot.rotation.y,phase:elevatorBotPhase,moving:!!moving}).catch(error=>console.warn("ILOX bot sync:",error));
+  }
+}
+
 function multiplayerPayload(record){
   const payload={...record};
   delete payload.cloudId;delete payload.cloudOwnerId;delete payload.pin;
@@ -2053,6 +2147,7 @@ async function enterMultiplayerWorld(worldId){
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
       onPlayerState:updateRemotePlayer,
       onElevatorState:applyRemoteElevatorState,
+      onElevatorBotState:applyRemoteElevatorBotState,
       onPlayerStateChange:payload=>{
         if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
         else updateRemotePlayer(payload.new);
@@ -2863,7 +2958,7 @@ function animate() {
       }
     }
   }
-  if(started&&player)updateElevators(delta);
+  if(started&&player){ensureElevatorBot();updateElevators(delta);updateElevatorBot(delta);}
   const focus = player || {position:new THREE.Vector3(0,terrainHeight(0,0),0)};
   const firstPerson = player && cameraMode === "first";
   if(cameraFreeMode && cameraFreePosition){
