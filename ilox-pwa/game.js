@@ -1415,7 +1415,10 @@ function createBuildPiece(record, options = {}) {
     }
     group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
   }
-  if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
+  if(kind==="floor"){
+    const shaftOverlap=buildRecords.some(e=>e.kind==="elevator"&&baseY>e.y+.5&&Math.abs(x-e.x)<2.35&&Math.abs(z-e.z)<2.35);
+    if(!shaftOverlap)box(1.5,.16,1.5,wood,0,.08,0);
+  }
   if(kind==="elevator"){
     const shaftHeight=Math.max(3,Math.min(60,(record.floorCount||20)*3));
     const steel=mat(0x56636b,.42,.72),glassPanel=mat(0x78c9d8,.22,.25),cabinMat=mat(0x9ba8aa,.48,.48),dark=mat(0x25343b,.6,.35);
@@ -1439,7 +1442,26 @@ function createBuildPiece(record, options = {}) {
     group.userData.elevatorFloorCount=record.floorCount||20;
     group.userData.elevatorCurrentFloor=record.currentFloor||1;
   }
-  if(kind==="roof"){const roofPiece=box(record.roofWidth||1.5,.16,record.roofDepth||1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
+  if(kind==="roof"){
+    const rw=record.roofWidth||1.5,rd=record.roofDepth||1.5,roofMat=mat(0x9a5545);
+    const elevator=buildRecords.find(e=>e.kind==="elevator"&&baseY>e.y+.5);
+    let opening=null;
+    if(elevator){
+      const dx=elevator.x-x,dz=elevator.z-z,a=rotation||0;
+      const lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=1.62;
+      if(Math.abs(lx)<rw/2+half&&Math.abs(lz)<rd/2+half)opening={left:lx-half,right:lx+half,back:lz-half,front:lz+half};
+    }
+    if(!opening){const roofPiece=box(rw,.16,rd,roofMat,0,1.42,0);roofPiece.rotation.z=-.12;}
+    else{
+      const L=-rw/2,R=rw/2,B=-rd/2,F=rd/2,hl=Math.max(L,opening.left),hr=Math.min(R,opening.right),hb=Math.max(B,opening.back),hf=Math.min(F,opening.front);
+      if(hl>L)box(hl-L,.16,rd,roofMat,(L+hl)/2,1.42,0);
+      if(R>hr)box(R-hr,.16,rd,roofMat,(hr+R)/2,1.42,0);
+      if(hf>hb&&hr>hl){
+        if(hb>B)box(hr-hl,.16,hb-B,roofMat,(hl+hr)/2,1.42,(B+hb)/2);
+        if(F>hf)box(hr-hl,.16,F-hf,roofMat,(hl+hr)/2,1.42,(hf+F)/2);
+      }
+    }
+  }
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
   if(kind==="door"){
     const doorHeight=3.0,openingWidth=1.5,leafWidth=1.38,leafHeight=2.88,depth=1.5;
@@ -1504,6 +1526,7 @@ function createBuildPiece(record, options = {}) {
   if(kind==="lamp"){cyl(0,.4,0,.07,.09,.8,metal);ball(0,.95,0,.28,.22,.28,mat(0xffd98a,.25));}
   if(["gate","fence","pen"].includes(kind)){for(const sx of [-.75,.75])box(.12,1.25,.12,darkWood,sx,.625,0);for(const yy of [.35,.95])box(1.5,.12,.1,wood,0,yy,0);if(kind!=="fence")for(let i=-2;i<=2;i++)box(.07,.75,.09,wood,i*.28,.62,0);}
   group.position.set(x,baseY,z);group.rotation.y=rotation;group.userData.buildRecord=record;group.userData.vy=0;group.userData.buildHeight=group.userData.buildHeight||new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).y;scene.add(group);buildGroups.push(group);
+  if(kind==="elevator")rebuildElevatorOpenings();
   if(kind==="pool"||kind==="platea")refreshTerrainSurface();
   if(["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(kind)) loadAnimalModel(group,kind,options.notify===true);
   return group;
@@ -1581,6 +1604,14 @@ function loadBuilds() {
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
+function rebuildElevatorOpenings(){
+  const targets=buildGroups.filter(g=>["floor","roof"].includes(g.userData.buildRecord?.kind));
+  for(const old of targets){
+    const record=old.userData.buildRecord,index=buildGroups.indexOf(old);
+    scene.remove(old);if(index>=0)buildGroups.splice(index,1);
+    createBuildPiece(record);
+  }
+}
 function animateElevator(group,now=Date.now()){
   const rec=group.userData.buildRecord,cabin=group.userData.elevatorCabin;if(!rec||!cabin)return;
   const travel=group.userData.elevatorTravel;
@@ -2350,7 +2381,7 @@ function updateBuildPlacementGuide(){
 
 function placeBuildAtPointer(event){
   const rect=renderer.domElement.getBoundingClientRect(),pointer=new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
-  if(buildTool==="erase"){const hits=raycaster.intersectObjects(buildGroups,true);if(!hits.length){showToast("Tocá una construcción para borrarla.");return;}let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);if(idx>=0){buildRecords.splice(idx,1);scene.remove(root);const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);refreshTerrainSurface();persistBuilds();showToast("Pieza eliminada");}return;}
+  if(buildTool==="erase"){const hits=raycaster.intersectObjects(buildGroups,true);if(!hits.length){showToast("Tocá una construcción para borrarla.");return;}let root=hits[0].object;while(root.parent&&root.parent!==scene)root=root.parent;const rec=root.userData.buildRecord,idx=buildRecords.indexOf(rec);if(idx>=0){buildRecords.splice(idx,1);scene.remove(root);const gi=buildGroups.indexOf(root);if(gi>=0)buildGroups.splice(gi,1);if(rec.kind==="elevator")rebuildElevatorOpenings();refreshTerrainSurface();persistBuilds();showToast("Pieza eliminada");}return;}
   if(!terrainMesh)return;const terrainHit=raycaster.intersectObject(terrainMesh,false)[0],pieceHits=raycaster.intersectObjects(buildGroups,true),hit=pieceHits[0];
   if(!terrainHit&&!hit){showToast("Tocá el terreno para colocar.");return;}
   const onPiece=!!hit&&(!terrainHit||hit.distance<terrainHit.distance);let point=onPiece?hit.point:terrainHit.point;
