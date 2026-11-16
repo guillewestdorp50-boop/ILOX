@@ -1088,6 +1088,7 @@ function init() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.18;
   game.insertBefore(renderer.domElement, game.firstChild);
+  createJumpCanvasControl();
   scene.add(new THREE.HemisphereLight(0xeaf3ed, 0x46533c, 1.8));
   const sun = new THREE.DirectionalLight(0xffe7c0, 3.1);
   sun.position.set(-55, 85, 42);
@@ -1107,6 +1108,55 @@ function init() {
   addEvents();
   animate();
   requestAnimationFrame(() => loading.classList.add("done"));
+}
+
+function createJumpCanvasControl(){
+  const canvas=document.createElement("canvas");
+  canvas.id="ilox-jump-canvas";
+  canvas.setAttribute("role","img");
+  canvas.setAttribute("aria-label","Control gráfico para saltar");
+  canvas.width=224;canvas.height=224;
+  const ctx=canvas.getContext("2d");
+  let pressed=false,activePointer=null;
+  const draw=()=>{
+    if(!ctx)return;
+    ctx.clearRect(0,0,224,224);
+    const cx=112,cy=112,r=98;
+    ctx.save();
+    ctx.shadowColor=pressed?"#ff263f":"#000000a8";
+    ctx.shadowBlur=pressed?24:16;ctx.shadowOffsetY=pressed?3:7;
+    const fill=ctx.createRadialGradient(78,62,8,112,112,r);
+    if(pressed){fill.addColorStop(0,"#ff9a9a");fill.addColorStop(.58,"#f12b45");fill.addColorStop(1,"#85051d");}
+    else{fill.addColorStop(0,"#ffb5b5");fill.addColorStop(.52,"#ed263d");fill.addColorStop(1,"#8f061d");}
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.lineWidth=7;ctx.strokeStyle="#ffe0e4";ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,r-12,Math.PI*1.08,Math.PI*1.92);ctx.strokeStyle="#ffffff65";ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="900 82px system-ui, sans-serif";ctx.fillText("↑",cx,cy-13);
+    ctx.font="1000 23px system-ui, sans-serif";ctx.letterSpacing="2px";ctx.fillText("SALTAR",cx,cy+59);
+    ctx.restore();
+  };
+  const release=e=>{
+    if(e&&activePointer!==null&&e.pointerId!==activePointer)return;
+    activePointer=null;pressed=false;draw();
+  };
+  canvas.addEventListener("pointerdown",e=>{
+    e.preventDefault();e.stopPropagation();
+    if(!started||activePointer!==null||e.button!==0)return;
+    const rect=canvas.getBoundingClientRect();
+    const x=(e.clientX-rect.left)/rect.width*224-112;
+    const y=(e.clientY-rect.top)/rect.height*224-112;
+    if(Math.hypot(x,y)>101)return;
+    activePointer=e.pointerId;pressed=true;
+    try{canvas.setPointerCapture(e.pointerId);}catch{}
+    draw();triggerJump();
+  });
+  canvas.addEventListener("pointerup",e=>{e.preventDefault();e.stopPropagation();release(e);});
+  canvas.addEventListener("pointercancel",e=>{e.preventDefault();e.stopPropagation();release(e);});
+  canvas.addEventListener("lostpointercapture",release);
+  canvas.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();});
+  addEventListener("blur",()=>release());
+  game.appendChild(canvas);draw();return canvas;
 }
 
 function addEvents() {
@@ -1173,7 +1223,7 @@ function addEvents() {
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
-    if (e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
+    if (e.target.closest("#ilox-jump-canvas") || e.target.closest("button") || e.target.closest("#move-pad") || e.target.closest("#camera-free-pad") || e.target.closest("#camera-free-controls") || e.target.closest("#build-panel") || e.target.closest("#menu-panel") || e.target.closest("#menu-toggle")) return;
     activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(activePointers.size===2){const p=[...activePointers.values()];pinchStartDistance=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);pinchStartZoom=cameraFreeMode?cameraFreeZoom:cameraDistance;pointerDragged=true;}
     lookPointer = e.pointerId;
