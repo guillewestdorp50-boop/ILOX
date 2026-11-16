@@ -32,7 +32,7 @@
       const runChecks = async () => {
         const checks = {};
         checks.webgl = (() => { try { const canvas=document.createElement("canvas"); return !!(window.WebGL2RenderingContext && canvas.getContext("webgl2")) || !!canvas.getContext("webgl"); } catch(e) { return false; } })();
-        checks.gameModule = await fetch("./game.js?v=ilox-shared-elevator-captain-bot-20261116-v29", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
+        checks.gameModule = await fetch("./game.js?v=ilox-v106-20261116", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
@@ -50,7 +50,7 @@
           const diagnostics = await runChecks();
           const latest = errors[errors.length - 1] || {type:"INFORME MANUAL",message:"El mundo quedó detenido en Preparando tu mundo aunque no se capturó un error JavaScript.",stack:""};
           const payload = {
-            app_version:"ILOX-PWA-NATURALEZA-SEGURA-20261116",
+            app_version:"ILOX-v106-20261116",
             error_type:latest.type,
             message:latest.message,
             stack:latest.stack,
@@ -76,6 +76,7 @@
         record(type, detail, detail?.stack || "");
         show("ILOX DETECTÓ UN FALLO", type + ": " + String(detail || "Sin detalle").slice(0,1200));
       };
+      window.__iloxOpenDiagnostics = () => show("DIAGNÓSTICO DE ILOX", "Panel de diagnóstico abierto. Podés enviar un informe técnico para revisar la carga del mundo.");
       window.addEventListener("error", event => {
         const detail = event.error?.stack || event.message || event.target?.src || event.target?.href || "Fallo al cargar un recurso";
         record("ERROR", detail, event.error?.stack || "");
@@ -93,6 +94,7 @@
           show("DIAGNÓSTICO DE ILOX", "Analizando carga del mundo…");
           sendReport();
         });
+        document.getElementById("ilox-diagnostics-fab")?.addEventListener("click", () => window.__iloxOpenDiagnostics?.());
       });
     })();
   </script>
@@ -112,7 +114,7 @@
     });
   </script>
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
-  <link rel="manifest" href="./manifest.webmanifest?v=ilox-v104-five-controls">
+  <link rel="manifest" href="./manifest.webmanifest?v=ilox-v106">
   <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
   <link rel="stylesheet" href="./styles.css?v=ilox-botonera-ascensor-20261116-v1">
@@ -121,6 +123,7 @@
 <body>
   <main id="game" aria-label="Mundo 3D de ILOX">
     <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p><button id="ilox-diagnostic-trigger" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">DETECTAR FALLO Y ENVIAR INFORME</button><button id="ilox-force-start" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#71f0c2,#22a6bd);color:#102b45;font-weight:900">FORZAR INICIO</button><p id="ilox-diagnostic-status" role="status"></p></div>
+    <button id="ilox-diagnostics-fab" type="button" aria-label="Abrir diagnóstico de ILOX" style="position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;z-index:100000;padding:10px 13px;border:1px solid rgba(255,255,255,.75);border-radius:999px;background:rgba(36,27,80,.94);color:#fff;font:800 11px/1.2 system-ui,sans-serif;letter-spacing:.04em;box-shadow:0 4px 18px #0006;cursor:pointer">AYUDA · DIAGNÓSTICO</button>
     <div id="welcome-scene" class="welcome-scene" aria-hidden="true">
       <svg class="welcome-art" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
         <defs>
@@ -205,7 +208,7 @@
       <button id="force-app-update" class="menu-action force-update-action" type="button">⚡ FORZAR ACTUALIZACIÓN <span>↻</span></button>
       <div class="menu-section-title">PARTIDA Y JUGADORES</div>
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
-      <div class="menu-version" aria-label="Versión del juego">ILOX v105</div>
+      <div class="menu-version" aria-label="Versión del juego">ILOX v106</div>
     </section>
     <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
       <div id="camera-free-pad" class="camera-free-pad" aria-label="Desplazar cámara"><div class="camera-free-ring"></div><div id="camera-free-knob" class="camera-free-knob"></div></div>
@@ -312,6 +315,6 @@
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-shared-elevator-captain-bot-20261116-v29"></script>
+  <script type="module" src="./game.js?v=ilox-v106-20261116"></script>
 </body>
 </html>
