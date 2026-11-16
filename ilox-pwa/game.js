@@ -130,6 +130,7 @@ function findRequiredParent(kind,x,z){
   }
   return null;
 }
+function isLivingBuildKind(kind){return ["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(kind);}
 function foundationAt(x,z){for(const r of buildRecords){if(r.kind!=="platea"&&r.kind!=="pool")continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
@@ -1336,7 +1337,7 @@ function addEvents() {
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
         doorRotateControl?.classList.toggle("hidden",!["door-solid","door-brick","door"].includes(kind));hudDeleteButton.classList.toggle("active",kind==="erase");
-        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
+        document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":isLivingBuildKind(kind)?"Seres vivos: colocación directa sobre el terreno, sin platea.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
         setHudDockOpen(false);
       });buildToolsHost.appendChild(button);
@@ -2887,7 +2888,7 @@ function updateBuildPlacementGuide(){
   const roofSupported=roofHasFourWalls(roofArea);
   const roofPreviewTops=roofArea?buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2&&(Math.abs(item.x-(roofArea.x-roofArea.width/2))<1.1||Math.abs(item.x-(roofArea.x+roofArea.width/2))<1.1||Math.abs(item.z-(roofArea.z-roofArea.depth/2))<1.1||Math.abs(item.z-(roofArea.z+roofArea.depth/2))<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5)):[];
   const roofPreviewY=roofPreviewTops.length?Math.max(...roofPreviewTops):null;
-  const valid=buildTool==="platea"||poolTool||buildTool==="water"||((buildTool==="roof"||buildTool==="roof-hole")?(roofAligned&&roofSupported):(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
+  const valid=isLivingBuildKind(buildTool)||buildTool==="platea"||poolTool||buildTool==="water"||((buildTool==="roof"||buildTool==="roof-hole")?(roofAligned&&roofSupported):(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
@@ -2952,7 +2953,7 @@ function placeBuildAtPointer(event){
   let containingPool=null;
   if(buildTool==="water"){containingPool=findRequiredParent("water",x,z);if(!containingPool){showToast("Primero colocá una PILETA. El agua necesita una estructura que la contenga.");return;}if(buildRecords.some(item=>item.kind==="water"&&item.poolX===containingPool.x&&item.poolZ===containingPool.z)){showToast("Esta pileta ya está llena.");return;}x=containingPool.x;z=containingPool.z;}
   if(isPoolTool&&buildRecords.some(item=>item.kind==="pool"&&Math.abs(item.x-x)<poolWidth/2+(item.poolWidth||6)/2&&Math.abs(item.z-z)<poolDepth/2+(item.poolDepth||6)/2)){showToast("Ese espacio ya tiene una pileta.");return;}
-  if(buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"){
+  if(!isLivingBuildKind(buildTool)&&buildTool!=="platea"&&!isPoolTool&&buildTool!=="water"){
     const currentFoundation=foundationAt(x,z);
     if(["block","brick","wall"].includes(buildTool)&&!foundationHasDoor(currentFoundation)){showToast("Primero colocá la puerta completa de esta construcción.");return;}
     if(!currentFoundation){showToast("Primero colocá una PLATEA. El terreno se nivela dentro de ella.");return;}
@@ -2991,7 +2992,7 @@ function placeBuildAtPointer(event){
     const wallTops=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-roofArea.x)<=roofArea.width/2&&Math.abs(item.z-roofArea.z)<=roofArea.depth/2&&(Math.abs(Math.abs(item.x-roofArea.x)-roofArea.width/2)<1.1||Math.abs(Math.abs(item.z-roofArea.z)-roofArea.depth/2)<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5));
     if(wallTops.length)baseY=Math.max(baseY,...wallTops);
   }
-  const record={kind:isPoolTool?"pool":(buildTool==="roof-hole"?"roof":buildTool),x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||buildTool==="floor"||isPoolTool)?0:(roofArea?0:2.4)),rotation:buildRotation,color:selectedBlockColor};
+  const record={kind:isPoolTool?"pool":(buildTool==="roof-hole"?"roof":buildTool),x,z,y:baseY+((isLivingBuildKind(buildTool)||buildTool==="water"||buildTool==="platea"||buildTool==="floor"||isPoolTool)?0:(roofArea?0:2.4)),rotation:buildRotation,color:selectedBlockColor};
   if(roofArea){record.roofWidth=roofArea.width;record.roofDepth=roofArea.depth;record.roofRevision="connected-plateas-v2";record.roofOpening=buildTool==="roof-hole";}
   if(isPoolTool){record.poolDesign=poolDesign;record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
