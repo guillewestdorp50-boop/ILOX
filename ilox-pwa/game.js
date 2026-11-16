@@ -937,12 +937,18 @@ function addEvents() {
   cameraFreePad?.addEventListener("pointerup", resetCameraFreeStick);
   cameraFreePad?.addEventListener("pointercancel", resetCameraFreeStick);
   const setCameraVertical = value => { cameraFreeVertical=value; };
-  cameraFreeUp?.addEventListener("pointerdown",e=>{e.preventDefault();setCameraVertical(1);});
-  cameraFreeDown?.addEventListener("pointerdown",e=>{e.preventDefault();setCameraVertical(-1);});
-  [cameraFreeUp,cameraFreeDown].forEach(button=>{
+  [cameraFreeUp,cameraFreeDown].forEach((button,index)=>{
     if(!button)return;
+    button.addEventListener("pointerdown",e=>{
+      if(!started||!cameraFreeMode||e.button!==0)return;
+      e.preventDefault();e.stopPropagation();
+      setCameraVertical(index===0?1:-1);
+      button.setPointerCapture?.(e.pointerId);
+    });
     const stop=()=>setCameraVertical(0);
-    button.addEventListener("pointerup",stop);button.addEventListener("pointercancel",stop);button.addEventListener("lostpointercapture",stop);
+    button.addEventListener("pointerup",stop);
+    button.addEventListener("pointercancel",stop);
+    button.addEventListener("lostpointercapture",stop);
   });
   game.addEventListener("pointerdown", e => {
     buildPointer={x:e.clientX,y:e.clientY};
