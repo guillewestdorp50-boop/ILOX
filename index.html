@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#162b24">
   <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=open-world-1">
+  <link rel="stylesheet" href="./styles.css?v=controls-menu-2">
   <title>ILOX — Tu propio mundo</title>
 </head>
 <body>
@@ -36,15 +36,32 @@
     </section>
     <div class="bottom-hint" id="hint"><span class="hint-dot"></span> No hay caminos. Todavía no hay respuestas.</div>
     <div class="touch-ui" id="touch-ui">
-      <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
+      <div class="joystick" id="joystick" aria-label="Control analógico de movimiento"><div class="stick" id="stick"></div></div>
       <div class="touch-note">MOVER</div>
       <div class="look-note">DESLIZÁ PARA MIRAR</div>
+      <div class="action-controls">
+        <button class="game-action jump-action" id="jump-button" aria-label="Saltar"><span>↑</span><small>SALTAR</small></button>
+        <button class="game-action run-action" id="run-button" aria-label="Correr"><span>»</span><small>CORRER</small></button>
+      </div>
     </div>
+    <button id="menu-button" class="menu-button" aria-expanded="false" aria-controls="game-menu">☰ <span>MENÚ</span></button>
+    <section id="game-menu" class="game-menu hidden" aria-label="Menú de herramientas">
+      <header class="menu-header"><strong id="menu-title">MENÚ</strong><button id="menu-close" aria-label="Cerrar menú">✕</button></header>
+      <div id="menu-root" class="menu-grid">
+        <button data-menu="build">🔨 <span>CONSTRUIR</span><b>›</b></button>
+        <button data-menu="world">🌎 <span>MUNDO</span><b>›</b></button>
+        <button data-menu="character">🧍 <span>PERSONAJE</span><b>›</b></button>
+        <button data-menu="settings">⚙️ <span>AJUSTES</span><b>›</b></button>
+      </div>
+      <div id="menu-subpanel" class="menu-grid hidden"></div>
+      <button id="menu-back" class="menu-back hidden">← VOLVER</button>
+    </section>
+    <button id="camera-button" class="camera-button" aria-label="Cambiar cámara">📷 <span>CÁMARA</span></button>
     <div class="controls-help" id="controls-help">W A S D / FLECHAS · MOVER &nbsp; | &nbsp; MOUSE · MIRAR</div>
     <div class="asset-credit">RECURSOS 3D CC0 · POLY HAVEN</div>
     <div class="toast" id="toast" role="status"></div>
   </main>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./app.js?v=open-world-1"></script>
+  <script type="module" src="./app.js?v=controls-menu-2"></script>
 </body>
 </html>
