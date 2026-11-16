@@ -1144,6 +1144,13 @@ function addEvents() {
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
   };
+  cameraFreeQuickButton?.addEventListener("click",()=>{
+    const nextMode=cameraFreeMode?"third":"free";
+    applyCameraMode(nextMode);
+    cameraModePanel.classList.add("hidden");
+    cameraFreeQuickButton.setAttribute("aria-pressed",String(nextMode==="free"));
+    cameraFreeQuickButton.classList.toggle("active",nextMode==="free");
+  });
   cameraMenuToggle.addEventListener("click",()=>{
      const modes=["first","second","third","free"];
      const current=modes.indexOf(cameraMode);
