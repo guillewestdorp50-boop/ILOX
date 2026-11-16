@@ -1351,7 +1351,7 @@ function createBuildPiece(record, options = {}) {
     group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
   }
   if(kind==="floor")box(1.5,.16,1.5,wood,0,.08,0);
-  if(kind==="roof"){const roofPiece=box(1.5,.16,1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
+  if(kind==="roof"){const roofPiece=box(record.roofWidth||1.5,.16,record.roofDepth||1.5,mat(0x9a5545),0,1.42,0);roofPiece.rotation.z=-.12;}
   if(kind==="wall")box(1.5,1.5,.16,wall,0,.75,0);
   if(kind==="door"){
     const doorHeight=3.0,openingWidth=1.5,leafWidth=1.38,leafHeight=2.88,depth=1.5;
@@ -2001,6 +2001,22 @@ function showMultiplayerError(error){
   document.querySelector("#multiplayer-status").textContent=message+authHint;
 }
 
+function connectedPlateaFootprint(seed){
+  if(!seed||seed.kind!=="platea")return null;
+  const component=[],pending=[seed],seen=new Set();
+  while(pending.length){
+    const current=pending.pop();if(seen.has(current))continue;
+    seen.add(current);component.push(current);
+    for(const candidate of buildRecords){
+      if(candidate.kind!=="platea"||seen.has(candidate)||Math.abs((candidate.y||0)-(seed.y||0))>.24)continue;
+      const dx=Math.abs(candidate.x-current.x),dz=Math.abs(candidate.z-current.z);
+      if((Math.abs(dx-6)<.22&&dz<.22)||(Math.abs(dz-6)<.22&&dx<.22))pending.push(candidate);
+    }
+  }
+  const minX=Math.min(...component.map(p=>p.x)),maxX=Math.max(...component.map(p=>p.x));
+  const minZ=Math.min(...component.map(p=>p.z)),maxZ=Math.max(...component.map(p=>p.z));
+  return {x:(minX+maxX)/2,z:(minZ+maxZ)/2,width:maxX-minX+6,depth:maxZ-minZ+6,foundation:seed,component};
+}
 function buildFootprint(kind){
   const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,1.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
   return sizes[kind]||[1.5,1.5];
@@ -2062,7 +2078,7 @@ function foundationContainsFootprint(x,z,kind,rotation=0){
 
 function autoSnapBuildPlacement(x,z,kind,rotation=0){
   const snapKinds=new Set(["block","brick","wall","floor","roof","window","stairs","door"]);
-  if(!snapKinds.has(kind))return {x,z,rotation,snapped:false};
+  if(!snapKinds.has(kind)||kind==="roof")return {x,z,rotation,snapped:false};
   const [nw,nd]=buildFootprint(kind),nc=Math.cos(rotation),ns=Math.sin(rotation);
   const newU={x:nc,z:ns},newV={x:-ns,z:nc};
   const candidates=[];
@@ -2144,12 +2160,14 @@ function updateBuildPlacementGuide(){
   const snap=placementKind==="door"?snapDoorToPlateaGrid(x,z,buildRotation):autoSnapBuildPlacement(x,z,placementKind,buildRotation);
   x=snap.x;z=snap.z;
   const guideRotation=snap.rotation;
-  const [w,d]=buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildFootprint(placementKind);
+  let roofArea=null;
+  if(buildTool==="roof"){roofArea=connectedPlateaFootprint(foundationAt(x,z));if(roofArea){x=roofArea.x;z=roofArea.z;}}
+  const [w,d]=buildTool==="platea"?[6,6]:poolTool?[buildTool==="pool-municipal"?24:buildTool==="pool-large"?12:6,buildTool==="pool-municipal"?12:buildTool==="pool-large"?12:6]:buildTool==="roof"?(roofArea?[roofArea.width,roofArea.depth]:[1.5,1.5]):buildFootprint(placementKind);
   if(snap.snapped&&placementKind!=="door")buildRotation=guideRotation;
   const activeFoundation=foundationAt(x,z);
   const needsDoor=["block","brick","wall"].includes(buildTool);
   const doorReady=foundationHasDoor(activeFoundation);
-  const valid=buildTool==="platea"||poolTool||buildTool==="water"||(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation));
+  const valid=buildTool==="platea"||poolTool||buildTool==="water"||(buildTool==="roof"?!!roofArea:(needsDoor&&!doorReady?false:foundationContainsFootprint(x,z,placementKind,buildRotation)));
   if(!buildGuide){
     const material=new THREE.LineBasicMaterial({color:0x22ee66,transparent:true,opacity:.98,depthTest:false});
     const geometry=new THREE.BufferGeometry();
@@ -2205,7 +2223,11 @@ function placeBuildAtPointer(event){
     const currentFoundation=foundationAt(x,z);
     if(["block","brick","wall"].includes(buildTool)&&!foundationHasDoor(currentFoundation)){showToast("Primero colocá la puerta completa de esta construcción.");return;}
     if(!currentFoundation){showToast("Primero colocá una PLATEA. El terreno se nivela dentro de ella.");return;}
-    if(!foundationContainsFootprint(x,z,buildTool,buildRotation)){showToast("La pieza debe quedar completamente dentro de la platea.");return;}
+    if(buildTool==="roof"){
+      const area=connectedPlateaFootprint(currentFoundation);
+      if(!area){showToast("No se encontró una superficie de plateas conectadas.");return;}
+      x=area.x;z=area.z;
+    }else if(!foundationContainsFootprint(x,z,buildTool,buildRotation)){showToast("La pieza debe quedar completamente dentro de la platea.");return;}
   }
   if(buildTool==="pen"||buildTool==="fence"){
     const angle=buildRotation,half=.75,ux=Math.cos(angle),uz=-Math.sin(angle);
@@ -2229,7 +2251,10 @@ function placeBuildAtPointer(event){
   if(isPoolTool){let top=-Infinity;for(let ix=-poolWidth/2;ix<=poolWidth/2;ix+=1.5)for(let iz=-poolDepth/2;iz<=poolDepth/2;iz+=1.5)top=Math.max(top,terrainHeight(x+ix,z+iz));baseY=top+.04;}
   if(onPiece&&buildTool!=="water"&&buildTool!=="platea"&&!isPoolTool){let root=hit.object;while(root.parent&&root.parent!==scene)root=root.parent;const sr=root.userData.buildRecord;if(sr){const normal=hit.face?hit.object.localToWorld(hit.face.normal.clone()).sub(hit.object.getWorldPosition(new THREE.Vector3())).normalize():new THREE.Vector3(0,1,0);baseY=normal.y<.65?sr.y:sr.y+(root.userData.buildHeight||1.5);}else baseY=new THREE.Box3().setFromObject(root).max.y;}
   const poolDesign=buildTool==="pool-municipal"?"municipal":buildTool==="pool-large"?"large":"small";
+  const roofArea=buildTool==="roof"?connectedPlateaFootprint(foundationAt(x,z)):null;
+  if(buildTool==="roof"&&roofArea){x=roofArea.x;z=roofArea.z;}
   const record={kind:isPoolTool?"pool":buildTool,x,z,y:baseY+((buildTool==="water"||buildTool==="platea"||isPoolTool)?0:2.4),rotation:buildRotation,color:selectedBlockColor};
+  if(roofArea){record.roofWidth=roofArea.width;record.roofDepth=roofArea.depth;record.roofRevision="connected-plateas-v1";}
   if(isPoolTool){record.poolDesign=poolDesign;record.poolWidth=poolWidth;record.poolDepth=poolDepth;}if(buildTool==="water"){record.poolWidth=containingPool.poolWidth||6;record.poolDepth=containingPool.poolDepth||6;record.poolX=containingPool.x;record.poolZ=containingPool.z;}
   buildRecords.push(record);
   const isAnimal=["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(buildTool);
