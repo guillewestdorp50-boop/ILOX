@@ -50,6 +50,7 @@ h1 em{font-style:normal;color:#e8d29a}
 .joystick{left:clamp(16px,3vw,34px);bottom:0;width:116px;height:116px;background:linear-gradient(145deg,#173eaaee,#09205ddd);border:3px solid #74c9ff;box-shadow:inset 0 3px 8px #ffffff55,0 6px 0 #071b48,0 0 18px #168bff88}
 .stick{width:48px;height:48px;left:31px;top:31px;background:linear-gradient(145deg,#fff4a8,#e9a928);border:3px solid #fff;box-shadow:inset 0 2px 5px #fff9,0 4px 8px #07152b99}
 .touch-note{left:54px;bottom:-16px;font-size:9px;color:#fff;text-shadow:0 2px 4px #000}
+.menu-button,.camera-button{font-family:inherit;color:#fff;font-weight:950;letter-spacing:.04em;border:2px solid #ffffffc9;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:2px;text-shadow:0 2px 3px #17233b;box-shadow:inset 0 3px 7px #ffffff66,inset 0 -5px 0 #0003,0 6px 0 #0005,0 0 15px #ffffff35;touch-action:manipulation}
 .look-note{display:none}
 .menu-button,.camera-button{position:absolute;z-index:8;min-height:54px;padding:7px 15px;flex-direction:row;font-size:14px;background:linear-gradient(145deg,#8b55f5,#4a20b7);bottom:calc(174px + env(safe-area-inset-bottom));left:clamp(16px,3vw,34px)}
 .camera-button{left:auto;right:clamp(14px,3vw,34px);bottom:calc(174px + env(safe-area-inset-bottom));background:linear-gradient(145deg,#24b9d0,#08758d)}
