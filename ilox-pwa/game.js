@@ -27,7 +27,21 @@ const cameraFreePad = document.querySelector("#camera-free-pad");
 const cameraFreeKnob = document.querySelector("#camera-free-knob");
 const cameraFreeUp = document.querySelector("#camera-free-up");
 const cameraFreeDown = document.querySelector("#camera-free-down");
-const jumpButton = document.querySelector("#jump-action");
+// SALTO: retirar cualquier control HTML heredado y crear uno nuevo desde JavaScript,
+// igual que los controles funcionales del ascensor. Así no queda atado al DOM viejo.
+document.querySelectorAll("#jump-action, #jump-button, .jump-button, [data-ilox-jump]").forEach(node => node.remove());
+document.querySelectorAll("button").forEach(node => {
+  const label = (node.textContent || "").replace(/[^\\p{L}]/gu, "").toUpperCase();
+  if (label === "SALTAR") node.remove();
+});
+const jumpButton = document.createElement("button");
+jumpButton.id = "ilox-jump-control";
+jumpButton.className = "jump-float";
+jumpButton.type = "button";
+jumpButton.setAttribute("aria-label", "Saltar");
+jumpButton.title = "Saltar";
+jumpButton.innerHTML = "⬆<small>SALTAR</small>";
+document.body.appendChild(jumpButton);
 const runButton = document.querySelector("#run-button");
 let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
