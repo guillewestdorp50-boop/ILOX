@@ -1612,6 +1612,20 @@ function loadBuilds() {
   try {
     const saved=JSON.parse(localStorage.getItem("ilox-builds-v1")||"[]");
     if(Array.isArray(saved)) saved.slice(0,1200).forEach(record=>{if(record&&["block","brick","platea","floor","wall","door","window","roof","stairs","elevator","pool","tree","rock","water","chair","table","bed","sofa","lamp","gate","fence","pen","sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(record.kind)&&Number.isFinite(record.x)&&Number.isFinite(record.z)){if(record.kind==="door")record.open=false;const heights={block:1.5,brick:1.5,platea:.3,wall:1.5,door:3.0,window:1.5,roof:1.5,stairs:1.5,elevator:120,pool:.22,floor:.16,tree:2.5,rock:.9,chair:1.5,table:1.05,bed:1.1,sofa:1.2,lamp:1.2,gate:1.25,fence:1.25,pen:1.25,sheep:.6,cow:.95,horse:1.2,chicken:.4,pig:.62,goat:.62,fox:.9,person:1.75,robot:1.8,trex:3.2};const supported=buildRecords.some(lower=>Math.abs(lower.x-record.x)<.2&&Math.abs(lower.z-record.z)<.2&&Math.abs((lower.y+(heights[lower.kind]||1.5))-record.y)<.24);if(!supported&&!["platea","pool"].includes(record.kind)&&Math.abs(record.y-terrainHeight(record.x,record.z))>.12)record.y=terrainHeight(record.x,record.z);buildRecords.push(record);createBuildPiece(record);}});
+     // Migra techos antiguos al tamaño real de todas las plateas conectadas.
+     let roofsMigrated=false;
+     for(const record of buildRecords){
+       if(record.kind!=="roof")continue;
+       const area=connectedPlateaFootprint(foundationAt(record.x,record.z));
+       if(!area)continue;
+       const changed=record.roofRevision!=="connected-plateas-v1"||Math.abs((record.roofWidth||1.5)-area.width)>.01||Math.abs((record.roofDepth||1.5)-area.depth)>.01;
+       if(!changed)continue;
+       record.x=area.x;record.z=area.z;record.roofWidth=area.width;record.roofDepth=area.depth;record.roofRevision="connected-plateas-v1";
+       const old=buildGroups.find(group=>group.userData.buildRecord===record);
+       if(old){scene.remove(old);const index=buildGroups.indexOf(old);if(index>=0)buildGroups.splice(index,1);}
+       createBuildPiece(record);roofsMigrated=true;
+     }
+     if(roofsMigrated)flushLocalBuildSave();
   } catch(error){ console.warn("ILOX: no se pudieron recuperar las construcciones",error); }
 }
 
