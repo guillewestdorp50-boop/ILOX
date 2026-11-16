@@ -364,3 +364,81 @@ body{background:#201747;color:#fff}
 .elevator-call-button{position:absolute;z-index:27;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translateX(-50%);max-width:calc(100vw - 24px);padding:13px 18px;border:1px solid #b5f4df;border-radius:999px;background:linear-gradient(120deg,#d2f5e7,#63d6a6);color:#10251f;font-size:11px;font-weight:950;letter-spacing:.08em;box-shadow:0 7px 22px #0008;pointer-events:auto;white-space:nowrap}.elevator-call-button.hidden{display:none!important}.elevator-call-button:disabled{opacity:.75;filter:saturate(.7)}
 .elevator-keypad .elevator-keys{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-flow:row!important;overflow-x:hidden!important;overflow-y:auto!important}
 @media(max-width:600px){.elevator-call-button{top:calc(74px + env(safe-area-inset-top));font-size:10px;padding:12px 15px}}
+
+
+/* ILOX v104 — HUD de acciones: botones cuadrados, vivos y separados. */
+#menu-toggle{
+  position:absolute;z-index:13;left:12px;right:auto;
+  top:calc(12px + env(safe-area-inset-top));
+  width:46px;height:46px;min-width:46px;padding:0;
+  display:grid;place-items:center;
+  border:2px solid #ffe36e;border-radius:10px;
+  background:linear-gradient(145deg,#ffcf24,#ff8a00);
+  color:#34204f;font-size:25px;font-weight:1000;line-height:1;
+  box-shadow:0 4px 0 #a94c16,0 7px 18px #0008;
+}
+#menu-toggle:active{transform:translateY(2px);box-shadow:0 2px 0 #a94c16,0 4px 12px #0007}
+.camera-controls{
+  top:calc(12px + env(safe-area-inset-top));left:66px;right:auto;
+  padding:0;gap:0;z-index:13;
+}
+.camera-menu-toggle{
+  width:46px;height:46px;border:2px solid #65c7ff;border-radius:10px;
+  background:linear-gradient(145deg,#168bff,#2454d8);color:#fff;
+  box-shadow:0 4px 0 #15358f,0 7px 18px #0008;
+}
+.camera-menu-toggle svg{width:29px;height:25px}
+.camera-mode-panel{
+  top:52px;left:0;right:auto;display:grid;grid-template-columns:repeat(3,42px);
+  gap:5px;padding:7px;border:2px solid #65c7ff;border-radius:11px;
+  background:#101b48f5;
+}
+.camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{
+  width:42px;height:42px;border:1px solid #75bfff;border-radius:8px;
+  background:#164c9b;color:#fff;font-size:19px;padding:0;
+}
+.camera-mode-panel .camera-mode.selected{background:#ffe36e;color:#39205f;border-color:#fff}
+.camera-mode-panel .camera-lock{background:#8b36d8;border-color:#d8a8ff}
+.menu-panel{top:calc(66px + env(safe-area-inset-top));left:12px;border:2px solid #ffe36e;border-radius:12px}
+.menu-action{
+  min-height:46px;border:2px solid #6bc8ff;border-radius:9px;
+  background:#174b9c;color:#fff;font-weight:900;
+}
+.menu-action:nth-child(2){border-color:#d49aff;background:#6327a8}
+.menu-action:nth-child(3){border-color:#73f0b1;background:#087b55}
+.menu-action:nth-child(4){border-color:#ffdf69;background:#88600a}
+.menu-action:nth-child(5){border-color:#77dcff;background:#145b88}
+.menu-action:nth-child(6){border-color:#ffad70;background:#99431b}
+.menu-action.danger{border-color:#ff9a9a;background:#a51f38;color:#fff}
+#door-rotate-control{
+  top:calc(12px + env(safe-area-inset-top));right:12px;left:auto;
+  width:46px;height:46px;padding:0;display:grid;place-items:center;
+  border:2px solid #8dffb8;border-radius:10px;
+  background:linear-gradient(145deg,#19c979,#07834e);
+  color:#fff;font-size:25px;font-weight:1000;
+  box-shadow:0 4px 0 #075b3a,0 7px 18px #0008;
+}
+#elevator-call-button{
+  top:calc(12px + env(safe-area-inset-top));left:122px;right:auto;
+  transform:none;width:46px;height:46px;min-width:46px;max-width:none;
+  padding:0;display:grid;place-items:center;
+  border:2px solid #ffc078;border-radius:10px;
+  background:linear-gradient(145deg,#ff9b27,#ed4b19);
+  color:#fff;font-size:24px;font-weight:1000;line-height:1;
+  box-shadow:0 4px 0 #9b2e16,0 7px 18px #0008;
+}
+#elevator-call-button:active{transform:translateY(2px)}
+.build-panel{border:2px solid #c79aff}
+.build-tool{border:2px solid #8fbcff;border-radius:9px;background:#174b9c;color:#fff}
+.build-tool.selected{border-color:#ffe36e;background:#ffe36e;color:#39205f}
+.block-color{border:2px solid #fff}
+@media(max-width:600px){
+  #menu-toggle{left:10px;top:calc(10px + env(safe-area-inset-top));width:43px;height:43px;min-width:43px}
+  .camera-controls{left:62px;top:calc(10px + env(safe-area-inset-top))}
+  .camera-menu-toggle{width:43px;height:43px}
+  .camera-mode-panel{top:49px;grid-template-columns:repeat(3,39px)}
+  .camera-mode-panel .camera-mode,.camera-mode-panel .camera-lock{width:39px;height:39px}
+  #elevator-call-button{left:112px;top:calc(10px + env(safe-area-inset-top));width:43px;height:43px;min-width:43px}
+  #door-rotate-control{right:10px;top:calc(10px + env(safe-area-inset-top));width:43px;height:43px}
+  .menu-panel{left:10px;top:calc(60px + env(safe-area-inset-top));width:min(280px,calc(100vw - 20px))}
+}
