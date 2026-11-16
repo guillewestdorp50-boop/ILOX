@@ -36,12 +36,14 @@ document.querySelectorAll("button").forEach(node => {
 });
 const jumpButton = document.createElement("button");
 jumpButton.id = "ilox-jump-control";
-jumpButton.className = "jump-float";
+jumpButton.className = "hud-action hud-jump";
 jumpButton.type = "button";
 jumpButton.setAttribute("aria-label", "Saltar");
 jumpButton.title = "Saltar";
 jumpButton.innerHTML = "⬆<small>SALTAR</small>";
-game.appendChild(jumpButton);
+const jumpControls = document.querySelector("#hud-dock .right-play-controls");
+if (!jumpControls) throw new Error("No se encontró el contenedor de acciones del HUD");
+jumpControls.insertBefore(jumpButton, jumpControls.firstChild);
 const runButton = document.querySelector("#run-button");
 let touchSprintActive = false;
 const menuToggle = document.querySelector("#menu-toggle");
