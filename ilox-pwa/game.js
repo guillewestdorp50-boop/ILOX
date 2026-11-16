@@ -130,7 +130,6 @@ function findRequiredParent(kind,x,z){
   return null;
 }
 function isLivingBuildKind(kind){return ["sheep","cow","horse","chicken","pig","goat","fox","person","robot","trex"].includes(kind);}
-function buildSpatialCellKey(x,z){return Math.floor(x/BUILD_SPATIAL_CELL_SIZE)+":"+Math.floor(z/BUILD_SPATIAL_CELL_SIZE);}
 function removeBuildSpatialGroup(group){const keys=group?.userData?.spatialCellKeys;if(!keys)return;for(const key of keys){const cell=buildSpatialCells.get(key);if(!cell)continue;cell.delete(group);if(!cell.size)buildSpatialCells.delete(key);}delete group.userData.spatialCellKeys;delete group.userData.spatialBounds;}
 function updateBuildSpatialGroup(group){if(!group||group.parent!==scene)return;removeBuildSpatialGroup(group);group.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(group);if(bounds.isEmpty())bounds.setFromCenterAndSize(group.position,new THREE.Vector3(1.5,1.5,1.5));group.userData.spatialBounds=bounds;const keys=[],minX=Math.floor(bounds.min.x/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor(bounds.max.x/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor(bounds.min.z/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor(bounds.max.z/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const key=cx+":"+cz;let cell=buildSpatialCells.get(key);if(!cell){cell=new Set();buildSpatialCells.set(key,cell);}cell.add(group);keys.push(key);}group.userData.spatialCellKeys=keys;}
 function getNearbyBuildGroups(x,z,radius=.5){const found=new Set(),minX=Math.floor((x-radius)/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor((x+radius)/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor((z-radius)/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor((z+radius)/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const cell=buildSpatialCells.get(cx+":"+cz);if(!cell)continue;for(const group of cell){const b=group.userData.spatialBounds;if(b&&x+radius>=b.min.x-.02&&x-radius<=b.max.x+.02&&z+radius>=b.min.z-.02&&z-radius<=b.max.z+.02)found.add(group);}}return found;}
@@ -3472,6 +3471,7 @@ function closeDoorPinDialog(){doorPinDialog?.classList.add("hidden");doorPinTarg
 function openDoorLeaf(group){
   const pivot=group?.userData.doorLeafPivot;if(!pivot)return;
   pivot.rotation.y=Math.PI/2;
+  updateBuildSpatialGroup(group);
   group.userData.doorIsOpen=true;
   if(group.userData.buildRecord)group.userData.buildRecord.open=true;
   group.userData.doorAutoCloseAt=Date.now()+3000;
@@ -3732,6 +3732,7 @@ function animate() {
         group.userData.doorPreviousLocalZ=localZ;
         if(now>=group.userData.doorAutoCloseAt){
           group.userData.doorLeafPivot.rotation.y=0;
+          updateBuildSpatialGroup(group);
           group.userData.doorIsOpen=false;
           if(group.userData.buildRecord?.open){
             group.userData.buildRecord.open=false;
