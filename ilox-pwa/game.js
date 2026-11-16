@@ -1208,10 +1208,18 @@ function createCameraCanvasControls(){
   cameraViewCanvas=makeCanvas("ilox-camera-view-canvas","calc(max(16px, env(safe-area-inset-right)) + 92px)","Cambiar entre primera, segunda y tercera persona","◉");
   cameraFreeCanvas=makeCanvas("ilox-camera-free-canvas","calc(max(16px, env(safe-area-inset-right)) + 8px)","Activar o desactivar cámara libre","✥");
   const fullscreenCanvas=makeCanvas("ilox-fullscreen-canvas","calc(max(16px, env(safe-area-inset-right)) + 176px)","Activar o salir de pantalla completa","⛶");
+  // Este control vive sobre la pantalla de bienvenida y sobre el mundo: se puede
+  // activar desde el primer toque, antes de pulsar JUGAR.
+  fullscreenCanvas.style.setProperty("position","fixed","important");
+  fullscreenCanvas.style.setProperty("top","calc(max(16px, env(safe-area-inset-top)) + 8px)","important");
+  fullscreenCanvas.style.setProperty("right","calc(max(16px, env(safe-area-inset-right)) + 176px)","important");
+  fullscreenCanvas.style.setProperty("z-index","10050","important");
+  fullscreenCanvas.style.setProperty("display","block","important");
+  document.body.appendChild(fullscreenCanvas);
   const refreshFullscreen=()=>fullscreenCanvas?.drawState("PANTALLA",document.fullscreenElement?"NORMAL":"COMPLETA",!!document.fullscreenElement);
   fullscreenCanvas?.addEventListener("pointerup",async e=>{
-    e.preventDefault();e.stopPropagation();if(!started)return;
-    try{if(!document.fullscreenElement)await game.requestFullscreen();else await document.exitFullscreen();}
+    e.preventDefault();e.stopPropagation();
+    try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();}
     catch{showToast("La pantalla completa no está disponible en este navegador.");}
   });
   document.addEventListener("fullscreenchange",refreshFullscreen);
@@ -2667,9 +2675,15 @@ function updateElevatorBot(delta){
       }
       // Mantiene el cuerpo sobre la superficie mientras pisa la platea y baja
       // suavemente al abandonarla; el ascenso se refleja en la zancada animada.
-      const supportLift=elevatorBotStepHeight(elevatorBot.position.x,elevatorBot.position.z,elevatorBotTarget.y);
-      const nextY=elevatorBot.position.y+THREE.MathUtils.clamp((elevatorBotTarget.y+supportLift)-elevatorBot.position.y,-3.8*delta,3.8*delta);
-      elevatorBot.position.y=nextY;
+      // El origen del bot representa la planta de los pies. Mantenerlo siempre
+      // apoyado sobre la superficie real evita que el modelo se hunda en el suelo.
+      const footY=elevatorBot.position.y;
+      const supportY=supportHeightAt(elevatorBot.position.x,elevatorBot.position.z,footY+.58);
+      const lowStep=elevatorBotStepHeight(elevatorBot.position.x,elevatorBot.position.z,footY);
+      const targetFootY=Math.max(elevatorBotTarget.y+lowStep,supportY);
+      const nextY=footY+THREE.MathUtils.clamp(targetFootY-footY,-3.8*delta,4.8*delta);
+      elevatorBot.position.y=Math.max(terrainHeight(elevatorBot.position.x,elevatorBot.position.z),nextY);
+      elevatorBot.userData.feetGrounded=Math.abs(elevatorBot.position.y-targetFootY)<.075;
     }
   }
   const actions=elevatorBot.userData.animalActions,moving=!!elevatorBot.userData.botActuallyMoving&&movingPhases.includes(elevatorBotPhase)&&elevatorBotTarget&&elevatorBot.position.distanceTo(elevatorBotTarget)>.12;
