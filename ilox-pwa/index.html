@@ -200,7 +200,21 @@
   </main>
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(error => console.warn("ILOX: no se pudo registrar el modo instalable", error)));
+      window.addEventListener("load", async () => {
+        try {
+          const registration = await navigator.serviceWorker.register("./sw.js", {
+            scope: "./",
+            updateViaCache: "none"
+          });
+          // Busca una versión nueva al abrir ILOX, sin recargar una partida activa.
+          await registration.update();
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") registration.update().catch(() => {});
+          });
+        } catch (error) {
+          console.warn("ILOX: no se pudo comprobar la actualización", error);
+        }
+      });
     }
   </script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
