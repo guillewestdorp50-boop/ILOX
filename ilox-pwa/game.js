@@ -1786,7 +1786,7 @@ function animateElevator(group,now=Date.now()){
 }
 
 // Música original ILOX: melodía instrumental infantil, sintetizada localmente.
-let iloxElevatorAudio=null,iloxElevatorMaster=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0,iloxGuitarShaper=null,iloxDrumNoise=null;
+let iloxElevatorAudio=null,iloxElevatorMaster=null,iloxElevatorMusicTimer=null,iloxElevatorBeat=0,iloxElevatorStartToken=0,iloxGuitarShaper=null,iloxDrumNoise=null;
 const ILOX_ELEVATOR_MELODY=[659.25,0,783.99,880,783.99,659.25,587.33,0,659.25,783.99,987.77,880,783.99,659.25,587.33,523.25];
 const ILOX_ELEVATOR_EMOTES=["😂","🤩","🎉","❤️","⭐","🎵","🕺","🥳","✨","💃","🚀","👏"];
 function iloxPlayNote(freq,when,duration=.22,volume=.055,type="sine"){
@@ -1844,39 +1844,51 @@ function iloxPopClap(t){
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.09,t+.003);gain.gain.exponentialRampToValueAtTime(.0001,t+.075);
   src.connect(filter);filter.connect(gain);gain.connect(iloxElevatorMaster||iloxElevatorAudio.destination);src.start(t);src.stop(t+.08);
 }
-function startIloxElevatorParty(){
+function unlockIloxElevatorAudio(){
   try{
-    const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return;
+    const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return Promise.resolve(false);
     if(!iloxElevatorAudio)iloxElevatorAudio=new AudioClass();
     if(!iloxElevatorMaster){iloxElevatorMaster=iloxElevatorAudio.createGain();iloxElevatorMaster.gain.value=0;iloxElevatorMaster.connect(iloxElevatorAudio.destination);}
-    // Primero limpiar cualquier reproducción anterior; después abrir el bus maestro.
-    // Si se invierte el orden, el fade-out de limpieza deja la nueva canción silenciada.
-    stopIloxElevatorParty(false);iloxElevatorBeat=0;
-    iloxElevatorMaster.gain.cancelScheduledValues(iloxElevatorAudio.currentTime);
-    iloxElevatorMaster.gain.setValueAtTime(0,iloxElevatorAudio.currentTime);
-    iloxElevatorMaster.gain.setTargetAtTime(.82,iloxElevatorAudio.currentTime,.035);
-    if(iloxElevatorAudio.state==="suspended")iloxElevatorAudio.resume().catch(()=>{});
+    if(iloxElevatorAudio.state==="suspended")return iloxElevatorAudio.resume().then(()=>iloxElevatorAudio.state==="running");
+    return Promise.resolve(iloxElevatorAudio.state==="running");
+  }catch(error){console.warn("ILOX: no se pudo habilitar el audio",error);return Promise.resolve(false);}
+}
+// Android y otros navegadores móviles exigen habilitar WebAudio durante un gesto real.
+window.addEventListener("pointerdown",()=>{unlockIloxElevatorAudio();},{capture:true,passive:true});
+function startIloxElevatorParty(){
+  try{
+    stopIloxElevatorParty(false);
+    const token=++iloxElevatorStartToken;
+    iloxElevatorBeat=0;
     if(player){player.userData.iloxDancing=true;player.userData.iloxEmoteNext=0;player.userData.iloxDanceStarted=clock.elapsedTime;}
-    // Pop-funk bailable original: bajo sincopado, batería firme, palmas, guitarra cortada y metales brillantes.
-    const bpm=116,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[220,261.63,293.66,196];
-    iloxElevatorMusicTimer=setInterval(()=>{
-      if(!iloxElevatorAudio||iloxElevatorAudio.state!=="running"||!player?.userData.iloxDancing)return;
-      const step=iloxElevatorBeat++%16,t=iloxElevatorAudio.currentTime+.018;
-      const root=roots[Math.floor(step/4)%4],melody=ILOX_ELEVATOR_MELODY[step];
-      // Pulso pop con bombo a negras, caja y palmas en 2/4, hi-hat constante.
-      if(step%4===0||step===7||step===15)iloxKick(t);
-      if(step===2||step===6||step===10||step===14){iloxSnare(t);iloxPopClap(t+.006);}
-      iloxHat(t,step%4===3);
-      // Guitarra funky a contratiempo y golpes cortos de metales en los acentos.
-      if(step===2||step===6||step===10||step===14)iloxGuitar(t,chords[Math.floor(step/4)]);
-      if(step===0||step===7||step===11)iloxPopBrass(t,chords[Math.floor(step/4)]*2);
-      // Bajo sincopado con notas de paso para que el groove tenga movimiento.
-      if([0,3,4,7,8,11,12,15].includes(step))iloxBass(t,root*(step%4===3?1.5:step%4===0?1:2));
-      if(melody)iloxPlayNote(melody,t+.012,.13,step%4===0?.025:.016,step%4===0?"square":"triangle");
-    },stepMs);
+    unlockIloxElevatorAudio().then(ready=>{
+      if(token!==iloxElevatorStartToken||!player?.userData.iloxDancing)return;
+      if(!ready||!iloxElevatorAudio||iloxElevatorAudio.state!=="running"){
+        console.warn("ILOX: el navegador mantuvo suspendido el audio del ascensor");return;
+      }
+      const now=iloxElevatorAudio.currentTime;
+      iloxElevatorMaster.gain.cancelScheduledValues(now);
+      iloxElevatorMaster.gain.setValueAtTime(0,now);
+      iloxElevatorMaster.gain.setTargetAtTime(.82,now,.035);
+      // Pop-funk bailable original: bajo sincopado, batería firme, palmas, guitarra cortada y metales brillantes.
+      const bpm=116,stepMs=60000/bpm/2,roots=[110,130.81,146.83,98],chords=[220,261.63,293.66,196];
+      iloxElevatorMusicTimer=setInterval(()=>{
+        if(token!==iloxElevatorStartToken||!iloxElevatorAudio||iloxElevatorAudio.state!=="running"||!player?.userData.iloxDancing)return;
+        const step=iloxElevatorBeat++%16,t=iloxElevatorAudio.currentTime+.018;
+        const root=roots[Math.floor(step/4)%4],melody=ILOX_ELEVATOR_MELODY[step];
+        if(step%4===0||step===7||step===15)iloxKick(t);
+        if(step===2||step===6||step===10||step===14){iloxSnare(t);iloxPopClap(t+.006);}
+        iloxHat(t,step%4===3);
+        if(step===2||step===6||step===10||step===14)iloxGuitar(t,chords[Math.floor(step/4)]);
+        if(step===0||step===7||step===11)iloxPopBrass(t,chords[Math.floor(step/4)]*2);
+        if([0,3,4,7,8,11,12,15].includes(step))iloxBass(t,root*(step%4===3?1.5:step%4===0?1:2));
+        if(melody)iloxPlayNote(melody,t+.012,.13,step%4===0?.025:.016,step%4===0?"square":"triangle");
+      },stepMs);
+    }).catch(error=>console.warn("ILOX: falló la activación del audio",error));
   }catch(error){console.warn("ILOX: no se pudo iniciar la banda pop del ascensor",error);}
 }
 function stopIloxElevatorParty(clearDance=true){
+  iloxElevatorStartToken++;
   if(iloxElevatorMusicTimer){clearInterval(iloxElevatorMusicTimer);iloxElevatorMusicTimer=null;}
   if(iloxElevatorMaster&&iloxElevatorAudio){
     const now=iloxElevatorAudio.currentTime;
