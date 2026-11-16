@@ -1005,7 +1005,7 @@ function addEvents() {
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0048, -1.565, 1.565);
     }
   });
-  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){elevatorSelectedFloor=Number(key.dataset.floor)||1;elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator)return;const target=elevatorSelectedFloor;closeElevatorKeypad();beginElevatorTravel(activeElevator,target);}});
+  elevatorPanel?.addEventListener("click",e=>{const key=e.target.closest("[data-floor]");if(key){const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));elevatorSelectedFloor=THREE.MathUtils.clamp(Math.round(Number(key.dataset.floor)||1),1,max);elevatorPanel.querySelectorAll(".elevator-key").forEach(button=>button.classList.toggle("selected",button===key));updateElevatorDisplay();return;}if(e.target.closest("#elevator-ok")){if(!elevatorRiding||!activeElevator)return;const group=activeElevator,target=THREE.MathUtils.clamp(Math.round(elevatorSelectedFloor||1),1,Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40)));const started=beginElevatorTravel(group,target);if(started){elevatorStatus.textContent="Viajando al piso "+target;closeElevatorKeypad();}else{elevatorStatus.textContent="No se pudo iniciar el viaje. Revisá el estado del ascensor.";showToast("No se pudo iniciar el viaje.");}}});
   document.querySelector("#elevator-keypad-close")?.addEventListener("click",closeElevatorKeypad);
   elevatorCallButton?.addEventListener("click",()=>{callElevator(activeElevator);setHudDockOpen(false);});
   elevatorDoorOpenButton?.addEventListener("click",()=>{if(setElevatorDoorState(activeElevator,true,true,true))showToast("Puertas abiertas.");});
@@ -1930,22 +1930,22 @@ function updateElevatorBot(delta){
   }else if(elevatorBotPhase==="approachFront"){
     elevatorBotTarget=outside;
     if(elevatorBot.position.distanceTo(outside)<.35&&!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))beginElevatorTravel(group,1,Date.now(),true);
-    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&!group.userData.elevatorTravel&&elevatorLandingExists(group,12)&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
+    if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&!group.userData.elevatorTravel&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
     elevatorBotTarget=inside;
-    if(elevatorBot.position.distanceTo(inside)<.32&&elevatorLandingExists(group,12)&&elevatorLandingExists(group,1)){
+    if(elevatorBot.position.distanceTo(inside)<.48&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
       if(!group.userData.elevatorTravel&&beginElevatorTravel(group,12,Date.now(),true))setElevatorBotPhase("waitingTop",group,inside);
     }
   }else if(elevatorBotPhase==="waitingTop"){
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
-    if((record.currentFloor||1)===12&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,12)){
+    if((record.currentFloor||1)===12&&!group.userData.elevatorTravel){
       if(!elevatorBotWaitUntil)elevatorBotWaitUntil=Date.now()+6500;
-      if(Date.now()>=elevatorBotWaitUntil&&elevatorLandingExists(group,1)&&beginElevatorTravel(group,1,Date.now(),true))setElevatorBotPhase("rideDown",group,inside);
+      if(Date.now()>=elevatorBotWaitUntil&&beginElevatorTravel(group,1,Date.now(),true))setElevatorBotPhase("rideDown",group,inside);
     }
   }else if(elevatorBotPhase==="rideDown"){
     elevatorBotTarget=inside;elevatorBot.position.copy(inside);
-    if((record.currentFloor||1)===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
+    if((record.currentFloor||1)===1&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&elevatorLandingExists(group,1))setElevatorBotPhase("exit",group,outside);
   }else if(elevatorBotPhase==="exit"){
     elevatorBotTarget=outside;
     if(elevatorBot.position.distanceTo(outside)<.35){elevatorBot.position.copy(outside);setElevatorBotPhase("done",group,outside);}
