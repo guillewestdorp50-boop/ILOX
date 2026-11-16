@@ -15,7 +15,7 @@ const hint = document.querySelector("#hint");
 const toast = document.querySelector("#toast");
 const movePad = document.querySelector("#move-pad");
 const moveKnob = document.querySelector("#move-knob");
-const cameraControls = document.querySelector("#camera-controls");
+const cameraControls = document.querySelector("#hud-controls");
 const cameraLockButton = document.querySelector("#camera-lock");
 const cameraMenuToggle = document.querySelector("#camera-menu-toggle");
 const cameraModePanel = document.querySelector("#camera-mode-panel");
@@ -26,6 +26,10 @@ const cameraFreeUp = document.querySelector("#camera-free-up");
 const cameraFreeDown = document.querySelector("#camera-free-down");
 const jumpButton = document.querySelector("#jump-button");
 const menuToggle = document.querySelector("#menu-toggle");
+const hudBuildButton = document.querySelector("#hud-build");
+const hudConfirmButton = document.querySelector("#hud-confirm");
+const hudDeleteButton = document.querySelector("#hud-delete");
+const elevatorCallLabel = document.querySelector("#elevator-call-label");
 const menuPanel = document.querySelector("#menu-panel");
 const buildPanel = document.querySelector("#build-panel");
 const quickSaveButton = document.querySelector("#quick-save");
@@ -149,12 +153,12 @@ function stairSurfaceHeight(group,x,z,feet=Infinity){
 function supportHeightAt(x,z,feet=Infinity,ignore=null){
   const f=foundationAt(x,z);
   let top=f?(f.kind==="pool"&&Math.abs(x-f.x)<(f.poolWidth||6)/2-.3&&Math.abs(z-f.z)<(f.poolDepth||6)/2-.3?f.y-1.936:f.y+(f.kind==="platea"?.3:.22)):terrainHeight(x,z);
-  for(const elevator of buildGroups){if(elevator===ignore||elevator.userData.buildRecord?.kind!=="elevator")continue;const cabin=elevator.userData.elevatorCabin;if(!cabin)continue;const floorY=elevator.position.y+cabin.position.y+.16;if(Math.abs(x-elevator.position.x)<1.18&&Math.abs(z-elevator.position.z)<1.18&&floorY<=feet+.35&&floorY>top)top=floorY;}
+  for(const elevator of buildGroups){if(elevator===ignore||elevator.userData.buildRecord?.kind!=="elevator")continue;const cabin=elevator.userData.elevatorCabin;if(!cabin)continue;const floorY=elevator.position.y+cabin.position.y+.16;if(Math.abs(x-elevator.position.x)<2.96&&Math.abs(z-elevator.position.z)<2.96&&floorY<=feet+.35&&floorY>top)top=floorY;}
   for(const g of buildGroups){
     if(g===ignore)continue;
     const kind=g.userData.buildRecord?.kind;
     if(!kind||kind==="water")continue;
-    if((kind==="platea"||kind==="roof")&&buildRecords.some(e=>e.kind==="elevator"&&g.position.y>e.y+.5&&Math.abs(x-e.x)<1.62&&Math.abs(z-e.z)<1.62))continue;
+    if((kind==="platea"||kind==="roof")&&buildRecords.some(e=>e.kind==="elevator"&&g.position.y>e.y+.5&&Math.abs(x-e.x)<3.08&&Math.abs(z-e.z)<3.08))continue;
     if(kind==="stairs"){
       const stairTop=stairSurfaceHeight(g,x,z,feet);
       if(stairTop!==null&&stairTop>top)top=stairTop;
@@ -1146,7 +1150,6 @@ function addEvents() {
       showToast("Movimiento desbloqueado");
     }
   });
-  const buildToggle = document.querySelector("#build-toggle");
   const viewToggle = document.querySelector("#view-toggle");
   const categorySelect = document.querySelector("#build-category");
   const buildToolsHost = document.querySelector("#build-tools");
@@ -1170,7 +1173,7 @@ function addEvents() {
       button.addEventListener("click",()=>{
         if(kind==="rotate"){buildRotation=(buildRotation+Math.PI/2)%(Math.PI*2);showToast("Pieza girada");return;}
         buildTool=kind;buildToolsHost.querySelectorAll(".build-tool").forEach(item=>item.classList.toggle("selected",item===button));
-        doorRotateControl?.classList.toggle("hidden",!["door-solid","door-brick","door"].includes(kind));
+        doorRotateControl?.classList.toggle("hidden",!["door-solid","door-brick","door"].includes(kind));hudDeleteButton.classList.toggle("active",kind==="erase");
         document.querySelector("#build-help").textContent=kind==="erase"?"Tocá una construcción para eliminar esa pieza.":(kind==="door"||kind==="door-solid"||kind==="door-brick")?"Puerta completa prediseñada: columnas de bloques incorporadas. Colocala antes de levantar las paredes.":kind==="water"?"Llená la pileta completa con agua.":kind==="platea"?"La platea aplana el terreno y se alinea con las vecinas.":kind.startsWith("pool-")?"Pileta con base propia y 2 metros de profundidad.":"Primero colocá una PLATEA; después construí sobre ella.";
         buildPanel.classList.add("hidden");
       });buildToolsHost.appendChild(button);
@@ -1266,7 +1269,7 @@ function addEvents() {
     finally{button.disabled=false;input.focus();}
   });
   document.querySelector("#change-avatar").addEventListener("click",()=>{
-    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");menuToggle.classList.add("hidden");avatarSelect.classList.remove("hidden");
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");cameraControls.classList.add("hidden");avatarSelect.classList.remove("hidden");
     enterWorldButton.innerHTML="APLICAR PERSONAJE <span>→</span>";
     document.querySelectorAll(".avatar-option").forEach(option=>option.classList.toggle("selected",option.dataset.avatar===selectedAvatar));
   });
@@ -1277,19 +1280,20 @@ function addEvents() {
     for(const group of buildGroups)scene.remove(group);buildGroups.length=0;buildRecords.length=0;refreshTerrainSurface();persistBuilds();
     menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");showToast("Se eliminaron todas las construcciones.");
   });
-  document.querySelector("#erase-parts").addEventListener("click",()=>{
-    buildMode=true;buildTool="erase";doorRotateControl?.classList.add("hidden");buildPanel.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
-    buildToggle.textContent="✓ TERMINAR";renderBuildTools(categorySelect.value);showToast("Tocá cada pieza que quieras eliminar.");
-  });
+  function setBuildMode(enabled,tool=buildTool,showPanel=enabled,notify=true){
+    buildMode=enabled;buildTool=tool;if(enabled)renderBuildTools(categorySelect.value);
+    buildPanel.classList.toggle("hidden",!enabled||!showPanel);doorRotateControl?.classList.add("hidden");
+    menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");
+    hudConfirmButton.disabled=!enabled;hudDeleteButton.classList.toggle("active",enabled&&tool==="erase");
+    cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(enabled?9.5:5.4));if(enabled&&!firstPersonBuild)pitch=.48;
+    viewToggle.classList.toggle("hidden",!enabled);viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
+    document.querySelector("#build-help").textContent=enabled?(tool==="erase"?"Tocá cada pieza que quieras eliminar.":"Elegí una categoría y una pieza. Tocá para colocar; todo encaja en cuadrícula."):"Explorá el mundo y construí.";
+    if(notify)showToast(!enabled?"¡A explorar!":tool==="erase"?"Modo eliminación activado":"Modo construcción activado");
+  }
+  hudBuildButton.addEventListener("click",()=>{if(!buildMode||buildTool==="erase")setBuildMode(true,"block",true);else buildPanel.classList.toggle("hidden");});
+  hudConfirmButton.addEventListener("click",()=>{if(buildMode)setBuildMode(false,buildTool,false);});
+  hudDeleteButton.addEventListener("click",()=>setBuildMode(true,"erase",false));
   viewToggle.addEventListener("click",()=>{applyCameraMode(cameraMode==="first"?"third":"first");cameraDistance=firstPersonBuild?0.08:9.5;});
-  buildToggle.addEventListener("click",()=>{
-    buildMode=!buildMode;buildPanel.classList.toggle("hidden",!buildMode);doorRotateControl?.classList.add("hidden");menuPanel.classList.add("hidden");menuToggle.setAttribute("aria-expanded","false");buildToggle.textContent=buildMode?"✓ TERMINAR":"🧱 Construir";
-    cameraDistance=cameraMode==="first"?0.08:(cameraMode==="second"?3:(buildMode?9.5:5.4));
-    if(buildMode&&!firstPersonBuild)pitch=.48;viewToggle.classList.toggle("hidden",!buildMode);
-    viewToggle.textContent=firstPersonBuild?"👁 PRIMERA PERSONA":"⬆ VISTA AÉREA";
-    document.querySelector("#build-help").textContent=buildMode?"Elegí una categoría y una pieza. Tocá para colocar; todo encaja en cuadrícula.":"Explorá el mundo y construí.";
-    showToast(buildMode?"Modo construcción activado":"¡A explorar!");
-  });
   document.querySelectorAll(".block-color").forEach(button => {
     button.addEventListener("click", () => {
       selectedBlockColor = Number(button.dataset.color);
@@ -1378,7 +1382,7 @@ function createBuildPiece(record, options = {}) {
   if(kind==="platea"){
     const slab=mat(0xb8b9b3,.88),elevator=buildRecords.find(e=>e.kind==="elevator"&&baseY>e.y+.5);
     if(elevator&&Math.abs(x-elevator.x)<4.7&&Math.abs(z-elevator.z)<4.7){
-      const dx=elevator.x-x,dz=elevator.z-z,a=rotation||0,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=1.62,L=-3,R=3,B=-3,F=3;
+      const dx=elevator.x-x,dz=elevator.z-z,a=rotation||0,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=3.08,L=-3,R=3,B=-3,F=3;
       const hl=Math.max(L,lx-half),hr=Math.min(R,lx+half),hb=Math.max(B,lz-half),hf=Math.min(F,lz+half);
       if(hl>L)box(hl-L,.3,6,slab,(L+hl)/2,.15,0);
       if(R>hr)box(R-hr,.3,6,slab,(hr+R)/2,.15,0);
@@ -1427,35 +1431,34 @@ function createBuildPiece(record, options = {}) {
     group.userData.isPool=true;group.userData.isFoundation=true;group.userData.buildHeight=.22;
   }
   if(kind==="floor"){
-    const shaftOverlap=buildRecords.some(e=>e.kind==="elevator"&&baseY>e.y+.5&&Math.abs(x-e.x)<2.35&&Math.abs(z-e.z)<2.35);
+    const shaftOverlap=buildRecords.some(e=>e.kind==="elevator"&&baseY>e.y+.5&&Math.abs(x-e.x)<3.35&&Math.abs(z-e.z)<3.35);
     if(!shaftOverlap)box(1.5,.16,1.5,wood,0,.08,0);
   }
   if(kind==="elevator"){
     const shaftHeight=Math.max(3,Math.min(120,(record.floorCount||40)*3));
     const steel=mat(0x56636b,.42,.72),glassPanel=mat(0x78c9d8,.22,.25),cabinMat=mat(0x9ba8aa,.48,.48),dark=mat(0x25343b,.6,.35);
     // Guías verticales y cuatro montantes dejan el hueco central libre.
-    for(const sx of [-1.55,1.55])for(const sz of [-1.55,1.55]){
-      box(.16,shaftHeight,.16,steel,sx,shaftHeight/2,sz);
-      box(.08,shaftHeight,.08,dark,sx*.72,shaftHeight/2,sz*.72);
+    for(const sx of [-2.92,2.92])for(const sz of [-2.92,2.92]){
+      box(.16,shaftHeight,.16,steel,sx,shaftHeight/2,sz);box(.08,shaftHeight,.08,dark,sx*.94,shaftHeight/2,sz*.94);
     }
-    box(3.25,.16,.16,steel,0,shaftHeight,0);
+    box(6,.16,.16,steel,0,shaftHeight,0);box(.16,.16,6,steel,0,shaftHeight,0);
     const cabin=new THREE.Group();cabin.name="ilox-elevator-cabin";
-    const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(2.55,.16,2.55),cabinMat);cabinFloor.position.y=.08;cabinFloor.userData.elevatorFloor=true;cabin.add(cabinFloor);
-    for(const sx of [-1.22,1.22]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,2.5),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
-    const back=new THREE.Mesh(new THREE.BoxGeometry(2.5,2.65,.08),glassPanel);back.position.set(0,1.4,-1.22);cabin.add(back);
-    const roof=new THREE.Mesh(new THREE.BoxGeometry(2.55,.12,2.55),cabinMat);roof.position.y=2.75;cabin.add(roof);
-    const consoleBody=new THREE.Mesh(new THREE.BoxGeometry(.38,.58,.12),dark);consoleBody.position.set(.91,1.35,.99);cabin.add(consoleBody);
-    const consoleFace=new THREE.Mesh(new THREE.BoxGeometry(.29,.47,.035),mat(0x173e48,.3,.3));consoleFace.position.set(.91,1.36,1.065);consoleFace.userData.elevatorConsole=true;cabin.add(consoleFace);
-    const consoleLight=new THREE.Mesh(new THREE.BoxGeometry(.12,.07,.025),mat(0x63f4c4,.25,.2));consoleLight.position.set(.91,1.53,1.09);cabin.add(consoleLight);
-    const doorL=new THREE.Mesh(new THREE.BoxGeometry(1.22,2.55,.08),steel),doorR=doorL.clone();
-    doorL.position.set(-.61,1.36,1.22);doorR.position.set(.61,1.36,1.22);cabin.add(doorL,doorR);
+    const cabinFloor= new THREE.Mesh(new THREE.BoxGeometry(6,.16,6),cabinMat);cabinFloor.position.y=.08;cabinFloor.userData.elevatorFloor=true;cabin.add(cabinFloor);
+    for(const sx of [-2.92,2.92]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,5.84),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
+    const back=new THREE.Mesh(new THREE.BoxGeometry(5.84,2.65,.08),glassPanel);back.position.set(0,1.4,-2.92);cabin.add(back);
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(6,.12,6),cabinMat);roof.position.y=2.75;cabin.add(roof);
+    const consoleBody=new THREE.Mesh(new THREE.BoxGeometry(.38,.58,.12),dark);consoleBody.position.set(2.42,1.35,2.48);cabin.add(consoleBody);
+    const consoleFace=new THREE.Mesh(new THREE.BoxGeometry(.29,.47,.035),mat(0x173e48,.3,.3));consoleFace.position.set(2.42,1.36,2.555);consoleFace.userData.elevatorConsole=true;cabin.add(consoleFace);
+    const consoleLight=new THREE.Mesh(new THREE.BoxGeometry(.12,.07,.025),mat(0x63f4c4,.25,.2));consoleLight.position.set(2.42,1.53,2.58);cabin.add(consoleLight);
+    const doorL=new THREE.Mesh(new THREE.BoxGeometry(2.9,2.55,.08),steel),doorR=doorL.clone();
+    doorL.position.set(-1.45,1.36,2.92);doorR.position.set(1.45,1.36,2.92);cabin.add(doorL,doorR);
     cabin.userData.doorLeft=doorL;cabin.userData.doorRight=doorR;
     cabin.position.y=.18;group.add(cabin);
     group.userData.elevatorCabin=cabin;group.userData.elevatorConsole=consoleFace;group.userData.elevatorDoorOpen=true;
     const landingDoors=[];
     for(let floor=1;floor<=(record.floorCount||40);floor++){
-      const offset=(floor-1)*3,left=new THREE.Mesh(new THREE.BoxGeometry(1.22,2.55,.08),steel),right=left.clone();
-      left.position.set(-.61,1.36+offset,1.55);right.position.set(.61,1.36+offset,1.55);
+      const offset=(floor-1)*3,left=new THREE.Mesh(new THREE.BoxGeometry(2.9,2.55,.08),steel),right=left.clone();
+      left.position.set(-1.45,1.36+offset,3.08);right.position.set(1.45,1.36+offset,3.08);
       left.castShadow=right.castShadow=true;group.add(left,right);landingDoors.push({floor,left,right});
     }
     group.userData.elevatorLandingDoors=landingDoors;
@@ -1749,7 +1752,7 @@ function updateElevators(delta){
     const score=d+verticalGap*2;
     if(d<5.5&&verticalGap<1.35&&score<nearestDistance){nearest=group;nearestFloor=floor;nearestDistance=score;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
-    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,group.userData.buildRecord?.currentFloor||1)&&d<1.05&&Math.abs(player.position.y-level)<.65){
+    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&elevatorLandingExists(group,group.userData.buildRecord?.currentFloor||1)&&d<2.65&&Math.abs(player.position.y-level)<.65){
       activeElevator=group;elevatorRiding=true;
       player.position.set(group.position.x,level,group.position.z);playerVerticalVelocity=0;playerGrounded=true;
     }
@@ -1758,7 +1761,7 @@ function updateElevators(delta){
     activeElevator=nearest;
     if(nearest){
       elevatorCallButton?.classList.remove("hidden");
-      if(elevatorCallButton){elevatorCallButton.disabled=!!nearest.userData.elevatorTravel;elevatorCallButton.textContent=nearest.userData.elevatorTravel?"ASCENSOR EN MOVIMIENTO":"LLAMAR ASCENSOR · PLANTA "+nearestFloor;}
+      if(elevatorCallButton){elevatorCallButton.disabled=!!nearest.userData.elevatorTravel;if(elevatorCallLabel)elevatorCallLabel.textContent=nearest.userData.elevatorTravel?"EN VIAJE":"PISO "+nearestFloor;}
     }else elevatorCallButton?.classList.add("hidden");
   }else elevatorCallButton?.classList.add("hidden");
   if(!elevatorRiding)closeElevatorKeypad();
@@ -2302,7 +2305,7 @@ function roofHasFourWalls(area){
   return sides.every(Boolean);
 }
 function buildFootprint(kind){
-  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],elevator:[3.2,3.2],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,4.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
+  const sizes={block:[1.5,1.5],brick:[1.5,1.5],floor:[1.5,1.5],roof:[1.5,1.5],elevator:[6,6],wall:[1.5,.16],door:[4.5,1.5],window:[1.5,.16],stairs:[1.5,4.5],chair:[.95,.9],table:[1.4,1.2],bed:[1.5,1.5],sofa:[1.5,.72],lamp:[.56,.56],gate:[1.5,.12],fence:[1.5,.12],pen:[1.5,.12],tree:[1.2,1.2],rock:[1.5,1.5],sheep:[1.2,1.2],cow:[1.5,1.5],horse:[1.8,1.5],chicken:[.8,.8],pig:[1.1,1.1],goat:[1.1,1.1],fox:[1.2,1.2],person:[1,1],robot:[1.2,1.2],trex:[2.4,3]};
   return sizes[kind]||[1.5,1.5];
 }
 function snapDoorToPlateaGrid(x,z,rotation=0){
