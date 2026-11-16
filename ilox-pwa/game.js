@@ -1928,21 +1928,40 @@ async function renderMultiplayerWorldList(){
       host.append(empty,create);return;
     }
     for(const world of worlds){
-      const button=document.createElement("button");button.type="button";button.className="mp-world-row";
+      const row=document.createElement("div");row.className="mp-world-row";
+      const enter=document.createElement("button");enter.type="button";enter.className="mp-world-enter";
       const info=document.createElement("div");
       const title=document.createElement("strong");title.textContent=world.name;
       const meta=document.createElement("small");meta.textContent=world.role==="owner"?"Tu mundo · propietario":"Mundo compartido";
       info.append(title,meta);
       const action=document.createElement("span");action.textContent=activeMultiplayerWorldId===world.id?"CONECTADO":"ENTRAR →";
-      button.append(info,action);
-      button.addEventListener("click",async()=>{
+      enter.append(info,action);
+      enter.addEventListener("click",async()=>{
         try{
           document.querySelector("#multiplayer-status").textContent="Abriendo "+world.name+"…";
           await enterMultiplayerWorld(world.id);
           document.querySelector("#multiplayer-dialog").classList.add("hidden");
         }catch(error){showMultiplayerError(error);}
       });
-      host.appendChild(button);
+      row.appendChild(enter);
+      if(world.role==="owner"){
+        const remove=document.createElement("button");remove.type="button";remove.className="mp-world-delete";remove.textContent="ELIMINAR";
+        remove.disabled=activeMultiplayerWorldId===world.id;
+        remove.title=remove.disabled?"Salí de este mundo antes de eliminarlo":"Eliminar este mundo y todas sus construcciones";
+        remove.addEventListener("click",async()=>{
+          if(activeMultiplayerWorldId===world.id){showToast("Primero salí del mundo para poder eliminarlo.");return;}
+          const accepted=confirm('¿Eliminar definitivamente el mundo "'+world.name+'" y todas sus construcciones? Esta acción no se puede deshacer.');
+          if(!accepted)return;
+          remove.disabled=true;
+          try{
+            await Multiplayer.deleteWorld(world.id);
+            showToast('Mundo "'+world.name+'" eliminado.');
+            await renderMultiplayerWorldList();
+          }catch(error){remove.disabled=false;showToast(error.message||"No se pudo eliminar el mundo.");}
+        });
+        row.appendChild(remove);
+      }
+      host.appendChild(row);
     }
   }catch(error){host.innerHTML='<div class="mp-permission-empty">No se pudieron cargar tus partidas. Revisá la conexión.</div>';console.warn(error);}
 }
