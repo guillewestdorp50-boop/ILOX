@@ -1475,11 +1475,13 @@ function createBuildPiece(record, options = {}) {
     for(const sx of [-2.92,2.92]){const side=new THREE.Mesh(new THREE.BoxGeometry(.08,2.65,5.84),glassPanel);side.position.set(sx,1.4,0);cabin.add(side);}
     const back=new THREE.Mesh(new THREE.BoxGeometry(5.84,2.65,.08),glassPanel);back.position.set(0,1.4,-2.92);cabin.add(back);
     const roof=new THREE.Mesh(new THREE.BoxGeometry(6,.12,6),cabinMat);roof.position.y=2.75;cabin.add(roof);
-    const consoleBody=new THREE.Mesh(new THREE.BoxGeometry(.38,.58,.12),dark);consoleBody.position.set(2.42,1.35,2.48);cabin.add(consoleBody);
-    const consoleFace=new THREE.Mesh(new THREE.BoxGeometry(.29,.47,.035),mat(0x173e48,.3,.3));consoleFace.position.set(2.42,1.36,2.555);consoleFace.userData.elevatorConsole=true;cabin.add(consoleFace);
-    const consoleLight=new THREE.Mesh(new THREE.BoxGeometry(.12,.07,.025),mat(0x63f4c4,.25,.2));consoleLight.position.set(2.42,1.53,2.58);cabin.add(consoleLight);
     const doorL=new THREE.Mesh(new THREE.BoxGeometry(2.9,2.55,.08),steel),doorR=doorL.clone();
     doorL.position.set(-1.45,1.36,2.92);doorR.position.set(1.45,1.36,2.92);cabin.add(doorL,doorR);
+    // El mando verde queda montado directamente sobre la hoja derecha de la puerta.
+    // Al deslizarse la puerta, el mando se desplaza con ella y nunca queda flotando en la cabina.
+    const consoleBody=new THREE.Mesh(new THREE.BoxGeometry(.42,.62,.12),dark);consoleBody.position.set(-.78,1.36,.09);doorR.add(consoleBody);
+    const consoleFace=new THREE.Mesh(new THREE.BoxGeometry(.33,.51,.035),mat(0x173e48,.3,.3));consoleFace.position.set(-.78,1.36,.17);consoleFace.userData.elevatorConsole=true;doorR.add(consoleFace);
+    const consoleLight=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.055,24),mat(0x63f4c4,.2,.1));consoleLight.rotation.x=Math.PI/2;consoleLight.position.set(-.78,1.51,.205);doorR.add(consoleLight);
     cabin.userData.doorLeft=doorL;cabin.userData.doorRight=doorR;
     cabin.position.y=.18;group.add(cabin);
     group.userData.elevatorCabin=cabin;group.userData.elevatorConsole=consoleFace;group.userData.elevatorDoorOpen=false;
