@@ -28,5 +28,5 @@ document.querySelector("#install").addEventListener("click",async()=>{
  if(!installPrompt){notify("En tu navegador, abrí el menú y elegí “Instalar aplicación” o “Agregar a pantalla de inicio”.");return;}
  installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;
 });
-if("serviceWorker" in navigator && location.protocol.startsWith("http"))window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(error=>console.warn("ILOX: service worker no disponible",error)));
+
 const initial=location.hash.slice(1);showView(views.includes(initial)?initial:"inicio");
