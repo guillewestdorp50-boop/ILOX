@@ -1697,24 +1697,33 @@ function updateElevators(delta){
     const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
     if(d<5.5&&d<nearestDistance){nearest=group;nearestDistance=d;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
-    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.02&&Math.abs(player.position.y-level)<.8){
-      activeElevator=group;elevatorRiding=true;player.position.set(group.position.x,level,group.position.z);
+    if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&d<1.12&&Math.abs(player.position.y-level)<.8){
+      activeElevator=group;elevatorRiding=true;elevatorPanelDismissed=false;
+      elevatorFloorSelect.dataset.currentFloor="";
+      player.position.set(group.position.x,level,group.position.z);
       showToast("Entraste en la cabina. Elegí tu planta.");
     }
   }
   if(nearest!==activeElevator&&!elevatorRiding)activeElevator=nearest;
   if(!nearest)elevatorPanelDismissed=false;
-  const panelOpen=!!nearest&&started&&!buildMode&&!elevatorPanelDismissed;
+  const panelOpen=!!nearest&&elevatorRiding&&activeElevator===nearest&&started&&!buildMode&&!elevatorPanelDismissed;
   elevatorPanel?.classList.toggle("hidden",!panelOpen);
   if(panelOpen&&nearest){
     activeElevator=nearest;
     const rec=nearest.userData.buildRecord;
-    if(elevatorFloorSelect.options.length!==rec.floorCount){
+    const floorCount=rec.floorCount||40,elevatorKey=String(rec.id||rec.x+":"+rec.z);
+    if(elevatorFloorSelect.options.length!==floorCount||elevatorFloorSelect.dataset.elevatorKey!==elevatorKey){
       elevatorFloorSelect.innerHTML="";
-      for(let floor=1;floor<=(rec.floorCount||40);floor++){const option=document.createElement("option");option.value=String(floor);option.textContent=floor===1?"PLANTA 1 · BAJA":("PLANTA "+floor);elevatorFloorSelect.appendChild(option);}
+      for(let floor=1;floor<=floorCount;floor++){const option=document.createElement("option");option.value=String(floor);option.textContent=floor===1?"PLANTA 1 · BAJA":("PLANTA "+floor);elevatorFloorSelect.appendChild(option);}
+      elevatorFloorSelect.dataset.elevatorKey=elevatorKey;
+      elevatorFloorSelect.dataset.currentFloor="";
     }
-    if(!nearest.userData.elevatorTravel)elevatorFloorSelect.value=String(rec.currentFloor||1);
-    elevatorStatus.textContent=nearest.userData.elevatorTravel?"Ascensor en movimiento…":elevatorRiding?"Estás dentro de la cabina. Elegí destino.":"Ascensor detenido. Acercate a la puerta para entrar.";
+    const floorNow=String(rec.currentFloor||1);
+    if(elevatorFloorSelect.dataset.currentFloor!==floorNow){
+      elevatorFloorSelect.value=floorNow;
+      elevatorFloorSelect.dataset.currentFloor=floorNow;
+    }
+    elevatorStatus.textContent=nearest.userData.elevatorTravel?"Ascensor en movimiento…":"Estás dentro de la cabina. Elegí tu destino.";
     elevatorGoButton.disabled=!!nearest.userData.elevatorTravel;
     elevatorGoButton.textContent=nearest.userData.elevatorTravel?"EN MOVIMIENTO":"CERRAR PUERTAS Y VIAJAR";
   }
