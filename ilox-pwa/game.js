@@ -1140,6 +1140,8 @@ function addEvents() {
     // Conservamos el ángulo orbital al cambiar de cámara: las tres vistas
     // y el bloqueo comparten exactamente el mismo control libre.
     document.querySelectorAll(".camera-mode").forEach(button => button.classList.toggle("selected", button.dataset.camera === mode));
+    cameraFreeQuickButton?.classList.toggle("active",cameraFreeMode);
+    cameraFreeQuickButton?.setAttribute("aria-pressed",String(cameraFreeMode));
     const buildView = document.querySelector("#view-toggle");
     if (buildView) buildView.textContent = mode === "first" ? "👁 PRIMERA PERSONA" : mode === "free" ? "✈ CÁMARA LIBRE" : "⬆ VISTA AÉREA";
     showToast(mode === "first" ? "Cámara en primera persona" : mode === "second" ? "Cámara cercana: segunda persona" : mode === "free" ? "Cámara libre: el personaje queda independiente" : "Cámara en tercera persona");
