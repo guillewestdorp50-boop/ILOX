@@ -460,3 +460,7 @@ body{background:#201747;color:#fff}
 
 /* La barra no captura gestos; el desplegable de cámara sí debe recibir toques. */
 .camera-mode-panel{pointer-events:auto}
+
+/* El botón contextual del ascensor queda a la derecha para no tapar el menú. */
+#elevator-call-button{left:auto;right:10px;top:calc(70px + env(safe-area-inset-top))}
+@media(max-width:600px){#elevator-call-button{left:auto;right:8px;top:calc(64px + env(safe-area-inset-top))}}
