@@ -3021,7 +3021,6 @@ function animate() {
     if(inWater){playerVerticalVelocity=0;const target=surface-.95+Math.sin(clock.elapsedTime*2.4)*.045;player.position.y+=(target-player.position.y)*Math.min(1,delta*3.5);playerGrounded=false;player.userData.isSwimming=true;}
     else{player.userData.isSwimming=false;const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y);playerVerticalVelocity-=20*delta;player.position.y+=playerVerticalVelocity*delta;if(player.position.y<=groundY){player.position.y=groundY;playerVerticalVelocity=0;playerGrounded=true;}else playerGrounded=false;}
     const moving = inputLength > 0.08;
-    if(player.userData.iloxDancing)updateIloxElevatorParty(delta);
     if (player.userData.isRiggedAvatar) {
       player.userData.mixer?.update(delta);
       setRiggedAvatarMotion(player, moving && !player.userData.isSwimming);
@@ -3060,6 +3059,7 @@ function animate() {
     player.userData.legs?.forEach((leg,i) => { leg.rotation.x = i===0 ? swing : -swing; });
     player.userData.arms?.forEach((arm,i) => { arm.rotation.x = swimmingNow ? Math.sin(player.userData.walkPhase*1.8+i*Math.PI)*.72 : i===0 ? -swing*0.82 : swing*0.82; arm.rotation.z = i===0 ? -0.035 : 0.035; });
     if(player.userData.toonTail){player.userData.toonTail.rotation.y=Math.sin(clock.elapsedTime*2.2)*.42;player.userData.toonTail.rotation.x=Math.sin(clock.elapsedTime*1.7)*.16;}
+    if(player.userData.iloxDancing)updateIloxElevatorParty(delta);
     // La cámara nunca modifica la orientación del personaje.
     player.rotation.y = playerHeading;
     if(player.userData.iloxDancing)player.rotation.y=playerHeading+Math.sin(clock.elapsedTime*4.6)*.10;
