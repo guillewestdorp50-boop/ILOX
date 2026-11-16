@@ -2713,9 +2713,20 @@ function findElevatorBotMove(x,z,dx,dz,step,feet){
   return best;
 }
 function setElevatorBotPhase(phase,group,target){
+  const previous=elevatorBotPhase;
   elevatorBotPhase=phase;elevatorBotElevator=group;elevatorBotTarget=target?target.clone():null;
   if(!["waitingTop","clubDance","emote"].includes(phase))elevatorBotWaitUntil=0;
   if(phase!=="emote")elevatorBotEmoteUntil=0;
+  if(previous!==phase&&["approach","approachFront","board","boardedWait","waitingTop","rideDown","exit","clubApproach","clubEnter","clubDance","clubExit","emote","waitingCommand"].includes(phase)){
+    const record=group?.userData?.buildRecord;
+    window.__iloxReportRuntimeEvent?.("BOT_PHASE_"+phase.toUpperCase(),"El bot cambió de etapa en su misión.",{
+      bot:{phase,previous,position:{x:Number(elevatorBot?.position.x?.toFixed(2)),y:Number(elevatorBot?.position.y?.toFixed(2)),z:Number(elevatorBot?.position.z?.toFixed(2))},
+        target:target?{x:Number(target.x.toFixed(2)),y:Number(target.y.toFixed(2)),z:Number(target.z.toFixed(2))}:null,
+        modelReady:!!elevatorBot?.userData?.animalModel,modelVisible:elevatorBot?.visible!==false,
+        controller:group? (elevatorBotIsController(record)?"local":"remote"):"none",
+        elevator:record?{x:record.x,z:record.z,floor:record.currentFloor||1,targetFloor:record.targetFloor||null,travel:!!group.userData.elevatorTravel,doorsOpen:!!group.userData.elevatorDoorOpen}:null}
+    });
+  }
 }
 function updateElevatorBot(delta){
   if(!elevatorBot)return;
@@ -2786,6 +2797,7 @@ function updateElevatorBot(delta){
     // coordenada aproximada del mundo.
     elevatorBotTarget.copy(cabin.localToWorld(new THREE.Vector3(0,.16,.75)));
     elevatorBot.position.copy(elevatorBotTarget);
+    const floorY=group.position.y+cabin.position.y+.16;
     const atBoardingMark=Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.9&&Math.abs(elevatorBot.position.y-floorY)<1.5;
     if(Date.now()>=elevatorBotWaitUntil&&atBoardingMark&&!group.userData.elevatorTravel&&beginElevatorTravel(group,botTopFloor,Date.now(),true)){
       setElevatorBotPhase("waitingTop",group,inside);
@@ -2850,6 +2862,14 @@ function updateElevatorBot(delta){
         elevatorBot.position.x=move.x;elevatorBot.position.z=move.z;
         elevatorBot.rotation.y=Math.atan2(Math.cos(move.angle),Math.sin(move.angle));
         elevatorBot.userData.botActuallyMoving=true;
+      }else{
+        const nearby=getNearbyBuildGroups(elevatorBot.position.x,elevatorBot.position.z,4);
+        window.__iloxReportRuntimeEvent?.("BOT_BLOCKED_"+elevatorBotPhase.toUpperCase(),"El bot no encontró un paso libre hacia su objetivo.",{
+          bot:{phase:elevatorBotPhase,position:{x:Number(elevatorBot.position.x.toFixed(2)),y:Number(elevatorBot.position.y.toFixed(2)),z:Number(elevatorBot.position.z.toFixed(2))},
+            target:{x:Number(elevatorBotTarget.x.toFixed(2)),y:Number(elevatorBotTarget.y.toFixed(2)),z:Number(elevatorBotTarget.z.toFixed(2))},distance:Number(dist.toFixed(2)),
+            obstacles:[...nearby].slice(0,12).map(item=>({kind:item.userData.buildRecord?.kind||"unknown",x:Number(item.position.x.toFixed(2)),z:Number(item.position.z.toFixed(2))}))},
+          elevator:{x:record.x,z:record.z,floor:record.currentFloor||1,travel:!!group.userData.elevatorTravel,doorsOpen:!!group.userData.elevatorDoorOpen}
+        });
       }
       // Mantiene el cuerpo sobre la superficie mientras pisa la platea y baja
       // suavemente al abandonarla; el ascenso se refleja en la zancada animada.
