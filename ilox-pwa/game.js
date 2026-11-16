@@ -1472,7 +1472,7 @@ function createBuildPiece(record, options = {}) {
     let opening=null;
     if(record.roofOpening){
       const dx=elevator?elevator.x-x:0,dz=elevator?elevator.z-z:0,a=rotation||0;
-      const lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=1.8;
+      const lx=dx*Math.cos(a)-dz*Math.sin(a)+dz*Math.cos(a),lz=dx*Math.sin(a)+dz*Math.cos(a),half=3.08;
       if(!elevator||(Math.abs(lx)<rw/2+half&&Math.abs(lz)<rd/2+half))opening={left:lx-half,right:lx+half,back:lz-half,front:lz+half};
     }
     if(!opening){const roofPiece=box(rw,.16,rd,roofMat,0,.08,0);roofPiece.rotation.z=-.12;}
