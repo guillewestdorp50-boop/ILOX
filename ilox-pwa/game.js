@@ -3865,6 +3865,29 @@ function animate() {
       }
       return false;
     };
+    const resolveCeiling=(fromFeet,toFeet)=>{
+      if(toFeet<=fromFeet)return {feet:toFeet,hit:null};
+      let resolved=toFeet,hit=null;
+      for(const group of getNearbyBuildGroups(player.position.x,player.position.z,.4)){
+        const kind=group.userData.buildRecord?.kind;
+        if(!SOLID_BUILD_KINDS.has(kind)||!group.visible)continue;
+        if(kind==="elevator"&&elevatorRiding&&activeElevator===group)continue;
+        if(kind==="pool"&&player.position.y>=(group.userData.buildRecord.y||0)+.22)continue;
+        group.updateMatrixWorld(true);
+        group.traverse(mesh=>{
+          if(!mesh.isMesh||!mesh.visible||mesh.userData.water||(mesh.userData.elevatorFloor&&elevatorRiding&&activeElevator===group))return;
+          const geometry=mesh.geometry;if(!geometry.boundingBox)geometry.computeBoundingBox();
+          const bounds=geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+          if(player.position.x+.28<=bounds.min.x||player.position.x-.28>=bounds.max.x||player.position.z+.28<=bounds.min.z||player.position.z-.28>=bounds.max.z)return;
+          const previousTop=fromFeet+PLAYER_HEIGHT,nextTop=toFeet+PLAYER_HEIGHT;
+          if(previousTop<=bounds.min.y+.02&&nextTop>bounds.min.y){
+            const safeFeet=bounds.min.y-PLAYER_HEIGHT-.02;
+            if(safeFeet>=resolved){resolved=safeFeet;hit={kind,x:Number(player.position.x.toFixed(3)),z:Number(player.position.z.toFixed(3)),ceilingY:Number(bounds.min.y.toFixed(3))};}
+          }
+        });
+      }
+      return {feet:resolved,hit};
+    };
     const tryStepMove=(x,z,axis)=>{
       const start=axis==="x"?player.position.x:player.position.z;
       const distance=x-start,steps=Math.max(1,Math.ceil(Math.abs(distance)/.12));
@@ -3900,7 +3923,7 @@ function animate() {
     if(collides(player.position.x,player.position.z,player.position.y)&&!collides(movementSafeStart.x,movementSafeStart.z,movementSafeStart.y)){
       const penetrated={x:Number(player.position.x.toFixed(3)),y:Number(player.position.y.toFixed(3)),z:Number(player.position.z.toFixed(3))};
       player.position.set(movementSafeStart.x,movementSafeStart.y,movementSafeStart.z);playerVerticalVelocity=0;
-      window.__iloxReportRuntimeEvent?.("PHYSICS_WALL_PENETRATION_GUARD","Se detectó una posición final dentro de una estructura sólida; el jugador fue devuelto a su última posición libre.",{penetrated,restoredTo:movementSafeStart});
+      window.__iloxReportRuntimeEvent?.("PHYSICS_COLLISION_RECOVERY","Se detectó una posición final dentro de una zona bloqueada; el jugador fue devuelto a su última posición libre.",{penetrated,restoredTo:movementSafeStart});
     }
     const pool=filledPoolAt(player.position.x,player.position.z);
     const surface=pool?pool.y:-Infinity,inWater=!!pool&&Date.now()>(player.userData.poolExitJumpUntil||0)&&player.position.y<surface+.35&&player.position.y>pool.y-2.25;
@@ -3909,7 +3932,14 @@ function animate() {
       player.userData.isSwimming=false;
       const groundY=supportHeightAt(player.position.x,player.position.z,player.position.y),previousFeet=player.position.y;
       playerVerticalVelocity-=20*delta;
-      const nextFeet=previousFeet+playerVerticalVelocity*delta;
+      let nextFeet=previousFeet+playerVerticalVelocity*delta;
+      if(nextFeet>previousFeet){
+        const ceiling=resolveCeiling(previousFeet,nextFeet);
+        if(ceiling.hit){
+          nextFeet=ceiling.feet;playerVerticalVelocity=0;
+          window.__iloxReportRuntimeEvent?.("PHYSICS_CEILING_BLOCKED","El jugador alcanzó la cara inferior de una estructura; se detuvo el salto sin atravesarla.",{obstacle:ceiling.hit,position:{x:Number(player.position.x.toFixed(3)),y:Number(nextFeet.toFixed(3)),z:Number(player.position.z.toFixed(3))}});
+        }
+      }
       if(nextFeet<groundY-.35&&previousFeet>=groundY-.02){
         window.__iloxReportRuntimeEvent?.("PHYSICS_FLOOR_CROSSING","El movimiento vertical cruzó la superficie de apoyo antes de ser corregido.",{position:{x:Number(player.position.x.toFixed(3)),y:Number(nextFeet.toFixed(3)),z:Number(player.position.z.toFixed(3))},groundY:Number(groundY.toFixed(3)),penetration:Number((groundY-nextFeet).toFixed(3)),verticalVelocity:Number(playerVerticalVelocity.toFixed(3))});
       }
