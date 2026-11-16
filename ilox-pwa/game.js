@@ -1113,6 +1113,16 @@ function init() {
 function createJumpCanvasControl(){
   const canvas=document.createElement("canvas");
   canvas.id="ilox-jump-canvas";
+  // El control es una capa HUD: fijar sus dimensiones aquí evita que la regla global canvas lo convierta en pantalla completa.
+  for(const [prop,value] of Object.entries({
+    position:"absolute",left:"auto",top:"auto",right:"max(12px, env(safe-area-inset-right))",
+    bottom:"max(14px, env(safe-area-inset-bottom))",width:"68px",height:"68px",
+    minWidth:"68px",minHeight:"68px",maxWidth:"68px",maxHeight:"68px",
+    zIndex:"46",pointerEvents:"auto",touchAction:"none",
+    userSelect:"none",webkitUserSelect:"none"
+  })) canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.style.setProperty("width","68px","important");
+  canvas.style.setProperty("height","68px","important");
   canvas.setAttribute("role","img");
   canvas.setAttribute("aria-label","Control gráfico para saltar");
   canvas.width=224;canvas.height=224;
