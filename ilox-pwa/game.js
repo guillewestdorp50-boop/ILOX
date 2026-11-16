@@ -995,7 +995,14 @@ function addEvents() {
     if(!elevatorRiding){
       showToast("Entrá en la cabina antes de elegir destino.");return;
     }
-    if(beginElevatorTravel(activeElevator,target))showToast("Puertas cerradas. Ascensor en marcha.");
+    const current=activeElevator.userData.buildRecord?.currentFloor||1;
+    if(beginElevatorTravel(activeElevator,target)){
+      if(target!==current){
+        elevatorPanelDismissed=true;
+        elevatorPanel?.classList.add("hidden");
+        showToast("Puertas cerradas. Mirá el ascensor en movimiento.");
+      }
+    }
   });
   document.querySelector("#elevator-close")?.addEventListener("click",()=>{elevatorPanelDismissed=true;elevatorPanel?.classList.add("hidden");});
   game.addEventListener("pointerup", e => {
@@ -1659,7 +1666,13 @@ function animateElevator(group,now=Date.now()){
   if(travel){
     const t=THREE.MathUtils.clamp((now-travel.startedAt)/travel.duration,0,1);
     offset=((travel.fromFloor-1)+(travel.toFloor-travel.fromFloor)*t)*3;
-    if(t>=1){rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;if(!group.userData.elevatorRemoteTravel)persistBuilds();group.userData.elevatorRemoteTravel=false;}
+    if(t>=1){
+      rec.currentFloor=travel.toFloor;rec.targetFloor=travel.toFloor;
+      group.userData.elevatorTravel=null;group.userData.elevatorDoorOpen=true;group.userData.elevatorDoorChangedAt=now;
+      if(elevatorRiding&&activeElevator===group)elevatorPanelDismissed=false;
+      if(!group.userData.elevatorRemoteTravel)persistBuilds();
+      group.userData.elevatorRemoteTravel=false;
+    }
   }
   cabin.position.y=.18+offset;
   const open=group.userData.elevatorDoorOpen&&!group.userData.elevatorTravel;
