@@ -153,6 +153,7 @@ function supportHeightAt(x,z,feet=Infinity,ignore=null){
     if(g===ignore)continue;
     const kind=g.userData.buildRecord?.kind;
     if(!kind||kind==="water")continue;
+    if((kind==="platea"||kind==="roof")&&buildRecords.some(e=>e.kind==="elevator"&&g.position.y>e.y+.5&&Math.abs(x-e.x)<1.62&&Math.abs(z-e.z)<1.62))continue;
     if(kind==="stairs"){
       const stairTop=stairSurfaceHeight(g,x,z,feet);
       if(stairTop!==null&&stairTop>top)top=stairTop;
