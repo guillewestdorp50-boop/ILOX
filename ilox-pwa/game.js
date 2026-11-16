@@ -134,7 +134,7 @@ function removeBuildSpatialGroup(group){const keys=group?.userData?.spatialCellK
 function updateBuildSpatialGroup(group){if(!group||group.parent!==scene)return;removeBuildSpatialGroup(group);group.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(group);if(bounds.isEmpty())bounds.setFromCenterAndSize(group.position,new THREE.Vector3(1.5,1.5,1.5));group.userData.spatialBounds=bounds;const keys=[],minX=Math.floor(bounds.min.x/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor(bounds.max.x/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor(bounds.min.z/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor(bounds.max.z/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const key=cx+":"+cz;let cell=buildSpatialCells.get(key);if(!cell){cell=new Set();buildSpatialCells.set(key,cell);}cell.add(group);keys.push(key);}group.userData.spatialCellKeys=keys;}
 function getNearbyBuildGroups(x,z,radius=.5){const found=new Set(),minX=Math.floor((x-radius)/BUILD_SPATIAL_CELL_SIZE),maxX=Math.floor((x+radius)/BUILD_SPATIAL_CELL_SIZE),minZ=Math.floor((z-radius)/BUILD_SPATIAL_CELL_SIZE),maxZ=Math.floor((z+radius)/BUILD_SPATIAL_CELL_SIZE);for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){const cell=buildSpatialCells.get(cx+":"+cz);if(!cell)continue;for(const group of cell){const b=group.userData.spatialBounds;if(b&&x+radius>=b.min.x-.02&&x-radius<=b.max.x+.02&&z+radius>=b.min.z-.02&&z-radius<=b.max.z+.02)found.add(group);}}return found;}
 function foundationAt(x,z){for(const g of getNearbyBuildGroups(x,z,0)){const r=g.userData.buildRecord;if(!r||(r.kind!=="platea"&&r.kind!=="pool"))continue;const w=r.kind==="pool"?(r.poolWidth||6):FOUNDATION_SIZE,d=r.kind==="pool"?(r.poolDepth||6):FOUNDATION_SIZE,a=r.rotation||0,dx=x-r.x,dz=z-r.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<=w/2&&Math.abs(lz)<=d/2)return r;}return null;}
-function filledPoolAt(x,z){for(const g of getNearbyBuildGroups(x,z,13)){const p=g.userData.buildRecord;if(p?.kind!=="pool"||Math.abs(x-p.x)>=(p.poolWidth||6)/2-.48||Math.abs(z-p.z)>=(p.poolDepth||6)/2-.48)continue;for(const waterGroup of getNearbyBuildGroups(p.x,p.z,13)){const w=waterGroup.userData.buildRecord;if(w?.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z)return p;}}return null;}
+function filledPoolAt(x,z){const nearby=getNearbyBuildGroups(x,z,13);for(const g of nearby){const p=g.userData.buildRecord;if(p?.kind!=="pool"||Math.abs(x-p.x)>=(p.poolWidth||6)/2-.48||Math.abs(z-p.z)>=(p.poolDepth||6)/2-.48)continue;if([...nearby].some(waterGroup=>{const w=waterGroup.userData.buildRecord;return w?.kind==="water"&&w.poolX===p.x&&w.poolZ===p.z;}))return p;}return null;}
 function plateasAreAdjacent(a,b){
   if(!a||!b||a===b||a.kind!=="platea"||b.kind!=="platea")return false;
   const dx=Math.abs(a.x-b.x),dz=Math.abs(a.z-b.z);
@@ -3767,6 +3767,8 @@ function animate() {
   updateBuildGravity(delta);
   for(const group of buildGroups){
     if(!group.userData.animalMixer)continue;
+    const dancing=!!group.userData.iloxClubDancing;
+    if(!dancing&&player&&Math.hypot(group.position.x-player.position.x,group.position.z-player.position.z)>70)continue;
     group.userData.animalMixer.update(delta);
     const actions=group.userData.animalActions;
     if(updateIloxLivingDance(group,delta))continue;
