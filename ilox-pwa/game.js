@@ -1614,6 +1614,8 @@ function migrateConnectedRoofs(){
   for(const record of [...buildRecords]){
     if(record.kind!=="roof")continue;
     const area=connectedPlateaFootprint(foundationAt(record.x,record.z));if(!area)continue;
+    const previousOpening=record.roofOpening;
+    if(previousOpening===undefined)record.roofOpening=buildRecords.some(item=>item.kind==="elevator"&&item.y<record.y&&Math.abs(item.x-area.x)<area.width/2&&Math.abs(item.z-area.z)<area.depth/2);
     const key=[area.x,area.z,area.width,area.depth].map(v=>Math.round(v*100)/100).join(":");
     if(seen.has(key)){
       const group=buildGroups.find(item=>item.userData.buildRecord===record);
@@ -1624,7 +1626,7 @@ function migrateConnectedRoofs(){
     seen.add(key);
     const supportTops=buildRecords.filter(item=>["wall","block","brick","door","window"].includes(item.kind)&&Math.abs(item.x-area.x)<=area.width/2&&Math.abs(item.z-area.z)<=area.depth/2&&(Math.abs(item.x-(area.x-area.width/2))<1.1||Math.abs(item.x-(area.x+area.width/2))<1.1||Math.abs(item.z-(area.z-area.depth/2))<1.1||Math.abs(item.z-(area.z+area.depth/2))<1.1)).map(item=>(item.y||0)+(item.kind==="door"?3:1.5));
     const supportY=supportTops.length?Math.max(...supportTops):record.y;
-    if(record.roofRevision!=="connected-plateas-v2"||Math.abs((record.roofWidth||1.5)-area.width)>.01||Math.abs((record.roofDepth||1.5)-area.depth)>.01||Math.abs(record.x-area.x)>.01||Math.abs(record.z-area.z)>.01||Math.abs((record.y||0)-supportY)>.08){
+    if(record.roofRevision!=="connected-plateas-v2"||Math.abs((record.roofWidth||1.5)-area.width)>.01||Math.abs((record.roofDepth||1.5)-area.depth)>.01||Math.abs(record.x-area.x)>.01||Math.abs(record.z-area.z)>.01||Math.abs((record.y||0)-supportY)>.08||record.roofOpening!==previousOpening){
       record.x=area.x;record.z=area.z;record.y=supportY;record.roofWidth=area.width;record.roofDepth=area.depth;record.roofRevision="connected-plateas-v2";
       const old=buildGroups.find(group=>group.userData.buildRecord===record);
       if(old){scene.remove(old);const index=buildGroups.indexOf(old);if(index>=0)buildGroups.splice(index,1);}
