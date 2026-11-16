@@ -103,12 +103,9 @@
       const force = document.getElementById("ilox-force-start");
       const release = () => {
         if (!panel || panel.querySelector("#ilox-diagnostic-detail")) return;
+        // Oculta únicamente el overlay de carga. No emitir un aviso de fallo:
+        // el temporizador puede ejecutarse aunque el mundo ya esté funcionando.
         panel.classList.add("done");
-        const toast = document.getElementById("toast");
-        if (toast) {
-          toast.textContent = "Inicio forzado. Si JUGAR no responde, el motor 3D no llegó a arrancar.";
-          toast.classList.add("show");
-        }
       };
       force?.addEventListener("click", release);
       window.setTimeout(release, 15000);
