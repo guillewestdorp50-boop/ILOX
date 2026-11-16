@@ -2532,7 +2532,7 @@ function isElevatorBotBlocked(x,z,feet){
     // Con las puertas completamente abiertas, el hueco del ascensor es transitable.
     // En board/exit el bot ya está alineado con la entrada: no debe chocar contra
     // las hojas móviles ni contra el piso/cabina que forman parte del propio ascensor.
-    if(kind==="elevator"&&elevatorBotElevator===g&&["board","boardedWait","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel&&Number(g.userData.elevatorDoorProgress||0)>=.98)continue;
+    if(kind==="elevator"&&elevatorBotElevator===g&&["board","boardedWait","exit"].includes(elevatorBotPhase)&&g.userData.elevatorDoorOpen&&!g.userData.elevatorTravel)continue;
     if(kind==="pool"&&feet>=(g.userData.buildRecord.y||0)+.22)continue;
     g.updateMatrixWorld(true);
     let blocked=false;
@@ -2614,7 +2614,7 @@ function updateElevatorBot(delta){
     if(elevatorBot.position.distanceTo(outside)<.35&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&!group.userData.elevatorTravel&&elevatorLandingExists(group,1))setElevatorBotPhase("board",group,inside);
   }else if(elevatorBotPhase==="board"){
     elevatorBotTarget=inside;
-    if(elevatorBot.position.distanceTo(inside)<.48&&elevatorLandingExists(group,1)){
+    if(Math.hypot(elevatorBot.position.x-inside.x,elevatorBot.position.z-inside.z)<.62&&Math.abs(elevatorBot.position.y-floorY)<1.5&&elevatorLandingExists(group,1)){
       elevatorBot.position.copy(inside);
       setElevatorBotPhase("boardedWait",group,inside);
       elevatorBotWaitUntil=Date.now()+1100;
