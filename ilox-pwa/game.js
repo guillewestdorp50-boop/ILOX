@@ -2902,13 +2902,14 @@ function startMultiplayerFallbackSync(worldId){
 function syncRemotePresence(state){
   const seen=new Set();multiplayerPresentUserIds.clear();
   const elevators=buildGroups.filter(group=>group.userData.buildRecord?.kind==="elevator");
-  for(const group of elevators)group.userData.elevatorPassengers=new Map();
+  const useLegacyElevatorPresence=!multiplayerWorldAuthority;
+  if(useLegacyElevatorPresence)for(const group of elevators)group.userData.elevatorPassengers=new Map();
   for(const entries of Object.values(state||{})){
     for(const entry of entries||[]){
       const userId=entry.user_id||entry.userId;
       if(!userId)continue;
       multiplayerPresentUserIds.add(userId);
-      if(entry.elevatorX!=null&&entry.elevatorZ!=null){
+      if(useLegacyElevatorPresence&&entry.elevatorX!=null&&entry.elevatorZ!=null){
         const group=elevators.find(item=>Math.abs(item.userData.buildRecord.x-Number(entry.elevatorX))<.1&&Math.abs(item.userData.buildRecord.z-Number(entry.elevatorZ))<.1);
         if(group)group.userData.elevatorPassengers.set(userId,{joinedAt:Number(entry.elevatorJoinedAt)||0});
       }
@@ -2917,7 +2918,7 @@ function syncRemotePresence(state){
       updateRemotePlayer({userId,x:entry.x||0,y:entry.y||0,z:entry.z||0,rotation:entry.rotation||0,avatar:entry.avatar||"boy:0",moving:entry.moving,swimming:entry.swimming,jumping:entry.jumping});
     }
   }
-  for(const group of elevators){
+  if(useLegacyElevatorPresence)for(const group of elevators){
     const ordered=[...group.userData.elevatorPassengers.entries()].sort((a,b)=>a[1].joinedAt-b[1].joinedAt||String(a[0]).localeCompare(String(b[0])));
     group.userData.elevatorCaptainId=ordered[0]?.[0]||null;
     if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel&&group.userData.elevatorCaptainId!==multiplayerUserId)closeElevatorKeypad();
