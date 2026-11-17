@@ -2171,7 +2171,11 @@ function setElevatorDoorState(group,open,broadcast=true,manual=false){
   if(open&&!elevatorLandingExists(group,floor)){showToast("No hay una plataforma segura en esta planta.");return false;}
   if(!open&&manual&&elevatorDoorAreaOccupied(group)){showToast("Esperá a que todos salgan de la entrada.");return false;}
   if(broadcast&&multiplayerSession){
-    if(!multiplayerWorldAuthority||!rec.cloudId){showToast("El servidor compartido del ascensor no está conectado.");return false;}
+    if(!multiplayerWorldAuthority||!rec.cloudId){
+      const now=Date.now();
+      if(now-(group.userData.elevatorAuthorityWarningAt||0)>3000){group.userData.elevatorAuthorityWarningAt=now;showToast("El servidor compartido del ascensor no está conectado.");}
+      return false;
+    }
     if(passengersCount(group)>0&&group.userData.elevatorCaptainId!==multiplayerUserId)return true;
     const requested=!!open,requestAt=Number(group.userData.elevatorDoorRequestAt)||0;
     if(group.userData.elevatorDoorRequested===requested&&Date.now()-requestAt<1400)return true;
