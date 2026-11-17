@@ -376,6 +376,7 @@ export async function connectWorldAuthority(worldId, handlers = {}) {
     sendPassenger: (elevatorId, joined) => send("elevator:passenger", { elevatorId, joined: !!joined }),
     callElevator: (elevatorId, targetFloor) => send("elevator:call", { elevatorId, targetFloor }),
     travelElevator: (elevatorId, targetFloor) => send("elevator:travel", { elevatorId, targetFloor }),
+    pauseElevator: (elevatorId, startedAt) => send("elevator:pause", { elevatorId, startedAt }),
     setElevatorDoor: (elevatorId, open) => send("elevator:door", { elevatorId, open: !!open }),
     close: async () => {
       closedByClient = true;
