@@ -155,6 +155,7 @@ async function startTravel(room, e, target, userId, token) {
   }
   const fromFloor = e.currentFloor;
   const duration = Math.max(1200, Math.abs(target - fromFloor) * 1250);
+  if (!e.passengers.size) e.captainId = userId;
   e.targetFloor = target; e.moving = true; e.doorOpen = false; e.changedAt = Date.now();
   e.travelStartedAt = Date.now(); e.travelDurationMs = duration; e.changedBy = userId;
   try { await persistElevator(room, e, token); }
@@ -174,8 +175,9 @@ async function handleMessage(ws, message) {
     const e = room.elevators.get(message.elevatorId);
     if (!e || typeof message.joined !== 'boolean') return send(ws, 'error', { code: 'invalid_elevator' });
     if (message.joined) {
+      const firstPassenger = e.passengers.size === 0;
       if (!e.passengers.has(userId)) e.passengers.set(userId, Date.now());
-      if (!e.captainId) e.captainId = userId;
+      if (firstPassenger || !e.captainId) e.captainId = userId;
     } else {
       e.passengers.delete(userId);
       if (e.captainId === userId) e.captainId = [...e.passengers.entries()].sort((a,b) => a[1]-b[1])[0]?.[0] || null;
@@ -199,6 +201,19 @@ async function handleMessage(ws, message) {
     if (!e.passengers.has(userId) || e.captainId !== userId) return send(ws, 'error', { code: 'not_elevator_captain' });
     try { await startTravel(room, e, target, userId, token); }
     catch (error) { send(ws, 'error', { code: error.message || 'elevator_travel_failed' }); }
+    return;
+  }
+  if (message.type === 'elevator:pause') {
+    const e = room.elevators.get(message.elevatorId);
+    const requestedStart = Number(message.startedAt);
+    if (!e || !e.moving || e.captainId !== userId || !Number.isFinite(requestedStart)) return send(ws, 'error', { code: 'not_elevator_controller' });
+    const nextStart = Math.max(e.travelStartedAt, Math.min(Date.now(), requestedStart));
+    if (nextStart <= e.travelStartedAt) return;
+    e.travelStartedAt = nextStart;
+    try { await persistElevator(room, e, token); }
+    catch (error) { return send(ws, 'error', { code: 'elevator_pause_persist_failed' }); }
+    startArrivalTimer(room, e);
+    broadcast(room, 'elevator:pause', { elevatorId:e.id, x:e.x, z:e.z, startedAt:e.travelStartedAt, duration:e.travelDurationMs, captainId:e.captainId });
     return;
   }
   if (message.type === 'elevator:door') {
@@ -235,6 +250,7 @@ httpServer.on('upgrade', (req, socket, head) => {
         ws.session={room,userId:identity.userId,role:identity.role,accessToken:message.accessToken};
         room.clients.add(ws);
         room.userConnections.set(identity.userId,(room.userConnections.get(identity.userId)||0)+1);
+        for (const elevator of room.elevators.values()) if (elevator.moving && !elevator.captainId) elevator.captainId = identity.userId;
         send(ws,'world:ready',{worldId:room.worldId,userId:identity.userId,role:identity.role,elevators:[...room.elevators.values()].map(elevatorSnapshot),connectedPlayers:room.userConnections.size});
         broadcast(room,'world:presence',{connectedPlayers:room.userConnections.size});
       }catch(error){
