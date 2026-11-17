@@ -2508,18 +2508,18 @@ function drawElevatorCanvas(){
   ctx.fillStyle="#86a9a4";ctx.textAlign="left";ctx.font="600 14px system-ui";ctx.fillText("DISPONIBLES: 1 — "+count,42,278);
   const keys=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]];
   for(let row=0;row<4;row++)for(let col=0;col<3;col++){
-    const label=keys[row][col],x=32+col*181,y=300+row*105;
+    const label=keys[row][col],x=32+col*181,y=292+row*88;
     const special=label==="C"||label==="⌫";
     const fill=special?"#1c3b43":"#173b43",stroke=special?"#5faaa0":"#5bd2b0";
-    rounded(x,y,172,88,17,fill,stroke,2);
-    ctx.fillStyle=special?"#b8e6d9":"#f3fff9";ctx.textAlign="center";ctx.font=special?"900 29px system-ui":"1000 38px system-ui";ctx.fillText(label,x+86,y+45);
+    rounded(x,y,172,76,17,fill,stroke,2);
+    ctx.fillStyle=special?"#b8e6d9":"#f3fff9";ctx.textAlign="center";ctx.font=special?"900 29px system-ui":"1000 38px system-ui";ctx.fillText(label,x+86,y+39);
   }
   const isCaptain=!multiplayerSession||activeElevator?.userData.elevatorCaptainId===multiplayerUserId;
-  rounded(32,742,536,94,19,isCaptain?"#79f0bd":"#36534d",isCaptain?"#c6ffe5":"#718b82",3);
-  ctx.shadowColor=isCaptain?"#56e8ac":"transparent";ctx.shadowBlur=isCaptain?18:0;ctx.fillStyle=isCaptain?"#052c25":"#c1d0ca";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText(isCaptain?"CONFIRMAR VIAJE  ›":"SOLO CAPITÁN PUEDE VIAJAR",300,790);ctx.shadowBlur=0;
+  rounded(32,660,536,82,19,isCaptain?"#79f0bd":"#36534d",isCaptain?"#c6ffe5":"#718b82",3);
+  ctx.shadowColor=isCaptain?"#56e8ac":"transparent";ctx.shadowBlur=isCaptain?18:0;ctx.fillStyle=isCaptain?"#052c25":"#c1d0ca";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText(isCaptain?"CONFIRMAR VIAJE  ›":"SOLO CAPITÁN PUEDE VIAJAR",300,701);ctx.shadowBlur=0;
   const doorOpen=!!activeElevator?.userData.elevatorDoorOpen;
-  rounded(32,850,536,94,19,"#d83b43","#ff9b9f",3);
-  ctx.shadowColor="#ff5252";ctx.shadowBlur=15;ctx.fillStyle="#fff7f7";ctx.textAlign="center";ctx.font="1000 28px system-ui";ctx.fillText(doorOpen?"CERRAR PUERTA":"ABRIR PUERTA",300,898);ctx.shadowBlur=0;
+  rounded(32,755,536,82,19,"#d83b43","#ff9b9f",3);
+  ctx.shadowColor="#ff5252";ctx.shadowBlur=15;ctx.fillStyle="#fff7f7";ctx.textAlign="center";ctx.font="1000 28px system-ui";ctx.fillText(doorOpen?"PUERTA ABIERTA":"ABRIR PUERTA",300,796);ctx.shadowBlur=0;
   ctx.restore();
 }
 function createElevatorCanvasControl(){
@@ -2530,10 +2530,10 @@ function createElevatorCanvasControl(){
     e.preventDefault();e.stopPropagation();if(!elevatorKeypadOpen||!started)return;
     const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*980;
     if(x>=495&&y<=105){closeElevatorKeypad();return;}
-    if(y>=742&&y<=840){confirmElevatorTravel(activeElevator);return;}
-    if(y>=850&&y<=944){const group=activeElevator;if(group&&!group.userData.elevatorTravel){const opening=!group.userData.elevatorDoorOpen;if(setElevatorDoorState(group,opening,true,true)){showToast(opening?"Puertas abiertas.":"Puertas cerradas.");drawElevatorCanvas();}}return;}
-    if(y>=300&&y<720&&x>=32&&x<568){
-      const col=Math.max(0,Math.min(2,Math.floor((x-32)/181))),row=Math.max(0,Math.min(3,Math.floor((y-300)/105))),key=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]][row][col];
+    if(y>=660&&y<=742){confirmElevatorTravel(activeElevator);return;}
+    if(y>=755&&y<=837){const group=activeElevator;if(group&&!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen){if(setElevatorDoorState(group,true,true,true)){showToast("Solicitud para abrir la puerta enviada.");drawElevatorCanvas();}}return;}
+    if(y>=292&&y<644&&x>=32&&x<568){
+      const col=Math.max(0,Math.min(2,Math.floor((x-32)/181))),row=Math.max(0,Math.min(3,Math.floor((y-292)/88))),key=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]][row][col];
       const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
       if(key==="C")elevatorFloorInput="";
       else if(key==="⌫")elevatorFloorInput=elevatorFloorInput.slice(0,-1);
