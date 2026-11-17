@@ -134,16 +134,26 @@ function getOrCreateRoom(worldId, rows, states, token) {
 }
 function removePassenger(room, userId) {
   for (const e of room.elevators.values()) {
-    if (!e.passengers.delete(userId)) continue;
-    if (e.captainId === userId) e.captainId = [...e.passengers.entries()].sort((a,b) => a[1]-b[1])[0]?.[0] || null;
+    const wasPassenger = e.passengers.delete(userId);
+    const wasController = e.captainId === userId;
+    if (!wasPassenger && !wasController) continue;
+    if (wasController) {
+      e.captainId = [...e.passengers.entries()].sort((a,b) => a[1]-b[1])[0]?.[0] || null;
+      if (!e.captainId && e.moving) {
+        const nextPeer = [...room.clients].find(peer => peer.session?.userId && peer.session.userId !== userId);
+        e.captainId = nextPeer?.session?.userId || null;
+      }
+    }
     broadcast(room, 'elevator:passengers', elevatorSnapshot(e));
   }
 }
 async function setDoor(room, e, open, token) {
   if (e.moving) throw new Error('elevator_busy');
+  const previousOpen = e.doorOpen;
   e.doorOpen = open;
   e.changedAt = Date.now();
-  await persistElevator(room, e, token);
+  try { await persistElevator(room, e, token); }
+  catch (error) { e.doorOpen = previousOpen; throw error; }
   broadcast(room, 'elevator:door', elevatorSnapshot(e));
 }
 async function startTravel(room, e, target, userId, token) {
@@ -209,9 +219,10 @@ async function handleMessage(ws, message) {
     if (!e || !e.moving || e.captainId !== userId || !Number.isFinite(requestedStart)) return send(ws, 'error', { code: 'not_elevator_controller' });
     const nextStart = Math.max(e.travelStartedAt, Math.min(Date.now(), requestedStart));
     if (nextStart <= e.travelStartedAt) return;
+    const previousStart = e.travelStartedAt;
     e.travelStartedAt = nextStart;
     try { await persistElevator(room, e, token); }
-    catch (error) { return send(ws, 'error', { code: 'elevator_pause_persist_failed' }); }
+    catch (error) { e.travelStartedAt = previousStart; return send(ws, 'error', { code: 'elevator_pause_persist_failed' }); }
     startArrivalTimer(room, e);
     broadcast(room, 'elevator:pause', { elevatorId:e.id, x:e.x, z:e.z, startedAt:e.travelStartedAt, duration:e.travelDurationMs, captainId:e.captainId });
     return;
@@ -232,7 +243,7 @@ httpServer.on('upgrade', (req, socket, head) => {
   if (req.url !== '/world') { socket.write('HTTP/1.1 404 Not Found\\r\\nConnection: close\\r\\n\\r\\n'); socket.destroy(); return; }
   const ws = acceptWebSocket(req, socket, head);
   if (!ws) return;
-  peers.add(ws); ws.session=null; ws.authInProgress=false;
+  peers.add(ws); ws.session=null; ws.authInProgress=false; ws.messageQueue=Promise.resolve();
   const authTimer=setTimeout(()=>{ if(!ws.session){send(ws,'error',{code:'authentication_timeout'});ws.close(4401,'authentication timeout');}},AUTH_TIMEOUT_MS);
   ws.on('pong',()=>{ws.isAlive=true;});
   ws.on('message',async raw=>{
@@ -260,7 +271,7 @@ httpServer.on('upgrade', (req, socket, head) => {
       }
       return;
     }
-    try{await handleMessage(ws,message);}catch(error){console.error('ILOX world message failed:',error?.message||error);send(ws,'error',{code:'internal_error'});}
+    ws.messageQueue=ws.messageQueue.then(()=>handleMessage(ws,message)).catch(error=>{console.error('ILOX world message failed:',error?.message||error);send(ws,'error',{code:'internal_error'});});
   });
   ws.on('close',()=>{
     clearTimeout(authTimer); peers.delete(ws); if(!ws.session)return;
