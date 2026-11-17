@@ -7,8 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node server.mjs",
-    "test": "node --test",
-    "prestart": "node --test"
+    "start": "npm test && node server.mjs",
+    "test": "node --test"
   }
 }
