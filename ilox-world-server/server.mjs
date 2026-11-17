@@ -200,6 +200,12 @@ async function handleMessage(ws, message) {
       const firstPassenger = e.passengers.size === 0;
       if (!e.passengers.has(userId)) e.passengers.set(userId, Date.now());
       if (firstPassenger || !e.captainId) e.captainId = userId;
+      // El primer abordaje cierra la puerta desde la autoridad compartida.
+      // Todos los clientes reciben el mismo estado y ya no dependen de timers locales.
+      if (!e.moving && e.doorOpen) {
+        try { await setDoor(room, e, false, token); }
+        catch (error) { send(ws, 'error', { code: error.message || 'elevator_door_failed' }); }
+      }
     } else {
       e.passengers.delete(userId);
       if (e.captainId === userId) e.captainId = [...e.passengers.entries()].sort((a,b) => a[1]-b[1])[0]?.[0] || null;
