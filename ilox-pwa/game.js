@@ -1,7 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js";
-import * as Multiplayer from "./multiplayer.js?v=ilox-v117-no-bot-20261116";
+import * as Multiplayer from "./multiplayer.js?v=ilox-authority-v120-20261117";
 
 const game = document.querySelector("#game");
 const loading = document.querySelector("#loading");
@@ -41,7 +41,7 @@ const doorPinTitle = document.querySelector("#door-pin-title");
 const doorPinHelp = document.querySelector("#door-pin-help");
 const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
-let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerUserId = null, multiplayerWorldOwnerId = null;
+let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerWorldAuthority = null, multiplayerUserId = null, multiplayerWorldOwnerId = null;
 const multiplayerPresentUserIds=new Set();
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
@@ -2170,6 +2170,14 @@ function setElevatorDoorState(group,open,broadcast=true,manual=false){
   const floor=rec.currentFloor||1;
   if(open&&!elevatorLandingExists(group,floor)){showToast("No hay una plataforma segura en esta planta.");return false;}
   if(!open&&manual&&elevatorDoorAreaOccupied(group)){showToast("Esperá a que todos salgan de la entrada.");return false;}
+  if(broadcast&&multiplayerSession){
+    if(!multiplayerWorldAuthority||!rec.cloudId){showToast("El servidor compartido del ascensor no está conectado.");return false;}
+    const requested=!!open,requestAt=Number(group.userData.elevatorDoorRequestAt)||0;
+    if(group.userData.elevatorDoorRequested===requested&&Date.now()-requestAt<1400)return true;
+    group.userData.elevatorDoorRequested=requested;group.userData.elevatorDoorRequestAt=Date.now();
+    multiplayerWorldAuthority.setElevatorDoor(rec.cloudId,requested).catch(error=>{group.userData.elevatorDoorRequestAt=0;showToast(error.message||"No se pudo cambiar la puerta.");});
+    return true;
+  }
   const now=Date.now();
   const currentProgress=Number(group.userData.elevatorDoorProgress??(group.userData.elevatorDoorOpen?1:0));
   group.userData.elevatorDoorOpen=!!open;
@@ -2227,9 +2235,9 @@ function passengersCount(group){return group.userData.elevatorPassengers?.size||
 function broadcastElevatorPassenger(group,passengerId,joined,joinedAt=Date.now()){
   const rec=group?.userData?.buildRecord;
   if(!rec||!multiplayerSession||!passengerId)return;
-  multiplayerSession.sendElevatorState({
-    action:"passenger",x:rec.x,z:rec.z,passengerId,joined:!!joined,joinedAt
-  }).catch(error=>console.warn("ILOX elevator passenger sync:",error));
+  if(!multiplayerWorldAuthority||!rec.cloudId){showToast("El servidor compartido del ascensor no está conectado.");return;}
+  multiplayerWorldAuthority.sendPassenger(rec.cloudId,!!joined)
+    .catch(error=>showToast(error.message||"No se pudo actualizar el pasajero del ascensor."));
 }
 function elevatorSweepBlocker(group,fromOffset,toOffset){
   if(Math.abs(toOffset-fromOffset)<.0001||!player)return null;
@@ -2272,7 +2280,7 @@ function animateElevator(group,now=Date.now()){
       }
       if(multiplayerSession&&now-(group.userData.elevatorBlockBroadcastAt||0)>900){
         group.userData.elevatorBlockBroadcastAt=now;
-        multiplayerSession.sendElevatorState({action:'pause',x:rec.x,z:rec.z,startedAt:travel.startedAt}).catch(error=>console.warn('ILOX elevator pause sync:',error));
+        if(multiplayerWorldAuthority&&rec.cloudId)multiplayerWorldAuthority.pauseElevator(rec.cloudId,travel.startedAt).catch(error=>console.warn('ILOX elevator pause sync:',error));
       }
     }else{offset=candidateOffset;group.userData.elevatorLastSafeOffset=offset;group.userData.elevatorBlockedBy=null;}
     if(t>=1&&!blocker){
@@ -2416,6 +2424,13 @@ function updateIloxElevatorParty(delta){
 
 function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=true){
   const rec=group?.userData.buildRecord;if(!rec||group.userData.elevatorTravel)return false;
+  if(broadcast&&multiplayerSession){
+    if(!multiplayerWorldAuthority||!rec.cloudId){showToast("El servidor compartido del ascensor no está conectado.");return false;}
+    const target=Number(targetFloor);
+    const action=elevatorRiding&&activeElevator===group?"travelElevator":"callElevator";
+    multiplayerWorldAuthority[action](rec.cloudId,target).catch(error=>showToast(error.message||"El servidor no pudo iniciar el viaje."));
+    return true;
+  }
   const floorCount=Math.max(1,Math.min(40,Number(rec.floorCount)||40));
   const fromFloor=THREE.MathUtils.clamp(Math.round(Number(rec.currentFloor)||1),1,floorCount);
   const toFloor=THREE.MathUtils.clamp(Math.round(Number(targetFloor)||1),1,floorCount);
@@ -2439,8 +2454,17 @@ function beginElevatorTravel(group,targetFloor,startedAt=Date.now(),broadcast=tr
   return true;
 }
 function applyRemoteElevatorState(state){
-  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
+  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&(state.elevatorId?item.userData.buildRecord?.cloudId===state.elevatorId:(Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1)));
   if(!group)return;
+  if(state.action==="passengers_snapshot"){
+    const passengers=group.userData.elevatorPassengers||(group.userData.elevatorPassengers=new Map());
+    passengers.clear();
+    for(const passenger of state.passengers||[])if(passenger?.userId)passengers.set(passenger.userId,{joinedAt:Number(passenger.joinedAt)||Date.now()});
+    group.userData.elevatorCaptainId=state.captainId||null;
+    if(group.userData.elevatorTravel)group.userData.elevatorRemoteTravel=group.userData.elevatorCaptainId!==multiplayerUserId;
+    if(elevatorRiding&&activeElevator===group&&!group.userData.elevatorTravel&&group.userData.elevatorCaptainId!==multiplayerUserId)closeElevatorKeypad();
+    return;
+  }
   if(state.action==="pause"){
     if(group.userData.elevatorTravel&&group.userData.elevatorRemoteTravel)group.userData.elevatorTravel.startedAt=Number(state.startedAt)||group.userData.elevatorTravel.startedAt;
     return;
@@ -2455,12 +2479,12 @@ function applyRemoteElevatorState(state){
     return;
   }
   const rec=group.userData.buildRecord;
-  if(state.captainId)group.userData.elevatorCaptainId=state.captainId;
+  if(state.captainId!==undefined)group.userData.elevatorCaptainId=state.captainId;
   if(player&&Math.abs(player.position.x-group.position.x)<2.72&&Math.abs(player.position.z-group.position.z)<2.72&&Math.abs(player.position.y-(group.position.y+(group.userData.elevatorCabin?.position.y||.18)+.16))<1.5){activeElevator=group;elevatorRiding=true;playerVerticalVelocity=0;playerGrounded=true;}
   rec.currentFloor=state.fromFloor;group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
   prepareElevatorCargo(group,state.fromFloor);
   group.userData.elevatorLastSafeOffset=(state.fromFloor-1)*3;
-  group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=true;
+  group.userData.elevatorTravel={fromFloor:state.fromFloor,toFloor:state.toFloor,startedAt:state.startedAt,duration:state.duration};group.userData.elevatorRemoteTravel=state.captainId!==multiplayerUserId;
 }
 function drawElevatorCanvas(){
   if(!elevatorCanvas)return;
@@ -2589,16 +2613,74 @@ function updateElevators(delta){
 }
 function applyRemoteElevatorDoorState(state){
   if(!state||!Number.isFinite(Number(state.x))||!Number.isFinite(Number(state.z)))return;
-  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1);
+  const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&(state.elevatorId?item.userData.buildRecord?.cloudId===state.elevatorId:(Math.abs(item.position.x-state.x)<.1&&Math.abs(item.position.z-state.z)<.1)));
   if(!group||Number(state.changedAt||0)<Number(group.userData.elevatorDoorChangedAt||0))return;
   if(group.userData.elevatorTravel)return;
   const floor=group.userData.buildRecord?.currentFloor||1;
-  if(Number(state.floor)!==floor|| (state.open&&!elevatorLandingExists(group,floor)))return;
+  if(Number(state.floor??state.currentFloor)!==floor|| (state.open&&!elevatorLandingExists(group,floor)))return;
+  group.userData.elevatorDoorRequested=undefined;group.userData.elevatorDoorRequestAt=0;
   const now=Date.now(),progress=Number(group.userData.elevatorDoorProgress??(group.userData.elevatorDoorOpen?1:0));
   group.userData.elevatorDoorOpen=!!state.open;
   group.userData.elevatorDoorAnimation={from:progress,to:state.open?1:0,startedAt:now,duration:850};
   group.userData.elevatorDoorCloseAt=state.open?now+4500:0;
   group.userData.elevatorDoorChangedAt=Number(state.changedAt)||now;
+}
+function applyWorldAuthorityMessage(message){
+  if(!message||typeof message.type!=="string")return;
+  if(message.type==="world:ready"){
+    for(const state of message.elevators||[]){
+      const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&item.userData.buildRecord?.cloudId===state.elevatorId);
+      if(!group)continue;
+      if(state.moving){
+        applyRemoteElevatorState({...state,fromFloor:state.currentFloor,toFloor:state.targetFloor,startedAt:state.startedAt,duration:state.duration});
+      }else{
+        const rec=group.userData.buildRecord;rec.currentFloor=state.currentFloor;rec.targetFloor=state.targetFloor;
+        group.userData.elevatorTravel=null;group.userData.elevatorRemoteTravel=false;
+        group.userData.elevatorDoorOpen=!!state.doorOpen;
+        if(state.doorOpen)applyRemoteElevatorDoorState({...state,floor:state.currentFloor,open:true});
+      }
+      applyRemoteElevatorState({...state,action:"passengers_snapshot"});
+    }
+    return;
+  }
+  if(message.type==="elevator:passengers"){
+    applyRemoteElevatorState({...message,action:"passengers_snapshot"});
+    return;
+  }
+  if(message.type==="elevator:travel"){
+    applyRemoteElevatorState({...message,fromFloor:message.fromFloor??message.currentFloor,toFloor:message.toFloor??message.targetFloor,startedAt:message.startedAt,duration:message.duration});
+    return;
+  }
+  if(message.type==="elevator:pause"){
+    applyRemoteElevatorState({...message,action:"pause"});
+    return;
+  }
+  if(message.type==="elevator:arrived"){
+    const group=buildGroups.find(item=>item.userData.buildRecord?.kind==="elevator"&&item.userData.buildRecord?.cloudId===message.elevatorId);
+    if(!group)return;
+    const rec=group.userData.buildRecord;rec.currentFloor=message.currentFloor;rec.targetFloor=message.currentFloor;
+    group.userData.elevatorTravel=null;group.userData.elevatorRemoteTravel=false;
+    group.userData.elevatorDoorOpen=false;group.userData.elevatorDoorCloseAt=0;
+    group.userData.elevatorLastSafeOffset=(message.currentFloor-1)*3;
+    return;
+  }
+  if(message.type==="elevator:door"){
+    applyRemoteElevatorDoorState({...message,floor:message.currentFloor,open:message.doorOpen});
+    return;
+  }
+  if(message.type==="error"){
+    const messages={
+      not_elevator_captain:"El control del ascensor pertenece al primer pasajero.",
+      not_elevator_controller:"El control de seguridad del ascensor cambió de jugador.",
+      elevator_busy:"El ascensor ya está en movimiento.",
+      elevator_occupied:"El ascensor está ocupado.",
+      invalid_floor:"Ese piso no existe en este ascensor.",
+      elevator_pause_persist_failed:"No se pudo guardar la pausa segura del ascensor."
+    };
+    showToast(messages[message.code]||"El servidor del mundo rechazó una orden ("+String(message.code||"error")+").");
+    return;
+  }
+  if(message.type==="world:restarting")showToast("El servidor del mundo se está reiniciando; esperá la reconexión.");
 }
 function multiplayerPayload(record){
   const payload={...record};
@@ -2864,6 +2946,7 @@ async function enterMultiplayerWorld(worldId){
     if(multiplayerSyncTimer){clearTimeout(multiplayerSyncTimer);multiplayerSyncTimer=null;}
     await syncMultiplayerStructures();
   }
+  if(multiplayerWorldAuthority){await multiplayerWorldAuthority.close();multiplayerWorldAuthority=null;}
   if(multiplayerSession){await multiplayerSession.close();multiplayerSession=null;}
   for(const avatar of remotePlayers.values())scene.remove(avatar);
   remotePlayers.clear();clearCurrentBuildWorld();multiplayerCloudSnapshot.clear();
@@ -2877,8 +2960,8 @@ async function enterMultiplayerWorld(worldId){
     const count=await loadMultiplayerStructures(worldId);
     multiplayerSession=await Multiplayer.subscribeWorld(worldId,{
       onPlayerState:updateRemotePlayer,
-      onElevatorState:applyRemoteElevatorState,
-      onElevatorDoorState:applyRemoteElevatorDoorState,
+      onElevatorState:()=>{},
+      onElevatorDoorState:()=>{},
       onPlayerStateChange:payload=>{
         if(payload.eventType==="DELETE")removeRemotePlayer(payload.old?.user_id);
         else updateRemotePlayer(payload.new);
@@ -2888,6 +2971,10 @@ async function enterMultiplayerWorld(worldId){
       onChatMessage:row=>appendMultiplayerChatMessage(row,true)
     });
     multiplayerUserId=multiplayerSession.userId;
+    multiplayerWorldAuthority=await Multiplayer.connectWorldAuthority(worldId,{
+      onMessage:applyWorldAuthorityMessage,
+      onClose:()=>{multiplayerWorldAuthority=null;showToast("Se perdió la conexión con el servidor del ascensor. No se enviarán órdenes locales.");}
+    });
     scheduleMultiplayerSync();
     const peerStates=await Multiplayer.getWorldPlayerStates(worldId);
     for(const state of peerStates)updateRemotePlayer(state);
@@ -2902,6 +2989,7 @@ async function enterMultiplayerWorld(worldId){
   }catch(error){
     stopMultiplayerFallbackSync();
     activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();
+    if(multiplayerWorldAuthority){try{await multiplayerWorldAuthority.close();}catch(closeError){console.warn(closeError);}multiplayerWorldAuthority=null;}
     if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
     for(const avatar of remotePlayers.values())scene.remove(avatar);
     remotePlayers.clear();clearCurrentBuildWorld();loadBuilds();
@@ -2944,6 +3032,7 @@ async function leaveMultiplayerWorld(){
     if(multiplayerSyncTimer){clearTimeout(multiplayerSyncTimer);multiplayerSyncTimer=null;}
     await syncMultiplayerStructures();
   }
+  if(multiplayerWorldAuthority){try{await multiplayerWorldAuthority.close();}catch(error){console.warn(error);}multiplayerWorldAuthority=null;}
   if(multiplayerSession){try{await multiplayerSession.close();}catch(error){console.warn(error);}multiplayerSession=null;}
   for(const avatar of remotePlayers.values())scene.remove(avatar);
   remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();multiplayerCloudSnapshot.clear();
