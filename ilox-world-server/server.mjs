@@ -249,7 +249,7 @@ async function handleMessage(ws, message) {
     const e = room.elevators.get(message.elevatorId);
     if (!e || typeof message.open !== 'boolean') return send(ws, 'error', { code: 'invalid_elevator' });
     if (e.moving) return send(ws, 'error', { code: 'elevator_busy' });
-    if (e.passengers.size && e.captainId !== userId) return send(ws, 'error', { code: 'not_elevator_captain' });
+    // Las puertas son un control de seguridad compartido: cualquier miembro autenticado del mundo puede abrirlas o cerrarlas cuando la cabina está detenida. El viaje sigue reservado al capitán.
     try { await setDoor(room, e, message.open, token); }
     catch (error) { send(ws, 'error', { code: error.message || 'elevator_door_failed' }); }
     return;
