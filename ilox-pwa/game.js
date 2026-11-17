@@ -2588,7 +2588,9 @@ function updateElevators(delta){
     const d=Math.hypot(player.position.x-group.position.x,player.position.z-group.position.z);
     const floor=elevatorFloorAtPlayer(group),landingY=group.position.y+.34+(floor-1)*3,verticalGap=Math.abs(player.position.y-landingY);
     const score=d+verticalGap*2;
-    if(!group.userData.elevatorTravel&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,floor)&&d<7.1&&verticalGap<1.35)setElevatorDoorState(group,true,true,false);
+    // Las puertas solo se abren automáticamente cuando la cabina está vacía.
+    // Al abordar, la autoridad las cierra y evita que otro cliente las reabra por proximidad.
+    if(!group.userData.elevatorTravel&&passengersCount(group)===0&&!group.userData.elevatorDoorOpen&&elevatorLandingExists(group,floor)&&d<7.1&&verticalGap<1.35)setElevatorDoorState(group,true,true,false);
     if(d<5.5&&verticalGap<1.35&&score<nearestDistance){nearest=group;nearestFloor=floor;nearestDistance=score;}
     const cabin=group.userData.elevatorCabin,level=group.position.y+cabin.position.y+.16;
     if(!elevatorRiding&&Date.now()-elevatorJustExitedAt>1200&&!group.userData.elevatorTravel&&group.userData.elevatorDoorOpen&&Number(group.userData.elevatorDoorProgress||0)>=.98&&elevatorLandingExists(group,group.userData.buildRecord?.currentFloor||1)&&d<2.65&&Math.abs(player.position.y-level)<.65){
@@ -3993,6 +3995,9 @@ function animate() {
       if(elevator.userData.buildRecord?.kind!=="elevator"||!elevator.userData.elevatorPassengers?.has(remoteId))continue;
       const cabin=elevator.userData.elevatorCabin;
       if(!cabin)continue;
+      // El movimiento vertical procede de la plataforma, no de caminar.
+      // Suprimir el ciclo de marcha y fijar pies al mismo plano que el pasajero local.
+      avatar.userData.remoteMoving=false;
       const floorY=elevator.position.y+cabin.position.y+.16;
       avatar.position.y=floorY;
       if(target)target.y=floorY;
