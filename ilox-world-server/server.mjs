@@ -120,8 +120,20 @@ function getOrCreateRoom(worldId, rows, states, token) {
   if (!room) { room = { worldId, clients: new Set(), userConnections: new Map(), elevators: new Map(), persistToken: token }; rooms.set(worldId, room); }
   room.persistToken = token || room.persistToken;
   const stateById = new Map(states.map(state => [state.structure_id, state]));
+  const liveIds = new Set(rows.map(row => row.id));
+  for (const [id, existing] of room.elevators) {
+    if (liveIds.has(id)) continue;
+    if (existing.timer) clearTimeout(existing.timer);
+    room.elevators.delete(id);
+  }
   for (const row of rows) {
-    if (room.elevators.has(row.id)) continue;
+    const existing = room.elevators.get(row.id);
+    if (existing) {
+      const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+      existing.x = Number(payload.x) || 0; existing.y = Number(payload.y) || 0; existing.z = Number(payload.z) || 0;
+      existing.floorCount = Math.max(1, Math.min(40, Number(payload.floorCount) || 40));
+      continue;
+    }
     const state = stateById.get(row.id);
     const e = makeElevator(row, state);
     room.elevators.set(row.id, e);
