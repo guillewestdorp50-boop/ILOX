@@ -2176,7 +2176,6 @@ function setElevatorDoorState(group,open,broadcast=true,manual=false){
       if(now-(group.userData.elevatorAuthorityWarningAt||0)>3000){group.userData.elevatorAuthorityWarningAt=now;showToast("El servidor compartido del ascensor no está conectado.");}
       return false;
     }
-    if(passengersCount(group)>0&&group.userData.elevatorCaptainId!==multiplayerUserId)return true;
     const requested=!!open,requestAt=Number(group.userData.elevatorDoorRequestAt)||0;
     if(group.userData.elevatorDoorRequested===requested&&Date.now()-requestAt<1400)return true;
     group.userData.elevatorDoorRequested=requested;group.userData.elevatorDoorRequestAt=Date.now();
@@ -2494,12 +2493,12 @@ function applyRemoteElevatorState(state){
 function drawElevatorCanvas(){
   if(!elevatorCanvas)return;
   const ctx=elevatorCanvas.getContext("2d");if(!ctx)return;
-  ctx.clearRect(0,0,600,880);
+  ctx.clearRect(0,0,600,980);
   const count=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
   const rounded=(x,y,w,h,r,fill,stroke,line=1)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}};
   ctx.save();
   const bg=ctx.createLinearGradient(0,0,600,880);bg.addColorStop(0,"#142d36");bg.addColorStop(.52,"#0b2029");bg.addColorStop(1,"#07151e");
-  ctx.shadowColor="#000c";ctx.shadowBlur=34;ctx.shadowOffsetY=14;rounded(12,12,576,856,34,bg,"#6de4c3",4);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.shadowColor="#000c";ctx.shadowBlur=34;ctx.shadowOffsetY=14;rounded(12,12,576,956,34,bg,"#6de4c3",4);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
   ctx.fillStyle="#a7f5dc";ctx.font="800 16px system-ui";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("ILOX  /  ELEVADOR",42,56);
   ctx.fillStyle="#f2fff9";ctx.font="1000 29px system-ui";ctx.fillText("SELECCIONÁ TU PISO",42,100);
   rounded(505,34,58,58,16,"#ffffff12","#8cbdb4",2);ctx.fillStyle="#effff8";ctx.font="bold 44px system-ui";ctx.textAlign="center";ctx.fillText("×",534,63);
@@ -2515,19 +2514,24 @@ function drawElevatorCanvas(){
     rounded(x,y,172,88,17,fill,stroke,2);
     ctx.fillStyle=special?"#b8e6d9":"#f3fff9";ctx.textAlign="center";ctx.font=special?"900 29px system-ui":"1000 38px system-ui";ctx.fillText(label,x+86,y+45);
   }
-  rounded(32,742,536,94,19,"#79f0bd","#c6ffe5",3);
-  ctx.shadowColor="#56e8ac";ctx.shadowBlur=18;ctx.fillStyle="#052c25";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText("CONFIRMAR VIAJE  ›",300,790);ctx.shadowBlur=0;
+  const isCaptain=!multiplayerSession||activeElevator?.userData.elevatorCaptainId===multiplayerUserId;
+  rounded(32,742,536,94,19,isCaptain?"#79f0bd":"#36534d",isCaptain?"#c6ffe5":"#718b82",3);
+  ctx.shadowColor=isCaptain?"#56e8ac":"transparent";ctx.shadowBlur=isCaptain?18:0;ctx.fillStyle=isCaptain?"#052c25":"#c1d0ca";ctx.textAlign="center";ctx.font="1000 27px system-ui";ctx.fillText(isCaptain?"CONFIRMAR VIAJE  ›":"SOLO CAPITÁN PUEDE VIAJAR",300,790);ctx.shadowBlur=0;
+  const doorOpen=!!activeElevator?.userData.elevatorDoorOpen;
+  rounded(32,850,536,94,19,"#d83b43","#ff9b9f",3);
+  ctx.shadowColor="#ff5252";ctx.shadowBlur=15;ctx.fillStyle="#fff7f7";ctx.textAlign="center";ctx.font="1000 28px system-ui";ctx.fillText(doorOpen?"CERRAR PUERTA":"ABRIR PUERTA",300,898);ctx.shadowBlur=0;
   ctx.restore();
 }
 function createElevatorCanvasControl(){
   const canvas=document.createElement("canvas");canvas.id="ilox-elevator-canvas";
-  for(const [prop,value] of Object.entries({position:"absolute",left:"50%",top:"50%",right:"auto",bottom:"auto",transform:"translate(-50%,-50%)",width:"min(300px, calc(100vw - 24px))",height:"min(440px, calc(100dvh - 28px))",maxWidth:"300px",maxHeight:"440px",zIndex:"65",pointerEvents:"auto",touchAction:"none",display:"none",userSelect:"none",webkitUserSelect:"none"}))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
-  canvas.width=600;canvas.height=880;canvas.setAttribute("role","img");canvas.setAttribute("aria-label","Botonera gráfica del ascensor con números del cero al nueve");
+  for(const [prop,value] of Object.entries({position:"absolute",left:"50%",top:"50%",right:"auto",bottom:"auto",transform:"translate(-50%,-50%)",width:"min(300px, calc(100vw - 24px))",height:"min(490px, calc(100dvh - 20px))",maxWidth:"300px",maxHeight:"490px",zIndex:"65",pointerEvents:"auto",touchAction:"none",display:"none",userSelect:"none",webkitUserSelect:"none"}))canvas.style.setProperty(prop.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  canvas.width=600;canvas.height=980;canvas.setAttribute("role","img");canvas.setAttribute("aria-label","Botonera gráfica del ascensor con números del cero al nueve");
   canvas.addEventListener("pointerdown",e=>{
     e.preventDefault();e.stopPropagation();if(!elevatorKeypadOpen||!started)return;
-    const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*880;
+    const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*980;
     if(x>=495&&y<=105){closeElevatorKeypad();return;}
     if(y>=742&&y<=840){confirmElevatorTravel(activeElevator);return;}
+    if(y>=850&&y<=944){const group=activeElevator;if(group&&!group.userData.elevatorTravel){const opening=!group.userData.elevatorDoorOpen;if(setElevatorDoorState(group,opening,true,true))showToast(opening?"Puertas abiertas.":"Puertas cerradas.");}return;}
     if(y>=300&&y<720&&x>=32&&x<568){
       const col=Math.max(0,Math.min(2,Math.floor((x-32)/181))),row=Math.max(0,Math.min(3,Math.floor((y-300)/105))),key=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]][row][col];
       const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
@@ -2541,7 +2545,6 @@ function createElevatorCanvasControl(){
 }
 function openElevatorKeypad(group){
   if(!elevatorRiding||!group||activeElevator!==group||group.userData.elevatorTravel)return;
-  if(multiplayerSession&&group.userData.elevatorCaptainId&&group.userData.elevatorCaptainId!==multiplayerUserId)return;
   const count=Math.max(1,Math.min(40,group.userData.buildRecord?.floorCount||40));
   elevatorSelectedFloor=THREE.MathUtils.clamp(group.userData.buildRecord?.currentFloor||1,1,count);elevatorFloorInput=String(elevatorSelectedFloor);
   elevatorKeypadOpen=true;if(elevatorCanvas){elevatorCanvas.style.setProperty("display","block","important");drawElevatorCanvas();}
