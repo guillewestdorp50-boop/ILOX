@@ -2531,7 +2531,7 @@ function createElevatorCanvasControl(){
     const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*600,y=(e.clientY-rect.top)/rect.height*980;
     if(x>=495&&y<=105){closeElevatorKeypad();return;}
     if(y>=742&&y<=840){confirmElevatorTravel(activeElevator);return;}
-    if(y>=850&&y<=944){const group=activeElevator;if(group&&!group.userData.elevatorTravel){const opening=!group.userData.elevatorDoorOpen;if(setElevatorDoorState(group,opening,true,true))showToast(opening?"Puertas abiertas.":"Puertas cerradas.");}return;}
+    if(y>=850&&y<=944){const group=activeElevator;if(group&&!group.userData.elevatorTravel){const opening=!group.userData.elevatorDoorOpen;if(setElevatorDoorState(group,opening,true,true)){showToast(opening?"Puertas abiertas.":"Puertas cerradas.");drawElevatorCanvas();}}return;}
     if(y>=300&&y<720&&x>=32&&x<568){
       const col=Math.max(0,Math.min(2,Math.floor((x-32)/181))),row=Math.max(0,Math.min(3,Math.floor((y-300)/105))),key=[["1","2","3"],["4","5","6"],["7","8","9"],["C","0","⌫"]][row][col];
       const max=Math.max(1,Math.min(40,activeElevator?.userData.buildRecord?.floorCount||40));
@@ -2634,6 +2634,7 @@ function applyRemoteElevatorDoorState(state){
   group.userData.elevatorDoorAnimation={from:progress,to:state.open?1:0,startedAt:now,duration:850};
   group.userData.elevatorDoorCloseAt=state.open?now+4500:0;
   group.userData.elevatorDoorChangedAt=Number(state.changedAt)||now;
+  if(activeElevator===group&&elevatorKeypadOpen)drawElevatorCanvas();
 }
 function applyWorldAuthorityMessage(message){
   if(!message||typeof message.type!=="string")return;
