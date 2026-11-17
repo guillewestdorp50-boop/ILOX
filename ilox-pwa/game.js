@@ -41,7 +41,7 @@ const doorPinTitle = document.querySelector("#door-pin-title");
 const doorPinHelp = document.querySelector("#door-pin-help");
 const doorPinChangeButton = document.querySelector("#door-pin-change");
 let doorPinTarget = null, doorPinMode = "setup";
-let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerWorldAuthority = null, multiplayerUserId = null, multiplayerWorldOwnerId = null;
+let activeMultiplayerWorldId = null, multiplayerSession = null, multiplayerWorldAuthority = null, multiplayerWorldAuthorityEnabled = false, multiplayerUserId = null, multiplayerWorldOwnerId = null;
 const multiplayerPresentUserIds=new Set();
 let multiplayerSyncTimer = null, multiplayerSyncing = false, multiplayerSyncAgain = false;
 let multiplayerFallbackTimer = null, multiplayerFallbackBusy = false, multiplayerLastChatPoll = 0;
@@ -2902,7 +2902,7 @@ function startMultiplayerFallbackSync(worldId){
 function syncRemotePresence(state){
   const seen=new Set();multiplayerPresentUserIds.clear();
   const elevators=buildGroups.filter(group=>group.userData.buildRecord?.kind==="elevator");
-  const useLegacyElevatorPresence=!multiplayerWorldAuthority;
+  const useLegacyElevatorPresence=!multiplayerWorldAuthorityEnabled;
   if(useLegacyElevatorPresence)for(const group of elevators)group.userData.elevatorPassengers=new Map();
   for(const entries of Object.values(state||{})){
     for(const entry of entries||[]){
@@ -2973,6 +2973,7 @@ async function enterMultiplayerWorld(worldId){
       onChatMessage:row=>appendMultiplayerChatMessage(row,true)
     });
     multiplayerUserId=multiplayerSession.userId;
+    multiplayerWorldAuthorityEnabled=true;
     multiplayerWorldAuthority=await Multiplayer.connectWorldAuthority(worldId,{
       onMessage:applyWorldAuthorityMessage,
       onClose:()=>{multiplayerWorldAuthority=null;showToast("Se perdió la conexión con el servidor del ascensor. No se enviarán órdenes locales.");}
@@ -2990,7 +2991,7 @@ async function enterMultiplayerWorld(worldId){
     return count;
   }catch(error){
     stopMultiplayerFallbackSync();
-    activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();
+    activeMultiplayerWorldId=null;multiplayerWorldAuthorityEnabled=false;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();
     if(multiplayerWorldAuthority){try{await multiplayerWorldAuthority.close();}catch(closeError){console.warn(closeError);}multiplayerWorldAuthority=null;}
     if(multiplayerSession){try{await multiplayerSession.close();}catch(closeError){console.warn(closeError);}multiplayerSession=null;}
     for(const avatar of remotePlayers.values())scene.remove(avatar);
@@ -3037,7 +3038,7 @@ async function leaveMultiplayerWorld(){
   if(multiplayerWorldAuthority){try{await multiplayerWorldAuthority.close();}catch(error){console.warn(error);}multiplayerWorldAuthority=null;}
   if(multiplayerSession){try{await multiplayerSession.close();}catch(error){console.warn(error);}multiplayerSession=null;}
   for(const avatar of remotePlayers.values())scene.remove(avatar);
-  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();multiplayerCloudSnapshot.clear();
+  remotePlayers.clear();activeMultiplayerWorldId=null;multiplayerWorldAuthorityEnabled=false;multiplayerUserId=null;multiplayerWorldOwnerId=null;multiplayerPresentUserIds.clear();multiplayerCloudSnapshot.clear();
   clearCurrentBuildWorld();loadBuilds();
   document.querySelector("#mp-leave-world")?.classList.add("hidden");
   document.querySelector("#mp-chat-panel")?.classList.add("hidden");
