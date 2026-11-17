@@ -312,3 +312,74 @@ export async function verifyDoorPin(structureId, pin) {
   if (error) throw error;
   return data === true;
 }
+
+
+const WORLD_AUTHORITY_URL = "wss://ilox-world-authority.onrender.com/world";
+
+export async function connectWorldAuthority(worldId, handlers = {}) {
+  const { data: { session }, error } = await client.auth.getSession();
+  if (error) throw error;
+  if (!session?.access_token) throw new Error("No hay una sesión válida para conectar el servidor del mundo.");
+  const socket = new WebSocket(WORLD_AUTHORITY_URL);
+  let ready = false;
+  let closedByClient = false;
+  let readyTimer = null;
+  const readyPromise = new Promise((resolve, reject) => {
+    readyTimer = setTimeout(() => {
+      if (!ready) {
+        try { socket.close(); } catch (_) {}
+        reject(new Error("El servidor del mundo no respondió a tiempo."));
+      }
+    }, 10000);
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({ type: "auth", accessToken: session.access_token, worldId }));
+    }, { once: true });
+    socket.addEventListener("message", event => {
+      let message;
+      try { message = JSON.parse(event.data); }
+      catch (_) { handlers.onProtocolError?.(new Error("Respuesta inválida del servidor del mundo.")); return; }
+      if (message.type === "world:ready" && !ready) {
+        ready = true;
+        clearTimeout(readyTimer);
+        handlers.onMessage?.(message);
+        resolve(message);
+        return;
+      }
+      if (message.type === "error" && !ready) {
+        clearTimeout(readyTimer);
+        reject(new Error(message.code || "No se pudo autenticar en el servidor del mundo."));
+        try { socket.close(); } catch (_) {}
+        return;
+      }
+      handlers.onMessage?.(message);
+    });
+    socket.addEventListener("error", () => {
+      if (!ready) {
+        clearTimeout(readyTimer);
+        reject(new Error("No se pudo abrir la conexión segura con el servidor del mundo."));
+      }
+    });
+    socket.addEventListener("close", event => {
+      clearTimeout(readyTimer);
+      if (!ready) reject(new Error("El servidor del mundo cerró la conexión antes de completar el ingreso."));
+      else if (!closedByClient) handlers.onClose?.(event);
+    });
+  });
+  const readyState = await readyPromise;
+  const send = (type, payload = {}) => {
+    if (socket.readyState !== WebSocket.OPEN) return Promise.reject(new Error("La conexión con el servidor del mundo se interrumpió."));
+    socket.send(JSON.stringify({ type, ...payload }));
+    return Promise.resolve(true);
+  };
+  return {
+    ready: readyState,
+    sendPassenger: (elevatorId, joined) => send("elevator:passenger", { elevatorId, joined: !!joined }),
+    callElevator: (elevatorId, targetFloor) => send("elevator:call", { elevatorId, targetFloor }),
+    travelElevator: (elevatorId, targetFloor) => send("elevator:travel", { elevatorId, targetFloor }),
+    setElevatorDoor: (elevatorId, open) => send("elevator:door", { elevatorId, open: !!open }),
+    close: async () => {
+      closedByClient = true;
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close(1000, "client leaving world");
+    }
+  };
+}
