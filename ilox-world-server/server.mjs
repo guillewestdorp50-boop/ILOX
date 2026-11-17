@@ -84,7 +84,7 @@ function makeElevator(row, persisted) {
 function elevatorSnapshot(e) {
   return { elevatorId: e.id, x: e.x, y: e.y, z: e.z, floorCount: e.floorCount, currentFloor: e.currentFloor,
     targetFloor: e.targetFloor, moving: e.moving, startedAt: e.travelStartedAt, duration: e.travelDurationMs,
-    doorOpen: e.doorOpen, captainId: e.captainId,
+    doorOpen: e.doorOpen, changedAt: e.changedAt || 0, captainId: e.captainId,
     passengers: [...e.passengers.entries()].map(([userId, joinedAt]) => ({ userId, joinedAt })) };
 }
 async function persistElevator(room, e, token) {
@@ -142,6 +142,7 @@ function removePassenger(room, userId) {
 async function setDoor(room, e, open, token) {
   if (e.moving) throw new Error('elevator_busy');
   e.doorOpen = open;
+  e.changedAt = Date.now();
   await persistElevator(room, e, token);
   broadcast(room, 'elevator:door', elevatorSnapshot(e));
 }
@@ -154,7 +155,7 @@ async function startTravel(room, e, target, userId, token) {
   }
   const fromFloor = e.currentFloor;
   const duration = Math.max(1200, Math.abs(target - fromFloor) * 1250);
-  e.targetFloor = target; e.moving = true; e.doorOpen = false;
+  e.targetFloor = target; e.moving = true; e.doorOpen = false; e.changedAt = Date.now();
   e.travelStartedAt = Date.now(); e.travelDurationMs = duration; e.changedBy = userId;
   try { await persistElevator(room, e, token); }
   catch (error) {
