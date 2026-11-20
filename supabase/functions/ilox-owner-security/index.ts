@@ -2,6 +2,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const OWNER_USER_ID = Deno.env.get("ILOX_OWNER_USER_ID") ?? "";
 const OWNER_PEPPER = Deno.env.get("ILOX_OWNER_PEPPER") ?? "";
 const ORIGIN = "https://ilox-mundo-abierto.onrender.com";
+import { answerVerifier, chooseThree, constantTimeEqual, normalizeAnswer } from "./security-core.ts";
 
 function readKey(name: string, legacyName: string): string {
   const bundle = Deno.env.get(name);
@@ -38,47 +39,6 @@ function reply(body: unknown, status = 200, originAllowed = true): Response {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function normalizeAnswer(value: unknown): string {
-  if (typeof value !== "string") throw new Error("invalid_input");
-  const normalized = value.normalize("NFKC").trim().toLocaleLowerCase("es-AR").replace(/\s+/g, " ");
-  if (normalized.length < 3 || normalized.length > 256) throw new Error("invalid_input");
-  return normalized;
-}
-
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let difference = 0;
-  for (let i = 0; i < a.length; i++) difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return difference === 0;
-}
-
-function randomIndex(max: number): number {
-  const range = 0x1_0000_0000;
-  const limit = Math.floor(range / max) * max;
-  const word = new Uint32Array(1);
-  do { crypto.getRandomValues(word); } while (word[0] >= limit);
-  return word[0] % max;
-}
-
-function chooseThree(): number[] {
-  const pool = [1,2,3,4,5,6,7,8,9,10];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = randomIndex(i + 1);
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, 3);
-}
-
-async function answerVerifier(ownerId: string, questionId: number, answer: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(OWNER_PEPPER),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
-  );
-  const input = new TextEncoder().encode(`${ownerId}|ilox-owner-v1|${questionId}|${answer}`);
-  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, input));
-  return [...signature].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function authenticateOwner(request: Request): Promise<{ id: string; email: string }> {
@@ -120,7 +80,7 @@ async function handle(request: Request): Promise<Response> {
   if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
   const origin = request.headers.get("origin");
   if (origin && origin !== ORIGIN) return reply({ error: "not_found" }, 404, false);
-  if (!SUPABASE_URL || !PUBLISHABLE_KEY || !SECRET_KEY || !OWNER_PEPPER || !OWNER_USER_ID) {
+  if (!SUPABASE_URL || !PUBLISHABLE_KEY || !SECRET_KEY || !OWNER_PEPPER || OWNER_PEPPER.length < 32 || !OWNER_USER_ID) {
     return reply({ error: "service_not_configured" }, 503);
   }
 
@@ -142,7 +102,7 @@ async function handle(request: Request): Promise<Response> {
         const answer = normalizeAnswer(item.answer);
         verifiers[String(index + 1)] = {
           question,
-          verifier: await answerVerifier(owner.id, index + 1, answer),
+          verifier: await answerVerifier(owner.id, index + 1, answer, OWNER_PEPPER),
         };
       }
       const enrolled = await rpc("ilox_owner_enroll", {
@@ -201,7 +161,7 @@ async function handle(request: Request): Promise<Response> {
         const expected = security?.answer_verifiers?.[String(id)]?.verifier;
         const supplied = answers.get(id);
         if (typeof expected !== "string" || !supplied) { valid = false; continue; }
-        const actual = await answerVerifier(owner.id, id, supplied);
+        const actual = await answerVerifier(owner.id, id, supplied, OWNER_PEPPER);
         if (!constantTimeEqual(actual, expected)) valid = false;
       }
       if (!valid) {
@@ -222,6 +182,7 @@ async function handle(request: Request): Promise<Response> {
     if (code === "unauthorized") return reply({ error: "unauthorized" }, 401);
     if (code === "owner_temporarily_locked") return reply({ error: "temporarily_locked" }, 423);
     if (code === "owner_not_enrolled") return reply({ error: "not_enrolled" }, 409);
+    if (code === "owner_rate_limited") return reply({ error: "rate_limited" }, 429);
     return reply({ error: "security_service_unavailable" }, 503);
   }
 }
