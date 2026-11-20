@@ -1,0 +1,27 @@
+name: ILOX owner security tests
+
+on:
+  push:
+    branches:
+      - security/owner-key-v127
+    paths:
+      - "supabase/functions/ilox-owner-security/**"
+      - ".github/workflows/ilox-owner-security-tests.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/ilox-owner-security/**"
+      - ".github/workflows/ilox-owner-security-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deno-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Test owner security cryptographic helpers
+        run: deno test supabase/functions/ilox-owner-security/security-core.test.ts
