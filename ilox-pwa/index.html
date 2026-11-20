@@ -10,13 +10,22 @@
       const SUPABASE_URL = "https://wihbxfebobfmohmqqhkt.supabase.co";
       const SUPABASE_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
       const errors = [];
+      const runtimeEvents = [];
       let sending = false;
       const clientSessionId = (crypto.randomUUID ? crypto.randomUUID() : "ilox-" + Date.now() + "-" + Math.random().toString(36).slice(2));
       const runtimeLastSent = new Map();
       const runtimeWindow = [];
-      const record = (type, message, stack = "") => {
-        errors.push({ type: String(type).slice(0,80), message: String(message || "Error sin detalle").slice(0,2000), stack: String(stack || "").slice(0,6000) });
-        if (errors.length > 15) errors.shift();
+      const record = (type, message, stack = "", extra = {}) => {
+        errors.push({
+          time: new Date().toISOString(),
+          type: String(type).slice(0,120),
+          message: String(message || "Error sin detalle").slice(0,4000),
+          stack: String(stack || "").slice(0,12000),
+          source: String(extra.source || "").slice(0,2000),
+          line: Number.isFinite(extra.line) ? extra.line : null,
+          column: Number.isFinite(extra.column) ? extra.column : null
+        });
+        if (errors.length > 40) errors.shift();
       };
       const show = (title, detail) => {
         const panel = document.getElementById("loading");
@@ -39,7 +48,43 @@
         checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
         checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
+        const nav = navigator;
+        const connection = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+        const memory = performance.memory || null;
+        const resources = performance.getEntriesByType("resource").slice(-100).map(entry => ({
+          name: String(entry.name).slice(0,500),
+          type: entry.initiatorType || "",
+          durationMs: Math.round(entry.duration),
+          transferSize: entry.transferSize || 0
+        }));
+        checks.environment = {
+          online: nav.onLine,
+          language: nav.language,
+          platform: nav.platform || "",
+          deviceMemoryGB: nav.deviceMemory || null,
+          hardwareConcurrency: nav.hardwareConcurrency || null,
+          connection: connection ? {
+            effectiveType: connection.effectiveType || "",
+            downlinkMbps: connection.downlink || null,
+            rttMs: connection.rtt || null,
+            saveData: !!connection.saveData
+          } : null,
+          memory: memory ? {
+            usedJSHeapSize: memory.usedJSHeapSize,
+            totalJSHeapSize: memory.totalJSHeapSize,
+            jsHeapLimit: memory.jsHeapSizeLimit
+          } : null,
+          viewport: { width: innerWidth, height: innerHeight, pixelRatio: devicePixelRatio },
+          screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth },
+          visibility: document.visibilityState,
+          serviceWorkerController: !!navigator.serviceWorker?.controller,
+          currentScript: document.querySelector('script[type="module"][src]')?.src || "",
+          resources
+        };
         checks.errorsCaptured = errors.length;
+        checks.runtimeEventsCaptured = runtimeEvents.length;
+        checks.capturedErrors = errors.slice();
+        checks.runtimeEvents = runtimeEvents.slice(-40);
         return checks;
       };
       async function sendReport() {
@@ -51,24 +96,37 @@
         if (status) status.textContent = "Revisando el juego y enviando el informe…";
         try {
           const diagnostics = await runChecks();
-          const latest = errors[errors.length - 1] || {type:"INFORME MANUAL",message:"El mundo quedó detenido en Preparando tu mundo aunque no se capturó un error JavaScript.",stack:""};
+          const latest = errors[errors.length - 1] || {type:"INFORME MANUAL",message:"Se solicitó un informe manual; no había errores JavaScript capturados.",stack:""};
+          const allErrors = errors.slice(-40);
+          const allRuntimeEvents = runtimeEvents.slice(-40);
+          const fullMessage = allErrors.length
+            ? allErrors.map((item,index) => "["+(index+1)+"] "+item.time+" | "+item.type+" | "+item.message).join("\n")
+            : latest.message;
+          const fullStack = allErrors.map((item,index) => "===== ERROR "+(index+1)+" | "+item.type+" | "+item.time+" =====\n"+item.stack+"\nOrigen: "+item.source+" ("+item.line+":"+item.column+")").join("\n\n").slice(0,30000);
           const payload = {
-            app_version:"ILOX-v124-authoritative-elevator-20261117",
+            app_version:"ILOX-v127-full-diagnostic-report-20261120",
             error_type:latest.type,
-            message:latest.message,
-            stack:latest.stack,
+            message:fullMessage.slice(0,12000),
+            stack:fullStack || latest.stack || "",
             page_url:location.origin + location.pathname,
             user_agent:navigator.userAgent.slice(0,500),
-            diagnostics:{...diagnostics,client_session_id:clientSessionId}
+            diagnostics:{
+              ...diagnostics,
+              client_session_id:clientSessionId,
+              report_generated_at:new Date().toISOString(),
+              errors:allErrors,
+              runtime_events:allRuntimeEvents
+            }
           };
           const response = await fetch(SUPABASE_URL + "/functions/v1/ilox-error-report", {
             method:"POST",
             headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
             body:JSON.stringify(payload)
           });
-          if (!response.ok) throw new Error("Servidor de informes respondió HTTP " + response.status + ": " + (await response.text()).slice(0,300));
-          if (status) status.textContent = "INFORME ENVIADO. Ya podemos revisar el fallo desde el servidor.";
-          if (button) button.textContent = "INFORME ENVIADO ✓";
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error("Servidor de informes respondió HTTP " + response.status + ": " + JSON.stringify(result).slice(0,1000));
+          if (status) status.textContent = "INFORME COMPLETO ENVIADO ✓\nID: "+(result.report_id || "registrado")+"\nErrores capturados: "+allErrors.length+"\nEventos técnicos: "+allRuntimeEvents.length+"\nComprobaciones: "+JSON.stringify(diagnostics);
+          if (button) button.textContent = "INFORME COMPLETO ENVIADO ✓";
         } catch (error) {
           if (status) status.textContent = "No se pudo enviar automáticamente: " + String(error) + ". Sacá una captura de este panel.";
           if (button) { button.disabled = false; button.textContent = "REINTENTAR ENVÍO"; }
@@ -83,6 +141,8 @@
         while (runtimeWindow.length && now-runtimeWindow[0] > 600000) runtimeWindow.shift();
         if (runtimeWindow.length > 8) return false;
         runtimeLastSent.set(key,now);
+        runtimeEvents.push({time:new Date(now).toISOString(),type:key,message:String(message || "Evento de diagnóstico físico").slice(0,4000),details});
+        if (runtimeEvents.length > 40) runtimeEvents.shift();
         try {
           const response = await fetch(SUPABASE_URL + "/functions/v1/ilox-error-report", {
             method:"POST",
@@ -106,10 +166,13 @@
         record(type, detail, detail?.stack || "");
         show("ILOX DETECTÓ UN FALLO", type + ": " + String(detail || "Sin detalle").slice(0,1200));
       };
-      window.__iloxOpenDiagnostics = () => show("DIAGNÓSTICO DE ILOX", "Panel de diagnóstico abierto. Podés enviar un informe técnico para revisar la carga del mundo.");
+      window.__iloxOpenDiagnostics = () => {
+        show("INFORME COMPLETO DE ERRORES", "Recopilando errores, trazas, eventos físicos, recursos, red, memoria y estado de los módulos…");
+        sendReport();
+      };
       window.addEventListener("error", event => {
         const detail = event.error?.stack || event.message || event.target?.src || event.target?.href || "Fallo al cargar un recurso";
-        record("ERROR", detail, event.error?.stack || "");
+        record("ERROR", detail, event.error?.stack || "", {source:event.filename || event.target?.src || event.target?.href || "",line:event.lineno,column:event.colno});
         show("ILOX DETECTÓ UN FALLO", String(detail));
       }, true);
       window.addEventListener("unhandledrejection", event => {
@@ -237,7 +300,7 @@
       <button id="force-app-update" class="menu-action force-update-action" type="button">⚡ FORZAR ACTUALIZACIÓN <span>↻</span></button>
       <div class="menu-section-title">PARTIDA Y JUGADORES</div>
       <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
-      <button id="ilox-diagnostic-open" class="menu-action" type="button">🛠 DIAGNÓSTICO DEL MUNDO</button>
+      <button id="ilox-diagnostic-open" class="menu-action" type="button">🧾 VER INFORME COMPLETO DE ERRORES</button>
        <div class="menu-version" aria-label="Versión del juego">ILOX v127</div>
     </section>
     <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
