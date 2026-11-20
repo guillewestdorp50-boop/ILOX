@@ -23,5 +23,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Type-check owner security Edge Function
+        run: deno check supabase/functions/ilox-owner-security/index.ts
       - name: Test owner security cryptographic helpers
         run: deno test supabase/functions/ilox-owner-security/security-core.test.ts
