@@ -1,6 +1,6 @@
 export function normalizeAnswer(value: unknown): string {
   if (typeof value !== "string") throw new Error("invalid_input");
-  const normalized = value.normalize("NFKC").trim().toLocaleLowerCase("es-AR").replace(/\\s+/g, " ");
+  const normalized = value.normalize("NFKC").trim().toLocaleLowerCase("es-AR").replace(/\s+/g, " ");
   if (normalized.length < 3 || normalized.length > 256) throw new Error("invalid_input");
   return normalized;
 }
