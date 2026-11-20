@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#092d26">
+<title>ILOX — Mesa de naipes</title>
+<style>
+:root{color-scheme:dark;--gold:#e9c77c;--felt:#12664b;--felt2:#0b4938;--ink:#f8f1df}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b19;color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.game{height:100%;min-height:100dvh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 48%,#253d35 0,#101b19 70%)}
+.topbar{height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #ffffff18;background:#081511aa;letter-spacing:.12em;font-size:11px;font-weight:800}
+.brand{color:var(--gold);font-size:15px;letter-spacing:.2em}.status{color:#c9d8cc;letter-spacing:.04em}
+.table-wrap{flex:1;min-height:0;display:grid;place-items:center;padding:10px 14px}
+.table{position:relative;width:min(100%,1050px);height:min(100%,590px);min-height:340px;border:12px solid #4c3020;border-radius:48% / 42%;background:radial-gradient(ellipse at 50% 45%,#197455 0,#105b43 56%,#0b4635 100%);box-shadow:inset 0 0 0 2px #c89c58,inset 0 0 0 8px #083b2e,0 22px 50px #0009;overflow:hidden}
+.table:before{content:"";position:absolute;inset:15px;border:1px solid #d9c28b55;border-radius:48% / 42%;pointer-events:none}
+.center-mark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:clamp(22px,5vw,42px);font-weight:900;letter-spacing:.28em;color:#d6e9d51b;white-space:nowrap}
+.player{position:absolute;display:flex;align-items:center;gap:8px;font-size:12px;color:#f4ecd9;text-shadow:0 1px 4px #000}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f1d28e,#9b693b);border:2px solid #f7e6bd;color:#382819;font-weight:900}
+.opponent{top:8%;left:50%;transform:translateX(-50%);flex-direction:column;gap:4px}
+.left-player{left:5%;top:48%;flex-direction:column}.right-player{right:5%;top:48%;flex-direction:column}
+.hand-back{display:flex;justify-content:center;margin-top:3px}
+.back{width:34px;height:49px;margin-left:-15px;border:2px solid #f1dfb5;border-radius:5px;background:repeating-linear-gradient(45deg,#203f73 0 4px,#d7c08b 4px 6px);box-shadow:0 2px 4px #0008}
+.opponent .back{width:29px;height:42px;margin-left:-12px}
+.play-area{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,40px);width:60%}
+.pile{width:clamp(54px,9vw,78px);height:clamp(78px,13vw,112px);border:1px dashed #e5d5a277;border-radius:8px;display:grid;place-items:center;color:#e5d5a288;font-size:10px;text-align:center;letter-spacing:.08em}
+.card{position:relative;flex:none;width:clamp(48px,8vw,70px);height:clamp(72px,12vw,102px);border-radius:8px;background:#f7f1e4;color:#27231e;border:1px solid #d9ceb9;box-shadow:0 4px 10px #001b13aa;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:clamp(23px,4vw,34px);cursor:pointer;user-select:none;transition:transform .16s,box-shadow .16s}
+.card.red{color:#a72d32}.card .corner{position:absolute;top:5px;left:6px;font:700 10px/1.1 Georgia,serif;text-align:center}.card .corner.bottom{top:auto;left:auto;bottom:5px;right:6px;transform:rotate(180deg)}
+.card.selected{transform:translateY(-13px);box-shadow:0 0 0 3px var(--gold),0 12px 18px #00150f99}
+.my-seat{flex:none;min-height:156px;padding:8px 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;background:linear-gradient(0deg,#07120fee,#07120f99 70%,transparent)}
+.my-info{display:flex;align-items:center;gap:9px;font-size:12px;color:#d9e2d8}.my-info .avatar{width:27px;height:27px}
+.hand{display:flex;align-items:flex-end;justify-content:center;width:100%;min-height:104px;padding:4px 8px 0}
+.hand .card{margin-left:clamp(-14px,-2vw,-5px)}.hand .card:first-child{margin-left:0}
+.actions{height:38px;display:flex;justify-content:center;align-items:center;gap:10px}
+.action{border:1px solid #e7c77c88;border-radius:20px;padding:8px 17px;background:#132f27;color:#f3dfb2;font-size:10px;font-weight:800;letter-spacing:.1em}
+.action:disabled{opacity:.4}
+@media(max-width:600px){.topbar{height:44px;padding:0 12px}.table-wrap{padding:8px 5px}.table{height:min(100%,520px);min-height:310px;border-width:8px}.opponent{top:5%}.left-player{left:2%}.right-player{right:2%}.player{font-size:10px}.avatar{width:27px;height:27px}.play-area{width:67%;top:51%}.my-seat{min-height:146px}.hand{min-height:94px}.hand .card{margin-left:-17px}.hand .card:first-child{margin-left:0}}
+@media(orientation:landscape) and (max-height:520px){.topbar{height:38px}.table-wrap{padding:4px 10px}.table{height:100%;min-height:250px;width:min(100%,1050px)}.my-seat{min-height:108px;padding-bottom:4px}.hand{min-height:68px}.hand .card{height:66px;width:46px}.opponent .back{height:30px;width:22px}.play-area{top:52%}}
+</style>
+</head>
+<body>
+<div class="game">
+<header class="topbar"><span class="brand">ILOX</span><span>MESA DE NAIPES</span><span class="status">SALA · ESPERANDO JUGADORES</span></header>
+<main class="table-wrap">
+<section class="table" aria-label="Mesa de juego">
+<div class="center-mark">ILOX</div>
+<div class="player opponent"><div class="avatar">J2</div><span>JUGADOR 2</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="player left-player"><div class="avatar">J3</div><span>JUGADOR 3</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="player right-player"><div class="avatar">J4</div><span>JUGADOR 4</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="play-area"><div class="pile">MAZO</div><div class="pile">ZONA DE JUEGO</div><div class="pile">DESCARTE</div></div>
+</section>
+</main>
+<footer class="my-seat">
+<div class="my-info"><span class="avatar">YO</span><strong>TU MANO</strong><span id="count">· 5 cartas</span></div>
+<div class="hand" id="hand" aria-label="Tus cartas">
+<div class="card" data-card="1"><span class="corner">A<br>♠</span>♠<span class="corner bottom">A<br>♠</span></div>
+<div class="card red" data-card="2"><span class="corner">7<br>♥</span>♥<span class="corner bottom">7<br>♥</span></div>
+<div class="card" data-card="3"><span class="corner">3<br>♣</span>♣<span class="corner bottom">3<br>♣</span></div>
+<div class="card red" data-card="4"><span class="corner">Q<br>♦</span>♦<span class="corner bottom">Q<br>♦</span></div>
+<div class="card" data-card="5"><span class="corner">5<br>♠</span>♠<span class="corner bottom">5<br>♠</span></div>
+</div>
+<div class="actions"><button class="action" id="play" disabled>JUGAR CARTA</button><button class="action" id="sort" type="button">ORDENAR</button></div>
+</footer>
+</div>
+<script>
+const hand=document.getElementById('hand'),play=document.getElementById('play');
+hand.addEventListener('click',e=>{const card=e.target.closest('.card');if(!card)return;hand.querySelectorAll('.card').forEach(c=>c.classList.toggle('selected',c===card));play.disabled=false;});
+play.addEventListener('click',()=>{const selected=hand.querySelector('.selected');if(!selected)return;selected.classList.remove('selected');play.disabled=true;});
+document.getElementById('sort').addEventListener('click',()=>{const cards=[...hand.children];cards.reverse().forEach(c=>hand.appendChild(c));});
+</script>
+</body>
+</html>
