@@ -1,6 +1,6 @@
 # ILOX — Owner Key Pilot (verified discovery and implementation plan)
 
-**Status:** discovery and design only. The existing draft PR is not merged. No production code, database objects, secrets, user accounts, world data, or deployments have been changed.
+**Status:** isolated implementation is committed on `security/owner-key-v127` and remains unmerged. The PWA screen, Edge Function, migration draft, and helper tests are code-review artifacts only. No production migration, secret, Auth setting, user account, world data, or deployment has been changed.
 
 ## Goal and scope
 
@@ -57,6 +57,36 @@ Findings requiring careful treatment:
 7. **Fail closed:** invalid/anonymous identity, missing enrollment, backend failure, expired challenge, or invalid grant denies the owner action.
 8. **No silent production action:** code remains isolated for review. Migrations, Edge Function deployment, secret configuration, and any Render deployment are separate steps requiring explicit approval.
 
+## Implemented on the isolated branch
+
+- `ilox-pwa/owner-pilot/index.html`: private owner screen with separate email OTP/magic-link authentication, no persistent browser session, one-time ten-question enrollment, random three-question challenge, and answer fields that are cleared after use.
+- `supabase/functions/ilox-owner-security/index.ts`: server-side owner identity check against the exact configured Auth user UUID; anonymous sessions and unconfirmed email identities are rejected. It supports enrollment, status, challenge, and verification.
+- `supabase/functions/ilox-owner-security/security-core.ts`: CSPRNG question selection and HMAC-SHA-256 answer verifiers with Unicode/case/whitespace normalization.
+- `supabase/migrations/20261120000000_ilox_owner_security_pilot.sql`: isolated private tables, RLS enabled with no client policies, service-role-only RPCs, atomic challenge consumption, single-use action grants, and answer-free audit events.
+- `supabase/config.toml`: JWT verification stays enabled for the Edge Function.
+- `.github/workflows/ilox-owner-security-tests.yml`: Deno helper tests run in GitHub Actions.
+
+### Server-enforced controls in the draft
+
+- Each challenge expires after 5 minutes and is atomically consumed on its first verification attempt.
+- Maximum 10 challenge creations per owner in 10 minutes.
+- Five failed answers trigger a 15-minute lockout.
+- Successful verification issues a grant bound to the requested action; the grant expires after 60 seconds and can be consumed only once by a server-side caller.
+- Answer values are never written to database rows, audit events, logs, browser storage, or Git. Only keyed HMAC verifiers and question labels are stored.
+- The browser uses a separate ephemeral Auth client; the existing anonymous gameplay session is not reused or overwritten.
+
+### Configuration still required before any live test
+
+- Set `ILOX_OWNER_USER_ID` to the exact UUID of the verified permanent Supabase Auth account that the owner chooses. It must not be inferred from a display name, email guess, world ownership, or account order.
+- Set `ILOX_OWNER_PEPPER` to a newly generated random secret of at least 32 bytes in Supabase Edge Function secrets. Never put it in Git, the browser, or ChatGPT.
+- Confirm the project's `SUPABASE_SECRET_KEYS` environment is present for the Edge Function (or the legacy server-role secret environment during the key migration). The Edge Function also reads the public publishable key for Auth user validation.
+- Add the exact owner route to Supabase Auth's allowed redirect URLs so the email magic link returns to `https://ilox-mundo-abierto.onrender.com/owner-pilot/`.
+- The owner must already have a permanent, email-confirmed Auth identity. The existing anonymous gameplay account is deliberately ineligible.
+- Apply the migration and deploy the Edge Function only after separate explicit approval.
+
+### Known boundary — not yet connected to game operations
+
+The pilot can issue a short-lived action-scoped grant, and the migration includes a service-role-only atomic consume RPC. No existing world deletion, restore, transfer, bulk edit, or other owner operation has been wired to consume that grant yet. Therefore the screen does not execute or protect a live game action. Before enabling it as an actual lock, map the precise owner actions and make each corresponding server-side operation consume the grant transactionally. Do not treat the UI's success message as proof that an operation is protected.
 ## Required review gates before enabling owner actions
 
 - Finish mapping the owner bootstrap and account binding without revealing personal account data.
@@ -65,16 +95,14 @@ Findings requiring careful treatment:
 - Build and test on an isolated branch/test path only.
 - Do not deploy, run migrations, change RLS, rotate keys, alter backups/door credentials, modify world records, or change existing player accounts without a separate explicit approval.
 
-## Isolated interface prototype
+## Isolated interface and backend
 
-Added `ilox-pwa/owner-pilot/index.html` on the isolated security branch. It is a standalone visual prototype for the private owner area and is not linked from the normal navigation. It shows the independent identity step, ten-question enrollment concept, three-question challenge, and required abuse controls.
-
-The prototype deliberately has no working authentication, no email/OTP request, no answer inputs, no local persistence, no calls to Supabase, and no authorization effect. It is not part of the live `deploy/render-ilox` branch and has not been deployed. The HTML is a review artifact only; backend contracts, identity bootstrap, Edge Function implementation, tests, and deployment remain future gated work.
+The route `ilox-pwa/owner-pilot/index.html` now contains the working client flow for the isolated pilot. It is not linked from normal navigation and is not deployed. Its backend implementation and database migration are also committed only on `security/owner-key-v127`; see the implementation and configuration sections above. No migration has been run, no Edge Function has been deployed, and no production Auth or secret settings have been changed.
 
 ## Explicit non-actions so far
 
-- No questions or answers collected.
-- No secrets, hashes, owner IDs, or credentials added to Git.
-- No Supabase schema or Edge Function changes.
-- No changes to game worlds, constructions, backups, door credentials, or existing user accounts.
-- No production deployment or merge.
+- No actual owner question/answer content, pepper, bootstrap credential, or owner UUID has been collected or committed.
+- No migration has been applied to Supabase and no Edge Function has been deployed.
+- No Supabase secret, Auth redirect allowlist, account, RLS policy, or existing RPC has been changed.
+- No world, construction, backup, door credential, or existing player account has been modified.
+- No production Render deploy or PR merge has occurred.
