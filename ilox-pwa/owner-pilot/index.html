@@ -55,7 +55,7 @@ const SUPABASE_URL = "https://wihbxfebobfmohmqqhkt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
 const API_URL = SUPABASE_URL + "/functions/v1/ilox-owner-security";
 const auth = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: true }
 });
 let accessToken = null;
 let challengeId = null;
@@ -110,13 +110,23 @@ $("send-otp").addEventListener("click", async () => {
   try {
     const email = $("email").value.trim();
     if (!email) throw new Error("Ingresá el correo de propietario.");
-    const { error } = await auth.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await auth.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: window.location.href.split("#")[0] } });
     if (error) throw error;
     show("otp-area");
-    status("login-status", "Si el correo corresponde a una cuenta existente, recibirás un código de acceso.", "good");
+    status("login-status", "Si recibís un código, ingresalo abajo. Si recibís un enlace, abrilo desde este dispositivo para volver a esta pantalla.", "good");
   } catch (error) { status("login-status", errorText(error), "bad"); }
   finally { $("send-otp").disabled = false; }
 });
+
+async function establishOwnerSession(session) {
+  if (!session?.access_token || session.user?.is_anonymous) throw new Error("La sesión no es una identidad permanente.");
+  accessToken = session.access_token;
+  const state = await api("status");
+  show("login-panel", false); show("owner-panel");
+  show("enroll-panel", !state.enrolled); show("challenge-panel", state.enrolled);
+  $("owner-state").textContent = state.enrolled ? "Identidad verificada · preguntas configuradas." : "Identidad verificada · falta configurar tus diez preguntas.";
+  status("login-status", "");
+}
 
 $("verify-otp").addEventListener("click", async () => {
   status("login-status", "Verificando identidad…");
@@ -126,18 +136,24 @@ $("verify-otp").addEventListener("click", async () => {
       email: $("email").value.trim(), token: $("otp").value.trim(), type: "email"
     });
     if (error) throw error;
-    if (!data.session?.access_token || data.user?.is_anonymous) throw new Error("La sesión no es una identidad permanente.");
-    accessToken = data.session.access_token;
-    const state = await api("status");
-    show("login-panel", false); show("owner-panel");
-    show("enroll-panel", !state.enrolled); show("challenge-panel", state.enrolled);
-    $("owner-state").textContent = state.enrolled ? "Identidad verificada · preguntas configuradas." : "Identidad verificada · falta configurar tus diez preguntas.";
-    status("login-status", "");
+    await establishOwnerSession(data.session);
   } catch (error) {
     accessToken = null;
     status("login-status", errorText(error), "bad");
   } finally { $("verify-otp").disabled = false; }
 });
+
+auth.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_IN" && session) {
+    queueMicrotask(() => establishOwnerSession(session).catch(error => {
+      accessToken = null;
+      status("login-status", errorText(error), "bad");
+    }));
+  }
+});
+auth.auth.getSession().then(({ data }) => {
+  if (data.session) return establishOwnerSession(data.session);
+}).catch(error => status("login-status", errorText(error), "bad"));
 
 $("save-enrollment").addEventListener("click", async () => {
   $("save-enrollment").disabled = true;
