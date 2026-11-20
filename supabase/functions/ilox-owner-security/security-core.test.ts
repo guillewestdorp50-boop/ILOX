@@ -17,6 +17,12 @@ Deno.test("rejects answers that are too short or too long", () => {
   equal(longRejected, true);
 });
 
+Deno.test("rejects non-string answer values", () => {
+  let rejected = false;
+  try { normalizeAnswer(null); } catch { rejected = true; }
+  equal(rejected, true);
+});
+
 Deno.test("challenge always contains three distinct question ids in range", () => {
   for (let i = 0; i < 1000; i++) {
     const ids = chooseThree();
