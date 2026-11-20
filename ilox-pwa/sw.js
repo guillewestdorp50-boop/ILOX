@@ -1,12 +1,8 @@
 /* ILOX PWA: actualización automática de la aplicación y caché de respaldo offline. */
-const CACHE = "ilox-pwa-network-first-20261120-v128-diagnostics";
+const CACHE = "ilox-card-game-20261120-v129";
 const CORE = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./game.js",
-  "./multiplayer.js",
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-192.svg",
