@@ -1,63 +1,74 @@
-# ILOX — Owner Key Pilot (design and discovery)
+# ILOX — Owner Key Pilot (verified discovery and implementation plan)
 
-**Status:** documentation only; not deployed; no production code or database objects changed.
+**Status:** discovery and design only. The existing draft PR is not merged. No production code, database objects, secrets, user accounts, world data, or deployments have been changed.
 
-## Goal
+## Goal and scope
 
-Prepare an independent owner-security page for the ILOX pilot without changing the game scene, world content, construction data, existing accounts, or the PDA / Choferes Argentinos projects.
+Build an independent owner-security gate for the ILOX v127 pilot only. Preserve the existing game, worlds, constructions, multiplayer, backups, and player identities. PDA // ZONA and Choferes Argentinos are explicitly out of scope.
 
-## Verified deployment architecture
+## Confirmed live deployment
 
-The repository's GitHub Pages workflow builds and publishes multiple independent routes:
-- Root `/`: stable Island world.
-- `/forest/`: third-person Forest preview, built from a separate experimental branch.
-- `/ilox/`: static World Hub PWA, also copied from a separate experimental branch.
+Render workspace **My Workspace** was explicitly confirmed by the user. Read-only inspection found:
 
-The `ilox-pwa/README.md` explicitly says its inventory, friends/multiplayer, and construction areas are not connected to server accounts or cloud saves. The root `README.md` likewise says the initial version does not implement accounts, family authorization, multiplayer, or private saves.
+- **ILOX PWA:** `ilox-mundo-abierto`, static site, repo `guillewestdorp50-boop/ILOX`, branch `deploy/render-ilox`, publish directory `ilox-pwa`, URL `https://ilox-mundo-abierto.onrender.com`.
+- Its latest live deploy is commit `01e337d9845ad3795af5b1d1084af9ea57062ce2`, message **“Refresh ILOX PWA cache for v127”**. The service worker cache name also identifies v127.
+- **World authority backend:** `ilox-world-authority`, web service, same repository and branch, same live v127 commit, URL `https://ilox-world-authority.onrender.com`.
+- Both services have auto-deploy enabled on `deploy/render-ilox`. Do not push pilot work to that branch; work only on the isolated security branch unless the user separately approves a deployment plan.
 
-Repository code search did not find Supabase client initialization or references to the multiplayer tables. Therefore, the Supabase multiplayer database currently cannot be assumed to be wired to any of these published frontends. The owner page must not be inserted into the World Hub or 3D game until the actual live multiplayer client and its deployment path are identified.
+## Confirmed v127 integration
 
-## Verified Supabase state
+The live v127 source includes `ilox-pwa/multiplayer.js`, which initializes Supabase JS against the existing ILOX-MULTIJUGADOR project. It creates/reuses Supabase sessions with `signInAnonymously`, persists multiplayer profiles/world data, and opens a WebSocket to the Render world-authority service.
 
-- The project has existing Auth users and existing multiplayer/world records. Treat all as production data.
-- `public.multiplayer_worlds`, `public.multiplayer_world_members`, `public.multiplayer_structures`, and related tables contain existing records.
-- `private.ilox_world_backups` has RLS disabled. Direct table privileges for `anon` and `authenticated` were checked and are false; this is not evidence of public access through those roles. Do not auto-enable RLS: doing so without appropriate policies could break service access.
-- `public.multiplayer_delete_world(uuid)` is SECURITY DEFINER and executable by anon and authenticated roles, but its body rejects missing `auth.uid()` and checks that the caller owns the specified world before deleting. Review this separately; do not change it as part of owner-key installation.
-- Existing door credentials are stored in `private.multiplayer_door_credentials`; never reuse or alter this table for owner-key secrets.
-- Existing diagnostic Edge Function `ilox-error-report` is not an authentication endpoint and must not be repurposed.
+The world-authority server validates the Supabase access token through Auth and checks world membership before joining a room. The frontend and backend therefore really are connected to the existing Supabase project; earlier README/code-search conclusions that they were not connected were incorrect and are superseded by this verified v127 inspection. The PWA README is stale relative to the live v127 source.
+
+## Authentication implication for the owner pilot
+
+Current gameplay identity is anonymous Supabase Auth. An anonymous player session is useful for the existing multiplayer flow, but it is not by itself a strong, independently verified owner identity.
+
+The owner gate must therefore:
+- Keep current player sessions and gameplay untouched.
+- Require a separately verified owner identity or a rigorously bootstrapped, explicitly allowlisted identity before owner actions.
+- Reject anonymous sessions for owner authorization unless a separately approved design proves a safe binding; do not treat a display name, user-editable metadata, or possession of an arbitrary anonymous session as proof of ownership.
+- Use the 10-question challenge only as an additional factor, never as the sole factor.
+- Bind each successful authorization to one specific action, expire it quickly, and make it single-use.
+
+No owner identity is to be guessed from email, display name, world owner, or account ordering. Enrollment/bootstrap must be performed through a private server-side process and must not require the user to send secrets or answers in ChatGPT.
+
+## Supabase security discovery (read-only)
+
+The existing `ILOX-MULTIJUGADOR` project is active and contains live multiplayer data. Existing player/world tables have RLS enabled and owner/member policies. No schema changes were made.
+
+Findings requiring careful treatment:
+- The Supabase Security Advisor flags `private.ilox_world_backups` as critical because RLS is disabled. A separate privilege check found no direct SELECT/INSERT privileges for either `anon` or `authenticated`, and there are no policies. Do not auto-enable RLS or alter backup access until every service path is mapped; enabling it without the correct service policy could break recovery.
+- The Advisor warns that `public.multiplayer_delete_world(uuid)` is a SECURITY DEFINER function executable by anon/authenticated. Its current body checks `auth.uid()` is present and requires that caller to be the world's owner before deleting. Keep this separate from the owner-key pilot; do not change it as a shortcut.
+- The Advisor reports anonymous-session policies on multiplayer tables and a collection of RLS-enabled/no-policy tables, including other app tables. Do not broaden this pilot into changes to those policies or to other apps.
+- Existing door PIN material is held in `private.multiplayer_door_credentials`; do not reuse or modify it for owner-key secrets.
+- Existing `ilox-error-report` Edge Function is diagnostic only; do not repurpose it as an auth endpoint.
+- Never expose a Supabase service-role/secret key in browser code. The existing publishable key is client-side by design; all owner verification and privileged operations must remain server-side.
 
 ## Proposed security model
 
-1. **Independent route:** a separate owner-only page, not embedded in the 3D scene and not linked as public navigation.
-2. **Real account authentication first:** require a valid Supabase Auth session belonging to the explicitly enrolled owner. The question challenge is an additional factor, never the only factor.
-3. **Ten-question enrollment:** questions and answers are entered only on the secured owner page. Never send answers to ChatGPT, GitHub issues, logs, analytics, or client telemetry.
-4. **Three random challenges:** select three distinct questions with cryptographically secure randomness for each authorization attempt.
-5. **Server-side verification:** normalize answers consistently and verify keyed HMAC-SHA-256 values using a dedicated pepper stored only as a Supabase Edge Function secret. Never store plaintext answers, unkeyed answer hashes, or the pepper in this public repository.
-6. **Abuse controls:** server-enforced attempt limits, progressive lockout, generic failure messages, audit events without answers, challenge expiry, and single-use authorization grants bound to a specific action.
-7. **Fail closed:** missing owner enrollment, unavailable verifier, expired challenge, invalid session, or backend error must deny authorization.
-8. **No silent deployment:** code changes are reviewed in GitHub; production database changes and function deployments remain separate approval steps.
+1. **Independent owner route:** separate from the 3D scene and ordinary public navigation.
+2. **Explicit owner enrollment:** a private server-side bootstrap binds the real owner identity to a protected owner record. Do not guess or infer identity.
+3. **10-question enrollment:** user enters questions/answers only in the protected owner page. Never send answers to ChatGPT, GitHub, logs, analytics, diagnostics, or client telemetry.
+4. **Random challenge:** choose three distinct questions per attempt using cryptographically secure randomness.
+5. **Server-side verification:** store keyed HMAC-SHA-256 verifiers, not plaintext answers or unkeyed hashes. Keep the pepper exclusively in a dedicated Edge Function secret.
+6. **Abuse controls:** server-enforced rate limits, progressive lockout, generic errors, challenge expiry, single-use grants, and audit records without answers.
+7. **Fail closed:** invalid/anonymous identity, missing enrollment, backend failure, expired challenge, or invalid grant denies the owner action.
+8. **No silent production action:** code remains isolated for review. Migrations, Edge Function deployment, secret configuration, and any Render deployment are separate steps requiring explicit approval.
 
-## Bootstrap requirement (must be solved before coding enrollment)
+## Required review gates before enabling owner actions
 
-The published static frontends do not currently expose an owner sign-in flow. Supabase already contains accounts, but we must not guess which account belongs to the owner or create a second owner identity. First enrollment needs an explicit, administrator-controlled binding between the owner's existing Supabase Auth user and the owner record. The bootstrap credential must be entered only through a private server-side configuration channel, be single-use, and never be committed to this public repository.
+- Finish mapping the owner bootstrap and account binding without revealing personal account data.
+- Confirm exact owner-only actions that will require a grant; do not intercept or change ordinary multiplayer gameplay.
+- Review the exact RLS policies, grants, and any SECURITY DEFINER paths that the new owner endpoint will use.
+- Build and test on an isolated branch/test path only.
+- Do not deploy, run migrations, change RLS, rotate keys, alter backups/door credentials, modify world records, or change existing player accounts without a separate explicit approval.
 
-## Scope and limits
-
-This mechanism can protect owner-only operations explicitly routed through the new backend verification service. It cannot, by itself, block direct edits in GitHub, Supabase Dashboard, or provider consoles. Those provider-level actions need their own account permissions and approval controls.
-
-## Safety gates before implementation
-
-- Identify the actual live multiplayer client and its hosting/deployment route. The repo's Pages routes above do not establish which app the user currently plays.
-- Map the intended owner account and world permissions without exposing account data or guessing from email/name.
-- Review RLS, grants, private-schema exposure, and existing backup/door-credential functions before schema changes.
-- Confirm a safe bootstrap method and explicit owner identity binding.
-- Build and test only on a separate branch / isolated test path first.
-- Do not deploy, run migrations, rotate keys, alter RLS, or modify world data as part of this documentation stage.
-
-## Explicit non-actions in this stage
+## Explicit non-actions so far
 
 - No questions or answers collected.
 - No secrets, hashes, owner IDs, or credentials added to Git.
 - No Supabase schema or Edge Function changes.
-- No changes to the game world, constructions, backups, door credentials, or existing user accounts.
-- No production deployment.
+- No changes to game worlds, constructions, backups, door credentials, or existing user accounts.
+- No production deployment or merge.
