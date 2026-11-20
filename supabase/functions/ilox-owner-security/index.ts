@@ -57,13 +57,16 @@ async function authenticateOwner(request: Request): Promise<{ id: string; email:
 }
 
 async function rpc(name: string, args: Record<string, unknown>): Promise<any> {
+  const headers: Record<string, string> = {
+    apikey: SECRET_KEY,
+    "content-type": "application/json",
+  };
+  // Legacy service_role keys are JWTs and can also be used as Bearer tokens.
+  // New sb_secret keys belong only in apikey, never in Authorization.
+  if (SECRET_KEY.startsWith("eyJ")) headers.authorization = `Bearer ${SECRET_KEY}`;
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: "POST",
-    headers: {
-      apikey: SECRET_KEY,
-      authorization: `Bearer ${SECRET_KEY}`,
-      "content-type": "application/json",
-    },
+    headers,
     body: JSON.stringify(args),
   });
   const body = await response.json().catch(() => null);
