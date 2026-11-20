@@ -1,437 +1,73 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#241b50">
-  <script>
-    // Detector ILOX: registra fallos y permite enviar un informe técnico voluntario.
-    (() => {
-      const SUPABASE_URL = "https://wihbxfebobfmohmqqhkt.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
-      const errors = [];
-      const runtimeEvents = [];
-      let sending = false;
-      const clientSessionId = (crypto.randomUUID ? crypto.randomUUID() : "ilox-" + Date.now() + "-" + Math.random().toString(36).slice(2));
-      const runtimeLastSent = new Map();
-      const runtimeWindow = [];
-      const record = (type, message, stack = "", extra = {}) => {
-        errors.push({
-          time: new Date().toISOString(),
-          type: String(type).slice(0,120),
-          message: String(message || "Error sin detalle").slice(0,4000),
-          stack: String(stack || "").slice(0,12000),
-          source: String(extra.source || "").slice(0,2000),
-          line: Number.isFinite(extra.line) ? extra.line : null,
-          column: Number.isFinite(extra.column) ? extra.column : null
-        });
-        if (errors.length > 40) errors.shift();
-      };
-      // Captura también fallos HTTP/API que las librerías suelen devolver como respuestas y no como excepciones JavaScript.
-      const nativeFetch = window.fetch.bind(window);
-      window.fetch = async (input, init = {}) => {
-        const requestUrl = typeof input === "string" ? input : (input?.url || "");
-        const requestMethod = String(init?.method || input?.method || "GET").toUpperCase();
-        try {
-          const response = await nativeFetch(input, init);
-          if (!response.ok && !requestUrl.includes("/functions/v1/ilox-error-report")) {
-            let detail = "";
-            try {
-              const body = await response.clone().text();
-              try {
-                const parsed = JSON.parse(body);
-                detail = ["message","msg","error_description","error","code","hint","details"].map(key => parsed?.[key] ? key+": "+String(parsed[key]) : "").filter(Boolean).join(" | ");
-              } catch { detail = body.slice(0,1800); }
-            } catch (readError) { detail = "No se pudo leer el cuerpo de la respuesta: "+String(readError); }
-            record("HTTP_"+response.status, requestMethod+" "+requestUrl+" | "+(detail || response.statusText || "Respuesta HTTP no exitosa"), "", {source:requestUrl});
-          }
-          return response;
-        } catch (error) {
-          if (!requestUrl.includes("/functions/v1/ilox-error-report")) record("NETWORK_FETCH_ERROR", requestMethod+" "+requestUrl+" | "+String(error?.message || error), error?.stack || "", {source:requestUrl});
-          throw error;
-        }
-      };
-      const show = (title, detail) => {
-        const panel = document.getElementById("loading");
-        if (!panel) return;
-        panel.classList.remove("done");
-        let info = panel.querySelector("#ilox-diagnostic-detail");
-        if (!info) {
-          panel.innerHTML = '<div class="loading-mark">ILOX</div><p id="ilox-diagnostic-title"></p><pre id="ilox-diagnostic-detail" style="max-width:min(92vw,760px);max-height:28vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;padding:12px;border:1px solid #ff8b8b;border-radius:10px;background:#160d20;color:#ffe1e1;font:12px/1.45 monospace"></pre><button id="ilox-diagnostic-send" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">ENVIAR INFORME DE FALLO</button><button id="ilox-diagnostic-force" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#71f0c2,#22a6bd);color:#102b45;font-weight:900">FORZAR INICIO IGUAL</button><p id="ilox-diagnostic-status" role="status"></p>';
-          info = panel.querySelector("#ilox-diagnostic-detail");
-          panel.querySelector("#ilox-diagnostic-send").addEventListener("click", sendReport);
-          panel.querySelector("#ilox-diagnostic-force").addEventListener("click", () => panel.classList.add("done"));
-        }
-        panel.querySelector("#ilox-diagnostic-title").textContent = title;
-        info.textContent = detail;
-      };
-      const runChecks = async () => {
-        const checks = {};
-        checks.webgl = (() => { try { const canvas=document.createElement("canvas"); return !!(window.WebGL2RenderingContext && canvas.getContext("webgl2")) || !!canvas.getContext("webgl"); } catch(e) { return false; } })();
-        checks.gameModule = await fetch("./game.js?v=ilox-v127-elevator-door-button-fit-20261117", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
-        checks.multiplayerModule = await fetch("./multiplayer.js", {cache:"no-store"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
-        checks.threeCdn = await fetch("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", {method:"HEAD",mode:"cors"}).then(r => ({ok:r.ok,status:r.status})).catch(e => ({ok:false,error:String(e)}));
-        checks.serviceWorker = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration().then(r => !!r).catch(() => false) : false;
-        const nav = navigator;
-        const connection = nav.connection || nav.mozConnection || nav.webkitConnection || null;
-        const memory = performance.memory || null;
-        const resources = performance.getEntriesByType("resource").slice(-100).map(entry => ({
-          name: String(entry.name).slice(0,500),
-          type: entry.initiatorType || "",
-          durationMs: Math.round(entry.duration),
-          transferSize: entry.transferSize || 0
-        }));
-        checks.environment = {
-          online: nav.onLine,
-          language: nav.language,
-          platform: nav.platform || "",
-          deviceMemoryGB: nav.deviceMemory || null,
-          hardwareConcurrency: nav.hardwareConcurrency || null,
-          connection: connection ? {
-            effectiveType: connection.effectiveType || "",
-            downlinkMbps: connection.downlink || null,
-            rttMs: connection.rtt || null,
-            saveData: !!connection.saveData
-          } : null,
-          memory: memory ? {
-            usedJSHeapSize: memory.usedJSHeapSize,
-            totalJSHeapSize: memory.totalJSHeapSize,
-            jsHeapLimit: memory.jsHeapSizeLimit
-          } : null,
-          viewport: { width: innerWidth, height: innerHeight, pixelRatio: devicePixelRatio },
-          screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth },
-          visibility: document.visibilityState,
-          serviceWorkerController: !!navigator.serviceWorker?.controller,
-          currentScript: document.querySelector('script[type="module"][src]')?.src || "",
-          resources
-        };
-        checks.errorsCaptured = errors.length;
-        checks.runtimeEventsCaptured = runtimeEvents.length;
-        checks.capturedErrors = errors.slice();
-        checks.runtimeEvents = runtimeEvents.slice(-40);
-        return checks;
-      };
-      async function sendReport() {
-        if (sending) return;
-        sending = true;
-        const button = document.getElementById("ilox-diagnostic-send");
-        const status = document.getElementById("ilox-diagnostic-status");
-        if (button) button.disabled = true;
-        if (status) status.textContent = "Revisando el juego y enviando el informe…";
-        try {
-          const diagnostics = await runChecks();
-          const latest = errors[errors.length - 1] || {type:"INFORME MANUAL",message:"Se solicitó un informe manual; no había errores JavaScript capturados.",stack:""};
-          const allErrors = errors.slice(-40);
-          const allRuntimeEvents = runtimeEvents.slice(-40);
-          const fullMessage = allErrors.length
-            ? allErrors.map((item,index) => "["+(index+1)+"] "+item.time+" | "+item.type+" | "+item.message).join("\n")
-            : latest.message;
-          const fullStack = allErrors.map((item,index) => "===== ERROR "+(index+1)+" | "+item.type+" | "+item.time+" =====\n"+item.stack+"\nOrigen: "+item.source+" ("+item.line+":"+item.column+")").join("\n\n").slice(0,30000);
-          const payload = {
-            app_version:"ILOX-v127-full-diagnostic-report-20261120",
-            error_type:latest.type,
-            message:fullMessage.slice(0,12000),
-            stack:fullStack || latest.stack || "",
-            page_url:location.origin + location.pathname,
-            user_agent:navigator.userAgent.slice(0,500),
-            diagnostics:{
-              ...diagnostics,
-              client_session_id:clientSessionId,
-              report_generated_at:new Date().toISOString(),
-              errors:allErrors,
-              runtime_events:allRuntimeEvents
-            }
-          };
-          const response = await fetch(SUPABASE_URL + "/functions/v1/ilox-error-report", {
-            method:"POST",
-            headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
-            body:JSON.stringify(payload)
-          });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error("Servidor de informes respondió HTTP " + response.status + ": " + JSON.stringify(result).slice(0,1000));
-          if (status) status.textContent = "INFORME COMPLETO ENVIADO ✓\nID: "+(result.report_id || "registrado")+"\nErrores capturados: "+allErrors.length+"\nEventos técnicos: "+allRuntimeEvents.length+"\nDiagnóstico técnico íntegro guardado en el servidor para revisión.";
-          if (button) button.textContent = "INFORME COMPLETO ENVIADO ✓";
-        } catch (error) {
-          if (status) status.textContent = "No se pudo enviar automáticamente: " + String(error) + ". Sacá una captura de este panel.";
-          if (button) { button.disabled = false; button.textContent = "REINTENTAR ENVÍO"; }
-          sending = false;
-        }
-      }
-      window.__iloxReportRuntimeEvent = async (type, message, details = {}) => {
-        const now = Date.now();
-        const key = String(type || "PHYSICS_UNKNOWN").slice(0,80);
-        if (now - (runtimeLastSent.get(key) || 0) < 10000) return false;
-        runtimeWindow.push(now);
-        while (runtimeWindow.length && now-runtimeWindow[0] > 600000) runtimeWindow.shift();
-        if (runtimeWindow.length > 8) return false;
-        runtimeLastSent.set(key,now);
-        runtimeEvents.push({time:new Date(now).toISOString(),type:key,message:String(message || "Evento de diagnóstico físico").slice(0,4000),details});
-        if (runtimeEvents.length > 40) runtimeEvents.shift();
-        try {
-          const response = await fetch(SUPABASE_URL + "/functions/v1/ilox-error-report", {
-            method:"POST",
-            headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
-            body:JSON.stringify({
-              app_version:"ILOX-v124-authoritative-elevator-20261117",
-              error_type:key,
-              message:String(message || "Evento de diagnóstico físico").slice(0,2000),
-              page_url:location.origin + location.pathname,
-              diagnostics:{client_session_id:clientSessionId,event_time:new Date(now).toISOString(),...details}
-            })
-          });
-          if (!response.ok) throw new Error("HTTP " + response.status);
-          return true;
-        } catch(error) {
-          console.warn("ILOX diagnóstico físico: no se pudo enviar el evento",key,error);
-          return false;
-        }
-      };
-      window.__iloxReportStartupError = (type, detail) => {
-        record(type, detail, detail?.stack || "");
-        show("ILOX DETECTÓ UN FALLO", type + ": " + String(detail || "Sin detalle").slice(0,1200));
-      };
-      window.__iloxOpenDiagnostics = () => {
-        show("INFORME COMPLETO DE ERRORES", "Recopilando errores, trazas, eventos físicos, recursos, red, memoria y estado de los módulos…");
-        sendReport();
-      };
-      window.addEventListener("error", event => {
-        const detail = event.error?.stack || event.message || event.target?.src || event.target?.href || "Fallo al cargar un recurso";
-        record("ERROR", detail, event.error?.stack || "", {source:event.filename || event.target?.src || event.target?.href || "",line:event.lineno,column:event.colno});
-        show("ILOX DETECTÓ UN FALLO", String(detail));
-      }, true);
-      window.addEventListener("unhandledrejection", event => {
-        const reason = event.reason;
-        const detail = reason?.stack || reason?.message || reason;
-        record("PROMESA RECHAZADA", detail, reason?.stack || "");
-        show("ILOX DETECTÓ UN FALLO", String(detail));
-      });
-      document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("ilox-diagnostic-send")?.addEventListener("click", sendReport);
-        document.getElementById("ilox-diagnostic-open")?.addEventListener("click", () => window.__iloxOpenDiagnostics?.());
-        document.getElementById("ilox-diagnostic-trigger")?.addEventListener("click", () => {
-          show("DIAGNÓSTICO DE ILOX", "Analizando carga del mundo…");
-          sendReport();
-        });
-      });
-    })();
-  </script>
-  <script>
-    // Arranque de emergencia: permite salir de la pantalla de carga si el motor quedó inicializado pero el overlay no se cerró.
-    document.addEventListener("DOMContentLoaded", () => {
-      const panel = document.getElementById("loading");
-      const force = document.getElementById("ilox-force-start");
-      const release = () => {
-        if (!panel || panel.querySelector("#ilox-diagnostic-detail")) return;
-        // Oculta únicamente el overlay de carga. No emitir un aviso de fallo:
-        // el temporizador puede ejecutarse aunque el mundo ya esté funcionando.
-        panel.classList.add("done");
-      };
-      force?.addEventListener("click", release);
-      window.setTimeout(release, 15000);
-    });
-  </script>
-  <meta name="description" content="ILOX: construí, explorá y jugá en tu propio mundo.">
-  <link rel="manifest" href="./manifest.webmanifest?v=ilox-v114">
-  <link rel="icon" href="./icon.svg?v=ilox-v102-build-camera-fixes" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icon-192.svg?v=ilox-v102-build-camera-fixes">
-  <link rel="stylesheet" href="./styles.css?v=ilox-botonera-ascensor-20261116-v1">
-  <title>ILOX — Tu propio mundo</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#092d26">
+<title>ILOX — Mesa de naipes</title>
+<style>
+:root{color-scheme:dark;--gold:#e9c77c;--felt:#12664b;--felt2:#0b4938;--ink:#f8f1df}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b19;color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.game{height:100%;min-height:100dvh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 48%,#253d35 0,#101b19 70%)}
+.topbar{height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #ffffff18;background:#081511aa;letter-spacing:.12em;font-size:11px;font-weight:800}
+.brand{color:var(--gold);font-size:15px;letter-spacing:.2em}.status{color:#c9d8cc;letter-spacing:.04em}
+.table-wrap{flex:1;min-height:0;display:grid;place-items:center;padding:10px 14px}
+.table{position:relative;width:min(100%,1050px);height:min(100%,590px);min-height:340px;border:12px solid #4c3020;border-radius:48% / 42%;background:radial-gradient(ellipse at 50% 45%,#197455 0,#105b43 56%,#0b4635 100%);box-shadow:inset 0 0 0 2px #c89c58,inset 0 0 0 8px #083b2e,0 22px 50px #0009;overflow:hidden}
+.table:before{content:"";position:absolute;inset:15px;border:1px solid #d9c28b55;border-radius:48% / 42%;pointer-events:none}
+.center-mark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:clamp(22px,5vw,42px);font-weight:900;letter-spacing:.28em;color:#d6e9d51b;white-space:nowrap}
+.player{position:absolute;display:flex;align-items:center;gap:8px;font-size:12px;color:#f4ecd9;text-shadow:0 1px 4px #000}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f1d28e,#9b693b);border:2px solid #f7e6bd;color:#382819;font-weight:900}
+.opponent{top:8%;left:50%;transform:translateX(-50%);flex-direction:column;gap:4px}
+.left-player{left:5%;top:48%;flex-direction:column}.right-player{right:5%;top:48%;flex-direction:column}
+.hand-back{display:flex;justify-content:center;margin-top:3px}
+.back{width:34px;height:49px;margin-left:-15px;border:2px solid #f1dfb5;border-radius:5px;background:repeating-linear-gradient(45deg,#203f73 0 4px,#d7c08b 4px 6px);box-shadow:0 2px 4px #0008}
+.opponent .back{width:29px;height:42px;margin-left:-12px}
+.play-area{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,40px);width:60%}
+.pile{width:clamp(54px,9vw,78px);height:clamp(78px,13vw,112px);border:1px dashed #e5d5a277;border-radius:8px;display:grid;place-items:center;color:#e5d5a288;font-size:10px;text-align:center;letter-spacing:.08em}
+.card{position:relative;flex:none;width:clamp(48px,8vw,70px);height:clamp(72px,12vw,102px);border-radius:8px;background:#f7f1e4;color:#27231e;border:1px solid #d9ceb9;box-shadow:0 4px 10px #001b13aa;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:clamp(23px,4vw,34px);cursor:pointer;user-select:none;transition:transform .16s,box-shadow .16s}
+.card.red{color:#a72d32}.card .corner{position:absolute;top:5px;left:6px;font:700 10px/1.1 Georgia,serif;text-align:center}.card .corner.bottom{top:auto;left:auto;bottom:5px;right:6px;transform:rotate(180deg)}
+.card.selected{transform:translateY(-13px);box-shadow:0 0 0 3px var(--gold),0 12px 18px #00150f99}
+.my-seat{flex:none;min-height:156px;padding:8px 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;background:linear-gradient(0deg,#07120fee,#07120f99 70%,transparent)}
+.my-info{display:flex;align-items:center;gap:9px;font-size:12px;color:#d9e2d8}.my-info .avatar{width:27px;height:27px}
+.hand{display:flex;align-items:flex-end;justify-content:center;width:100%;min-height:104px;padding:4px 8px 0}
+.hand .card{margin-left:clamp(-14px,-2vw,-5px)}.hand .card:first-child{margin-left:0}
+.actions{height:38px;display:flex;justify-content:center;align-items:center;gap:10px}
+.action{border:1px solid #e7c77c88;border-radius:20px;padding:8px 17px;background:#132f27;color:#f3dfb2;font-size:10px;font-weight:800;letter-spacing:.1em}
+.action:disabled{opacity:.4}
+@media(max-width:600px){.topbar{height:44px;padding:0 12px}.table-wrap{padding:8px 5px}.table{height:min(100%,520px);min-height:310px;border-width:8px}.opponent{top:5%}.left-player{left:2%}.right-player{right:2%}.player{font-size:10px}.avatar{width:27px;height:27px}.play-area{width:67%;top:51%}.my-seat{min-height:146px}.hand{min-height:94px}.hand .card{margin-left:-17px}.hand .card:first-child{margin-left:0}}
+@media(orientation:landscape) and (max-height:520px){.topbar{height:38px}.table-wrap{padding:4px 10px}.table{height:100%;min-height:250px;width:min(100%,1050px)}.my-seat{min-height:108px;padding-bottom:4px}.hand{min-height:68px}.hand .card{height:66px;width:46px}.opponent .back{height:30px;width:22px}.play-area{top:52%}}
+</style>
 </head>
 <body>
-  <main id="game" aria-label="Mundo 3D de ILOX">
-    <div id="loading" class="loading"><div class="loading-mark">ILOX</div><p>Preparando tu mundo…</p><button id="ilox-diagnostic-trigger" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#ffe94c,#ff9900);color:#392047;font-weight:900">DETECTAR FALLO Y ENVIAR INFORME</button><button id="ilox-force-start" type="button" style="margin:10px;padding:14px 20px;border:2px solid #fff;border-radius:12px;background:linear-gradient(145deg,#71f0c2,#22a6bd);color:#102b45;font-weight:900">FORZAR INICIO</button><p id="ilox-diagnostic-status" role="status"></p></div>
-    <div id="welcome-scene" class="welcome-scene" aria-hidden="true">
-      <svg class="welcome-art" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <linearGradient id="welcome-sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17123f"/><stop offset=".48" stop-color="#2849a4"/><stop offset="1" stop-color="#19a9bd"/></linearGradient>
-          <radialGradient id="welcome-glow"><stop stop-color="#ffdb86" stop-opacity=".95"/><stop offset=".35" stop-color="#ff9c72" stop-opacity=".36"/><stop offset="1" stop-color="#ff9c72" stop-opacity="0"/></radialGradient>
-          <linearGradient id="island-grass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b5ec75"/><stop offset="1" stop-color="#42b982"/></linearGradient>
-          <linearGradient id="island-rock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a70c9"/><stop offset="1" stop-color="#302d70"/></linearGradient>
-          <linearGradient id="portal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe58d"/><stop offset=".5" stop-color="#ff9a70"/><stop offset="1" stop-color="#8b75ff"/></linearGradient>
-          <filter id="soft-glow"><feGaussianBlur stdDeviation="18"/></filter>
-        </defs>
-        <rect width="1200" height="800" fill="url(#welcome-sky)"/>
-        <circle cx="860" cy="210" r="260" fill="url(#welcome-glow)"/>
-        <g class="welcome-stars" fill="#fff4c8">
-          <circle cx="120" cy="130" r="3"/><circle cx="250" cy="240" r="2"/><circle cx="390" cy="105" r="3"/><circle cx="570" cy="190" r="2"/><circle cx="1030" cy="100" r="3"/><circle cx="1110" cy="330" r="2"/><circle cx="180" cy="430" r="2"/><circle cx="960" cy="440" r="3"/><circle cx="700" cy="80" r="2"/><circle cx="470" cy="370" r="2"/>
-        </g>
-        <g class="welcome-cloud cloud-a" fill="#c3eaff" opacity=".48"><path d="M-80 330c25-42 83-43 111-8 18-60 101-68 133-17 50-8 80 52 49 89H-45c-37-12-52-37-35-64Z"/></g>
-        <g class="welcome-cloud cloud-b" fill="#e6d9ff" opacity=".38"><path d="M880 280c22-36 74-36 99-7 16-50 87-57 115-14 43-7 69 45 42 76H910c-32-10-45-32-30-55Z"/></g>
-        <g class="welcome-orbit"><ellipse cx="600" cy="410" rx="370" ry="112" fill="none" stroke="#9eeaff" stroke-opacity=".4" stroke-width="2" stroke-dasharray="8 18"/><circle cx="232" cy="410" r="10" fill="#ffe58d"/><circle cx="970" cy="410" r="7" fill="#ff9b80"/></g>
-        <g class="welcome-island">
-          <ellipse cx="600" cy="590" rx="310" ry="54" fill="#08153e" opacity=".38" filter="url(#soft-glow)"/>
-          <path d="M300 485Q385 420 480 455Q555 405 650 450Q755 410 855 480L820 570Q745 628 600 660Q450 630 345 570Z" fill="url(#island-rock)"/>
-          <path d="M300 485Q385 420 480 455Q555 405 650 450Q755 410 855 480Q790 525 690 532Q520 548 405 522Z" fill="url(#island-grass)"/>
-          <path d="M405 520q80 32 190 12t190-10" fill="none" stroke="#e5ff9a" stroke-width="9" stroke-linecap="round" opacity=".5"/>
-          <g fill="#ffe18b"><path d="M470 465l-12-38 18 16 15-28 5 43Z"/><path d="M735 455l-8-32 16 13 13-23 4 39Z"/></g>
-          <g fill="#2d805e"><path d="M390 462q-8-75 18-98 35 37 18 100Z"/><path d="M414 464q4-93 42-108 27 58-10 112Z"/><path d="M770 463q-2-74 31-95 29 53-3 99Z"/></g>
-          <g fill="#6b4b42"><path d="M403 474l12-54 12 54Z"/><path d="M790 474l10-47 12 47Z"/></g>
-          <g transform="translate(600 426)"><path d="M-48 58V-5a48 48 0 0 1 96 0v63" fill="none" stroke="#ffcf7c" stroke-width="12" stroke-linecap="round"/><path d="M-34 58V-5a34 34 0 0 1 68 0v63" fill="none" stroke="#fff2bf" stroke-width="3" opacity=".9"/><circle cy="-5" r="8" fill="#fff2bf"/></g>
-          <g fill="#fff2a8"><circle cx="520" cy="465" r="5"/><circle cx="682" cy="468" r="4"/><circle cx="560" cy="442" r="3"/></g>
-        </g>
-        <g class="welcome-fireflies" fill="#fff3a8"><circle cx="310" cy="360" r="4"/><circle cx="870" cy="360" r="5"/><circle cx="450" cy="300" r="3"/><circle cx="760" cy="320" r="3"/><circle cx="600" cy="250" r="4"/></g>
-      </svg>
-      <div class="welcome-vignette"></div>
-    </div>
-    <div class="welcome" id="welcome">
-      <div class="welcome-brand" aria-label="ILOX">ILOX<span>✦</span></div>
-      <button id="start" class="start-button" type="button"><span>JUGAR</span><b aria-hidden="true">➜</b></button>
-    </div>
-    <section class="avatar-select hidden" id="avatar-select" aria-label="Elegí tu personaje">
-      <span class="eyebrow">ANTES DE COMENZAR</span>
-      <h2>Elegí tu personaje</h2>
-      <p>105 personajes para explorar, construir y vivir aventuras.</p>
-      <div class="avatar-options" aria-label="100 personajes elegibles"></div>
-      <button id="enter-world" class="start-button">ELEGIR Y ENTRAR <span>→</span></button>
-    </section>
-    <section class="build-panel hidden" id="build-panel" aria-label="Herramientas de construcción">
-      <div class="build-panel-title">CONSTRUIR TU MUNDO</div>
-      <label class="build-category-label" for="build-category">CATEGORÍA</label>
-      <select id="build-category" class="build-category">
-        <option value="block">Bloques y ladrillo visto</option><option value="nature">Naturaleza</option><option value="water">Agua</option>
-        <option value="structure">Estructuras</option><option value="furniture">Muebles y hogar</option><option value="farm">Campo y animales</option>
-      </select>
-      <label class="build-category-label hidden" id="animal-style-label" for="animal-style-select">ESTILO DE ANIMALES</label>
-      <select id="animal-style-select" class="build-category hidden" aria-label="Estilo de animales">
-        <option value="classic">Animales clásicos</option>
-        <option value="realistic">Realistas 3D</option>
-      </select>
-      <div class="block-palette" aria-label="Colores de bloques">
-        <span class="palette-label">COLOR</span><button class="block-color selected" data-color="16723968" style="--swatch:#ff3030" aria-label="Rojo"></button>
-        <button class="block-color" data-color="16776960" style="--swatch:#ffff00" aria-label="Amarillo"></button><button class="block-color" data-color="255" style="--swatch:#0000ff" aria-label="Azul"></button><button class="block-color" data-color="65280" style="--swatch:#00ff00" aria-label="Verde"></button>
-      </div>
-      <div id="build-tools" class="build-tools"></div>
-      <button id="view-toggle" class="view-toggle hidden">⬆ VISTA AÉREA</button>
-      <div class="build-help" id="build-help">Elegí una pieza y tocá el terreno para colocarla.</div>
-      <small class="build-attribution">Modelos “Fox”, “Robot”, “Old Man” y “T. rex” por <a href="https://bake3d.ai" target="_blank" rel="noopener">Bake3D</a>, licenciados bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Escala ajustada para ILOX.</small>
-    </section>
-    <div id="hud-dock" class="hud-dock hidden" aria-label="Controles de partida">
-      <div class="touch-ui" id="touch-ui"><div class="move-pad" id="move-pad" aria-label="Control analógico para avanzar y dirigir"><div class="move-ring"></div><div class="move-knob" id="move-knob"></div></div></div>
-      <div id="hud-controls" class="hud-controls" aria-label="Accesos principales">
-
-      </div>
-    </div><section id="menu-panel" class="menu-panel hidden" aria-label="Menú de partida">
-      <div class="menu-section-title">HERRAMIENTAS DEL MUNDO</div>
-      <button id="hud-build" class="menu-action menu-tool-action" type="button">🔨 CONSTRUIR <span>›</span></button>
-      <button id="hud-delete" class="menu-action menu-tool-action" type="button">⌫ ELIMINAR PIEZAS</button>
-      <button id="hud-confirm" class="menu-action menu-tool-action" type="button" disabled>✓ TERMINAR ACCIÓN</button>
-      <button id="door-rotate-control" class="menu-action menu-tool-action hidden" type="button">↻ GIRAR PUERTA</button>
-      <button id="elevator-call-button" class="menu-action menu-tool-action hidden" type="button">↕ LLAMAR ASCENSOR</button>
-      <button id="elevator-door-open-button" class="menu-action menu-tool-action hidden" type="button">↔ ABRIR PUERTAS</button>
-      <button id="elevator-door-close-button" class="menu-action menu-tool-action hidden" type="button">⇥ CERRAR PUERTAS</button>
-      <button id="mp-chat-toggle" class="menu-action menu-tool-action hidden" type="button">💬 CHAT DEL MUNDO<span class="mp-chat-unread hidden" aria-live="polite">0</span></button>
-      <button id="quick-save" class="menu-action menu-tool-action" type="button">💾 GUARDAR MUNDO</button>
-      <button id="force-app-update" class="menu-action force-update-action" type="button">⚡ FORZAR ACTUALIZACIÓN <span>↻</span></button>
-      <div class="menu-section-title">PARTIDA Y JUGADORES</div>
-      <button id="change-avatar" class="menu-action" type="button">🧍 Cambiar personaje</button><button id="multiplayer-open" class="menu-action" type="button">🌐 Multijugador</button><button id="mp-permissions-open" class="menu-action" type="button">🔐 Permisos de construcciones</button><button id="export-world-json" class="menu-action" type="button">📤 Exportar mundo a JSON</button><button id="import-world-json" class="menu-action" type="button">📥 Importar mundo desde JSON</button><input id="world-json-input" type="file" accept="application/json,.json" hidden><button id="erase-all" class="menu-action danger" type="button">🗑 Eliminar todo lo construido</button>
-      <button id="ilox-diagnostic-open" class="menu-action" type="button">🧾 VER INFORME COMPLETO DE ERRORES</button>
-       <div class="menu-version" aria-label="Versión del juego">ILOX v127</div>
-    </section>
-    <div id="camera-free-controls" class="camera-free-controls hidden" aria-label="Movimiento de cámara libre">
-      <div id="camera-free-pad" class="camera-free-pad" aria-label="Desplazar cámara"><div class="camera-free-ring"></div><div id="camera-free-knob" class="camera-free-knob"></div></div>
-    </div>
-    <section id="mp-chat-panel" class="mp-chat-panel hidden" aria-label="Chat del mundo compartido">
-      <header class="mp-chat-header"><strong>CHAT DEL MUNDO</strong><button id="mp-chat-close" type="button" aria-label="Cerrar chat">×</button></header>
-      <div id="mp-chat-messages" class="mp-chat-messages" aria-live="polite"><p class="mp-chat-empty">Todavía no hay mensajes. ¡Saludá a tu compañero!</p></div>
-      <form id="mp-chat-form" class="mp-chat-form"><input id="mp-chat-input" type="text" maxlength="500" autocomplete="off" placeholder="Escribí un mensaje…" aria-label="Mensaje"><button id="mp-chat-send" type="submit">ENVIAR</button></form>
-    </section>
-    <div class="toast" id="toast" role="status"></div>
-    <section id="mp-permissions-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="mp-permissions-title">
-      <div class="door-pin-card multiplayer-card">
-        <div class="door-pin-eyebrow">PROPIEDAD Y COLABORACIÓN</div>
-        <h2 id="mp-permissions-title">PERMISOS</h2>
-        <p id="mp-permissions-status">Elegí una pieza tuya y autorizá a un compañero.</p>
-        <label class="mp-label" for="mp-permission-structure">TU CONSTRUCCIÓN</label>
-        <select id="mp-permission-structure" class="build-category"></select>
-        <label class="mp-label" for="mp-permission-player">JUGADOR</label>
-        <select id="mp-permission-player" class="build-category"></select>
-        <button id="mp-grant-permission" class="door-pin-submit" type="button">AUTORIZAR A MODIFICAR</button>
-        <div id="mp-permission-current" class="mp-permission-list"></div>
-        <button id="mp-permissions-close" class="door-pin-cancel" type="button">CERRAR</button>
-      </div>
-    </section>
-    <section id="multiplayer-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="multiplayer-title">
-      <div class="door-pin-card multiplayer-card">
-        <div class="door-pin-eyebrow">MUNDO COMPARTIDO · ILOX ONLINE</div>
-        <h2 id="multiplayer-title">MULTIJUGADOR</h2>
-        <p id="multiplayer-status">Elegí si querés cargar un mundo guardado o crear uno nuevo.</p>
-        <label class="mp-label" for="mp-display-name">TU NOMBRE EN EL JUEGO</label>
-        <input id="mp-display-name" class="door-pin-input mp-text-input" maxlength="32" autocomplete="nickname" placeholder="Tu nombre">
-        <div id="mp-branches" class="mp-branches">
-          <button id="mp-branch-load" class="mp-branch-button" type="button"><strong>📂 CARGAR MUNDO</strong><small>Abrir una partida que ya existe</small></button>
-          <button id="mp-branch-create" class="mp-branch-button" type="button"><strong>🌱 CREAR MUNDO</strong><small>Comenzar una partida nueva</small></button>
-        </div>
-        <div id="mp-load-panel" class="mp-branch-panel hidden">
-          <button id="mp-back-branches-load" class="mp-back-branches" type="button">← VOLVER</button>
-          <div class="mp-separator">MUNDOS GUARDADOS</div>
-          <div id="mp-world-list" class="mp-world-list"><div class="mp-permission-empty">Buscando tus partidas…</div></div>
-          <div class="mp-separator">O ENTRAR CON UN CÓDIGO</div>
-          <input id="mp-invite-code" class="door-pin-input" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="one-time-code" placeholder="CÓDIGO DE 5 DÍGITOS">
-          <button id="mp-join-world" class="door-pin-secondary" type="button">UNIRME AL MUNDO</button>
-        </div>
-        <div id="mp-create-panel" class="mp-branch-panel hidden">
-          <button id="mp-back-branches-create" class="mp-back-branches" type="button">← VOLVER</button>
-          <label class="mp-label" for="mp-world-name">NOMBRE DEL MUNDO</label>
-          <input id="mp-world-name" class="door-pin-input mp-text-input" maxlength="60" value="Nuestro mundo" placeholder="Nombre de tu mundo">
-          <button id="mp-create-world" class="door-pin-submit" type="button">CREAR MUNDO NUEVO</button>
-        </div>
-        <div id="mp-created-code" class="mp-created-code hidden">
-          <span>CÓDIGO PARA COMPARTIR</span>
-          <strong id="mp-code-value"></strong>
-          <button id="mp-copy-code" class="door-pin-secondary" type="button">COPIAR CÓDIGO</button>
-        </div>
-        <button id="mp-leave-world" class="door-pin-secondary hidden" type="button">VOLVER A MI MUNDO INDIVIDUAL</button>
-        <button id="mp-close" class="door-pin-cancel" type="button">CERRAR</button>
-      </div>
-    </section>
-    <section id="door-pin-dialog" class="door-pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="door-pin-title">
-      <form id="door-pin-form" class="door-pin-card">
-        <div class="door-pin-eyebrow">SEGURIDAD DE LA CONSTRUCCIÓN</div>
-        <h2 id="door-pin-title">PUERTA PROTEGIDA</h2>
-        <p id="door-pin-help">Ingresá el PIN de la puerta.</p>
-        <input id="door-pin-input" name="door-pin" class="door-pin-input" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="off" placeholder="PIN de 4 a 8 números">
-        <input id="door-pin-current" class="door-pin-input hidden" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="PIN actual">
-        <input id="door-pin-new" class="door-pin-input hidden" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="new-password" placeholder="PIN nuevo">
-        <button class="door-pin-submit" type="submit">CONFIRMAR</button>
-        <button id="door-pin-change" class="door-pin-secondary hidden" type="button">CAMBIAR PIN</button>
-        <button id="door-pin-cancel" class="door-pin-cancel" type="button">CANCELAR</button>
-      </form>
-    </section>
-
-  </main>
-  <script>
-    if ("serviceWorker" in navigator) {
-      let reloadedForController = false;
-      // Si una nueva versión toma el control, recargar para mostrar su HTML y sus recursos.
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (reloadedForController) return;
-        reloadedForController = true;
-        window.location.reload();
-      });
-      window.addEventListener("load", async () => {
-        try {
-          const hadController = !!navigator.serviceWorker.controller;
-          const registration = await navigator.serviceWorker.register("./sw.js", {
-            scope: "./",
-            updateViaCache: "none"
-          });
-          await registration.update();
-          // La comprobación también se repite al volver a ILOX desde segundo plano.
-          document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-              registration.update().catch(error => console.warn("ILOX: actualización pendiente", error));
-            }
-          });
-          if (!hadController && !navigator.serviceWorker.controller) {
-            console.info("ILOX: primera instalación del sistema de caché actualizado.");
-          }
-        } catch (error) {
-          console.warn("ILOX: no se pudo comprobar la actualización", error);
-        }
-      });
-    }
-  </script>
-  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="./game.js?v=ilox-v126-universal-elevator-door-20261117"></script>
+<div class="game">
+<header class="topbar"><span class="brand">ILOX</span><span>MESA DE NAIPES</span><span class="status">SALA · ESPERANDO JUGADORES</span></header>
+<main class="table-wrap">
+<section class="table" aria-label="Mesa de juego">
+<div class="center-mark">ILOX</div>
+<div class="player opponent"><div class="avatar">J2</div><span>JUGADOR 2</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="player left-player"><div class="avatar">J3</div><span>JUGADOR 3</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="player right-player"><div class="avatar">J4</div><span>JUGADOR 4</span><div class="hand-back"><i class="back"></i><i class="back"></i><i class="back"></i></div></div>
+<div class="play-area"><div class="pile">MAZO</div><div class="pile">ZONA DE JUEGO</div><div class="pile">DESCARTE</div></div>
+</section>
+</main>
+<footer class="my-seat">
+<div class="my-info"><span class="avatar">YO</span><strong>TU MANO</strong><span id="count">· 5 cartas</span></div>
+<div class="hand" id="hand" aria-label="Tus cartas">
+<div class="card" data-card="1"><span class="corner">A<br>♠</span>♠<span class="corner bottom">A<br>♠</span></div>
+<div class="card red" data-card="2"><span class="corner">7<br>♥</span>♥<span class="corner bottom">7<br>♥</span></div>
+<div class="card" data-card="3"><span class="corner">3<br>♣</span>♣<span class="corner bottom">3<br>♣</span></div>
+<div class="card red" data-card="4"><span class="corner">Q<br>♦</span>♦<span class="corner bottom">Q<br>♦</span></div>
+<div class="card" data-card="5"><span class="corner">5<br>♠</span>♠<span class="corner bottom">5<br>♠</span></div>
+</div>
+<div class="actions"><button class="action" id="play" disabled>JUGAR CARTA</button><button class="action" id="sort" type="button">ORDENAR</button></div>
+</footer>
+</div>
+<script>
+const hand=document.getElementById('hand'),play=document.getElementById('play');
+hand.addEventListener('click',e=>{const card=e.target.closest('.card');if(!card)return;hand.querySelectorAll('.card').forEach(c=>c.classList.toggle('selected',c===card));play.disabled=false;});
+play.addEventListener('click',()=>{const selected=hand.querySelector('.selected');if(!selected)return;selected.classList.remove('selected');play.disabled=true;});
+document.getElementById('sort').addEventListener('click',()=>{const cards=[...hand.children];cards.reverse().forEach(c=>hand.appendChild(c));});
+</script>
 </body>
 </html>
