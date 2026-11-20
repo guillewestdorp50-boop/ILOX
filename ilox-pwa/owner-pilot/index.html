@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101c19">
+<title>ILOX · Acceso del propietario (prototipo)</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1513;--panel:#13231f;--panel2:#192e28;--line:#ffffff18;--ink:#f1f0e8;--muted:#a3b4a9;--gold:#e6c987;--mint:#8fc5a2;--red:#d58e7d}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 0%,#25443766,transparent 40%),var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1040px;margin:auto;padding:28px clamp(16px,4vw,42px) 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#f2d99e,#b77c45);color:#14251f;font-weight:900;font-size:25px}.brand b{display:block;letter-spacing:.18em;font-size:19px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.16em}.back{color:var(--muted);text-decoration:none;font-size:12px}.back:hover{color:var(--gold)}.eyebrow{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.2em}.intro{padding:42px 0 28px;max-width:720px}.intro h1{font-size:clamp(32px,6vw,54px);line-height:1.04;letter-spacing:-.055em;margin:10px 0 13px}.intro p{color:#bfcec3;max-width:650px;margin:0}.notice{display:flex;gap:12px;align-items:flex-start;border:1px solid #d5a76d55;background:#a47a2918;border-radius:12px;padding:14px 16px;margin:24px 0 28px;color:#e8d8b6;font-size:12px}.notice strong{display:block;color:#f0d69a;margin-bottom:2px}.lock{font-size:20px}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}.panel{background:linear-gradient(145deg,#172b25,#10201c);border:1px solid var(--line);border-radius:16px;padding:22px;min-width:0}.panel h2{font-size:17px;margin:0 0 5px;letter-spacing:-.02em}.sub{font-size:12px;color:var(--muted);margin:0 0 20px}.steps{display:grid;gap:10px}.step{display:grid;grid-template-columns:32px 1fr auto;gap:11px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:11px;background:#ffffff05}.num{width:30px;height:30px;border-radius:9px;background:#e6c98718;color:var(--gold);display:grid;place-items:center;font-weight:800;font-size:12px}.step b{display:block;font-size:12px}.step small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.state{font-size:9px;letter-spacing:.1em;color:#b5c7bb}.state.wait{color:var(--gold)}.identity{display:grid;gap:10px}.identity label{font-size:11px;color:#d6e0d7}.identity input{width:100%;border:1px solid #ffffff25;border-radius:8px;padding:13px;background:#091511;color:var(--ink);font:inherit;outline:none}.identity input:focus{border-color:var(--gold)}.btn{border:1px solid #e6c98780;border-radius:8px;padding:12px 14px;background:#e6c98718;color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.12em}.btn:disabled{opacity:.5;cursor:not-allowed}.locked{margin-top:18px;padding:14px;border-radius:10px;background:#0b1714;border:1px dashed #ffffff28;color:var(--muted);font-size:11px}.locked b{display:block;color:#d6e0d7;margin-bottom:4px}.questions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.q{padding:10px;border:1px dashed #ffffff25;border-radius:8px;color:#9eafa4;font-size:10px}.challenge{display:grid;gap:9px;margin-top:14px}.challenge div{padding:12px;border-radius:9px;background:#ffffff06;border:1px solid var(--line);color:#9eafa4;font-size:11px}.foot{margin-top:24px;color:#71877b;font-size:9px;letter-spacing:.12em;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}@media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.back{padding-top:9px}.intro{padding-top:30px}.panel{padding:18px}}@media(max-width:390px){.questions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><div class="brand"><span class="mark">I</span><span><b>ILOX</b><small>CONTROL DEL PROPIETARIO</small></span></div><a class="back" href="../">← Volver a ILOX</a></header>
+<section class="intro"><div class="eyebrow">ÁREA PRIVADA · PILOTO DE SEGURIDAD</div><h1>La llave de tu mundo.</h1><p>Un acceso independiente para proteger las acciones críticas del propietario, sin interferir con tu personaje ni con las partidas multijugador.</p></section>
+<div class="notice"><span class="lock">🔒</span><div><strong>Prototipo visual aislado — acceso todavía desactivado</strong>Esta pantalla no inicia sesión, no envía correos, no guarda respuestas y no autoriza acciones. La conexión segura del servidor se implementará y probará antes de habilitarla.</div></div>
+<section class="grid">
+<article class="panel"><h2>Cómo se protegerá el acceso</h2><p class="sub">Dos comprobaciones independientes, antes de cualquier acción de propietario.</p>
+<div class="steps">
+<div class="step"><span class="num">01</span><span><b>Identidad verificada</b><small>Cuenta privada del propietario, separada del jugador anónimo.</small></span><span class="state">PENDIENTE</span></div>
+<div class="step"><span class="num">02</span><span><b>Diez preguntas privadas</b><small>Se configuran desde esta área; nunca se comparten en el chat.</small></span><span class="state">PENDIENTE</span></div>
+<div class="step"><span class="num">03</span><span><b>Desafío aleatorio de tres</b><small>El servidor elige tres preguntas distintas en cada autorización.</small></span><span class="state">PENDIENTE</span></div>
+<div class="step"><span class="num">04</span><span><b>Permiso de un solo uso</b><small>Vence rápido y queda ligado a una acción concreta.</small></span><span class="state">PENDIENTE</span></div>
+</div>
+</article>
+<article class="panel"><h2>Identidad del propietario</h2><p class="sub">El acceso final utilizará verificación por correo (OTP o enlace seguro).</p>
+<form class="identity" onsubmit="event.preventDefault();document.querySelector('#prototype-msg').textContent='Desactivado en este prototipo: todavía no se envía ningún correo.'">
+<label for="email">Correo de la cuenta privada</label><input id="email" type="email" placeholder="Se habilitará al conectar Auth" disabled autocomplete="off">
+<button class="btn" type="submit" disabled>ENVIAR CÓDIGO DE ACCESO</button>
+</form>
+<div class="locked"><b>🔐 Verificación no conectada</b>El propietario todavía no está vinculado a una identidad autorizada. No se adivinará ni se tomará el nombre del personaje como prueba.</div>
+<p id="prototype-msg" class="sub" aria-live="polite" style="margin:12px 0 0">Modo demostración: sin conexión al backend.</p>
+</article>
+<article class="panel"><h2>Las diez preguntas</h2><p class="sub">En el sistema real, las respuestas se procesarán únicamente en el servidor y se almacenarán como verificadores protegidos.</p>
+<div class="questions"><div class="q">Pregunta 01 · Sin configurar</div><div class="q">Pregunta 02 · Sin configurar</div><div class="q">Pregunta 03 · Sin configurar</div><div class="q">Pregunta 04 · Sin configurar</div><div class="q">Pregunta 05 · Sin configurar</div><div class="q">Pregunta 06 · Sin configurar</div><div class="q">Pregunta 07 · Sin configurar</div><div class="q">Pregunta 08 · Sin configurar</div><div class="q">Pregunta 09 · Sin configurar</div><div class="q">Pregunta 10 · Sin configurar</div></div>
+<div class="locked"><b>Las respuestas no se muestran ni se guardan acá.</b>Esta maqueta no solicita datos personales ni respuestas de seguridad.</div>
+</article>
+<article class="panel"><h2>Ejemplo del desafío</h2><p class="sub">La selección real será criptográficamente aleatoria y se hará del lado del servidor.</p>
+<div class="challenge"><div>Pregunta seleccionada · 1 de 3</div><div>Pregunta seleccionada · 2 de 3</div><div>Pregunta seleccionada · 3 de 3</div></div>
+<div class="locked"><b>Protecciones obligatorias</b>Intentos limitados · bloqueo progresivo · desafío con vencimiento · errores genéricos · registro sin respuestas · cierre ante cualquier fallo.</div>
+</article>
+</section>
+<footer class="foot"><span>ILOX · OWNER SECURITY PILOT</span><span>NO CONECTADO · NO DESPLEGADO · NO AUTORIZA ACCIONES</span></footer>
+</main>
+</body>
+</html>
