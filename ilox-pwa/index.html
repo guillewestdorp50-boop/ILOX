@@ -187,6 +187,21 @@ html,body,#game{background:#14251f;color:#f8f3e6}
   .action{padding:11px 14px;font-size:9px}
 }
 
+
+/* Cartas sin marco de interfaz: queda visible únicamente la carta del mazo */
+.card{
+  border:0 !important;
+  border-radius:0 !important;
+  background-color:transparent !important;
+  box-shadow:0 8px 15px #0008 !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+.card:before{display:none !important}
+.card.selected{
+  box-shadow:0 14px 22px #000a !important;
+}
+
 </style></head><body><main id="game">
 <header class="top" style="display:none"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
 <section class="room"><div class="backwall" style="display:none"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
