@@ -27,6 +27,30 @@
         });
         if (errors.length > 40) errors.shift();
       };
+      // Captura también fallos HTTP/API que las librerías suelen devolver como respuestas y no como excepciones JavaScript.
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = async (input, init = {}) => {
+        const requestUrl = typeof input === "string" ? input : (input?.url || "");
+        const requestMethod = String(init?.method || input?.method || "GET").toUpperCase();
+        try {
+          const response = await nativeFetch(input, init);
+          if (!response.ok && !requestUrl.includes("/functions/v1/ilox-error-report")) {
+            let detail = "";
+            try {
+              const body = await response.clone().text();
+              try {
+                const parsed = JSON.parse(body);
+                detail = ["message","msg","error_description","error","code","hint","details"].map(key => parsed?.[key] ? key+": "+String(parsed[key]) : "").filter(Boolean).join(" | ");
+              } catch { detail = body.slice(0,1800); }
+            } catch (readError) { detail = "No se pudo leer el cuerpo de la respuesta: "+String(readError); }
+            record("HTTP_"+response.status, requestMethod+" "+requestUrl+" | "+(detail || response.statusText || "Respuesta HTTP no exitosa"), "", {source:requestUrl});
+          }
+          return response;
+        } catch (error) {
+          if (!requestUrl.includes("/functions/v1/ilox-error-report")) record("NETWORK_FETCH_ERROR", requestMethod+" "+requestUrl+" | "+String(error?.message || error), error?.stack || "", {source:requestUrl});
+          throw error;
+        }
+      };
       const show = (title, detail) => {
         const panel = document.getElementById("loading");
         if (!panel) return;
