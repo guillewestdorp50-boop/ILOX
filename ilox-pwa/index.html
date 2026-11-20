@@ -69,5 +69,21 @@ hand.addEventListener('click',e=>{const card=e.target.closest('.card');if(!card)
 play.addEventListener('click',()=>{const selected=hand.querySelector('.selected');if(!selected)return;selected.classList.remove('selected');play.disabled=true;});
 document.getElementById('sort').addEventListener('click',()=>{const cards=[...hand.children];cards.reverse().forEach(c=>hand.appendChild(c));});
 </script>
+<script>
+if ("serviceWorker" in navigator) {
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("./sw.js", {scope:"./", updateViaCache:"none"});
+      await registration.update();
+    } catch (error) { console.warn("No se pudo actualizar la aplicación:", error); }
+  });
+}
+</script>
 </body>
 </html>
