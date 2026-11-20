@@ -97,7 +97,7 @@ The pilot can issue a short-lived action-scoped grant, and the migration include
 
 ## Isolated interface and backend
 
-The route `ilox-pwa/owner-pilot/index.html` now contains the working client flow for the isolated pilot. It is not linked from normal navigation and is not deployed. Its backend implementation and database migration are also committed only on `security/owner-key-v127`; see the implementation and configuration sections above. No migration has been run, no Edge Function has been deployed, and no production Auth or secret settings have been changed.
+The route `ilox-pwa/owner-pilot/index.html` now contains the working client flow for the isolated pilot. The preview endpoint only accepts the fixed `owner.preview.test` action; it cannot mint grants for arbitrary world operations. Configure `ILOX_OWNER_ALLOWED_ORIGIN` to the exact Preview origin before deployment; the production origin remains the default. It is not linked from normal navigation and is not deployed. Its backend implementation and database migration are also committed only on `security/owner-key-v127`; see the implementation and configuration sections above. No migration has been run, no Edge Function has been deployed, and no production Auth or secret settings have been changed.
 
 ## Explicit non-actions so far
 
