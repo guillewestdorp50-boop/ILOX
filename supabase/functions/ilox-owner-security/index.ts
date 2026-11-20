@@ -41,7 +41,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-async function authenticateOwner(request: Request): Promise<{ id: string; email: string }> {
+async function authenticateOwner(request: Request): Promise<{ id: string }> {
   const authorization = request.headers.get("authorization") ?? "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match || !OWNER_USER_ID || !/^[0-9a-f-]{36}$/i.test(OWNER_USER_ID)) throw new Error("unauthorized");
@@ -53,7 +53,7 @@ async function authenticateOwner(request: Request): Promise<{ id: string; email:
   if (user?.id !== OWNER_USER_ID || user?.is_anonymous === true || !user?.email_confirmed_at) {
     throw new Error("unauthorized");
   }
-  return { id: user.id, email: user.email ?? "" };
+  return { id: user.id };
 }
 
 async function rpc(name: string, args: Record<string, unknown>): Promise<any> {
@@ -91,7 +91,9 @@ async function handle(request: Request): Promise<Response> {
 
   try {
     const owner = await authenticateOwner(request);
-    const body = await request.json();
+    let body: unknown;
+    try { body = await request.json(); }
+    catch { return reply({ error: "invalid_request" }, 400); }
     if (!isRecord(body) || typeof body.action !== "string") return reply({ error: "invalid_request" }, 400);
 
     if (body.action === "status") {
