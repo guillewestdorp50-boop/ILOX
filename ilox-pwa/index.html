@@ -26,7 +26,7 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
 .play-area{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,40px);width:60%}
 .pile{width:clamp(54px,9vw,78px);height:clamp(78px,13vw,112px);border:1px dashed #e5d5a277;border-radius:8px;display:grid;place-items:center;color:#e5d5a288;font-size:10px;text-align:center;letter-spacing:.08em}
 .card{position:relative;flex:none;width:clamp(48px,8vw,70px);height:clamp(72px,12vw,102px);border-radius:8px;background:#f7f1e4;color:#27231e;border:1px solid #d9ceb9;box-shadow:0 4px 10px #001b13aa;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:clamp(23px,4vw,34px);cursor:pointer;user-select:none;transition:transform .16s,box-shadow .16s}
-.card.red{color:#a72d32}.card .corner{position:absolute;top:5px;left:6px;font:700 10px/1.1 Georgia,serif;text-align:center}.card .corner.bottom{top:auto;left:auto;bottom:5px;right:6px;transform:rotate(180deg)}
+.card.red{color:#a72d32}.card.oro{color:#a87516}.card.copas{color:#a72d32}.card.espadas{color:#343b48}.card.bastos{color:#79502d}.card .corner{position:absolute;top:5px;left:6px;font:700 10px/1.1 Georgia,serif;text-align:center}.card .corner.bottom{top:auto;left:auto;bottom:5px;right:6px;transform:rotate(180deg)}
 .card.selected{transform:translateY(-13px);box-shadow:0 0 0 3px var(--gold),0 12px 18px #00150f99}
 .my-seat{flex:none;min-height:156px;padding:8px 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;background:linear-gradient(0deg,#07120fee,#07120f99 70%,transparent)}
 .my-info{display:flex;align-items:center;gap:9px;font-size:12px;color:#d9e2d8}.my-info .avatar{width:27px;height:27px}
@@ -41,7 +41,7 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
 </head>
 <body>
 <div class="game">
-<header class="topbar"><span class="brand">ILOX</span><span>MESA DE NAIPES</span><span class="status">SALA · ESPERANDO JUGADORES</span></header>
+<header class="topbar"><span class="brand">ILOX</span><span>MESA · BARAJA ESPAÑOLA</span><span class="status">SALA · ESPERANDO JUGADORES</span></header>
 <main class="table-wrap">
 <section class="table" aria-label="Mesa de juego">
 <div class="center-mark">ILOX</div>
@@ -54,11 +54,11 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
 <footer class="my-seat">
 <div class="my-info"><span class="avatar">YO</span><strong>TU MANO</strong><span id="count">· 5 cartas</span></div>
 <div class="hand" id="hand" aria-label="Tus cartas">
-<div class="card" data-card="1"><span class="corner">A<br>♠</span>♠<span class="corner bottom">A<br>♠</span></div>
-<div class="card red" data-card="2"><span class="corner">7<br>♥</span>♥<span class="corner bottom">7<br>♥</span></div>
-<div class="card" data-card="3"><span class="corner">3<br>♣</span>♣<span class="corner bottom">3<br>♣</span></div>
-<div class="card red" data-card="4"><span class="corner">Q<br>♦</span>♦<span class="corner bottom">Q<br>♦</span></div>
-<div class="card" data-card="5"><span class="corner">5<br>♠</span>♠<span class="corner bottom">5<br>♠</span></div>
+<div class="card oro" data-card="1"><span class="corner">1<br>OROS</span>🪙<span class="corner bottom">1<br>OROS</span></div>
+<div class="card copas" data-card="2"><span class="corner">7<br>COPAS</span>🏆<span class="corner bottom">7<br>COPAS</span></div>
+<div class="card espadas" data-card="3"><span class="corner">3<br>ESPADAS</span>⚔️<span class="corner bottom">3<br>ESPADAS</span></div>
+<div class="card bastos" data-card="4"><span class="corner">12<br>BASTOS</span>🪵<span class="corner bottom">12<br>BASTOS</span></div>
+<div class="card oro" data-card="5"><span class="corner">5<br>OROS</span>🪙<span class="corner bottom">5<br>OROS</span></div>
 </div>
 <div class="actions"><button class="action" id="play" disabled>JUGAR CARTA</button><button class="action" id="sort" type="button">ORDENAR</button></div>
 </footer>
