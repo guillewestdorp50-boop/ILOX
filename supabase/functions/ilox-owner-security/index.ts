@@ -1,7 +1,8 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const OWNER_USER_ID = Deno.env.get("ILOX_OWNER_USER_ID") ?? "";
 const OWNER_PEPPER = Deno.env.get("ILOX_OWNER_PEPPER") ?? "";
-const ORIGIN = "https://ilox-mundo-abierto.onrender.com";
+const ALLOWED_ORIGIN = Deno.env.get("ILOX_OWNER_ALLOWED_ORIGIN") ?? "https://ilox-mundo-abierto.onrender.com";
+const PILOT_ACTION = "owner.preview.test";
 import { answerVerifier, chooseThree, constantTimeEqual, normalizeAnswer } from "./security-core.ts";
 
 function readKey(name: string, legacyName: string): string {
@@ -79,10 +80,14 @@ function validAction(value: unknown): value is string {
 }
 
 async function handle(request: Request): Promise<Response> {
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-  if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
   const origin = request.headers.get("origin");
-  if (origin && origin !== ORIGIN) return reply({ error: "not_found" }, 404, false);
+  const originAllowed = !origin || origin === ALLOWED_ORIGIN;
+  const requestCors = origin && originAllowed ? { ...corsHeaders, "access-control-allow-origin": origin } : corsHeaders;
+  if (request.method === "OPTIONS") return originAllowed
+    ? new Response(null, { status: 204, headers: requestCors })
+    : reply({ error: "not_found" }, 404, false);
+  if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, originAllowed);
+  if (!originAllowed) return reply({ error: "not_found" }, 404, false);
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(declaredLength) && declaredLength > 24000) return reply({ error: "request_too_large" }, 413);
   if (!SUPABASE_URL || !PUBLISHABLE_KEY || !SECRET_KEY || !OWNER_PEPPER || OWNER_PEPPER.length < 32 || !OWNER_USER_ID) {
@@ -131,7 +136,7 @@ async function handle(request: Request): Promise<Response> {
     }
 
     if (body.action === "challenge") {
-      if (!validAction(body.targetAction)) return reply({ error: "invalid_action" }, 400);
+      if (body.targetAction !== PILOT_ACTION) return reply({ error: "invalid_action" }, 400);
       const security = await rpc("ilox_owner_get_security", { p_owner_user_id: owner.id });
       if (!security) return reply({ error: "not_enrolled" }, 409);
       if (security.locked_until && Date.parse(security.locked_until) > Date.now()) {
@@ -141,7 +146,7 @@ async function handle(request: Request): Promise<Response> {
       const created = await rpc("ilox_owner_start_challenge", {
         p_owner_user_id: owner.id,
         p_question_ids: ids,
-        p_target_action: body.targetAction,
+        p_target_action: PILOT_ACTION,
       });
       const questions = security.answer_verifiers ?? {};
       return reply({
@@ -165,12 +170,14 @@ async function handle(request: Request): Promise<Response> {
       }
       const security = await rpc("ilox_owner_get_security", { p_owner_user_id: owner.id });
       const answers = new Map<number, string>();
-      for (const item of body.answers) {
-        if (!isRecord(item) || !Number.isInteger(item.id) || answers.has(item.id as number)) {
-          await rpc("ilox_owner_record_failure", { p_owner_user_id: owner.id });
-          return reply({ error: "verification_failed" }, 401);
+      try {
+        for (const item of body.answers) {
+          if (!isRecord(item) || !Number.isInteger(item.id) || answers.has(item.id as number)) throw new Error("invalid_answer");
+          answers.set(item.id as number, normalizeAnswer(item.answer));
         }
-        answers.set(item.id as number, normalizeAnswer(item.answer));
+      } catch {
+        await rpc("ilox_owner_record_failure", { p_owner_user_id: owner.id });
+        return reply({ error: "verification_failed" }, 401);
       }
       let valid = answers.size === 3;
       for (const id of claimed.question_ids as number[]) {
