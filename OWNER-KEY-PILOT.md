@@ -65,6 +65,12 @@ Findings requiring careful treatment:
 - Build and test on an isolated branch/test path only.
 - Do not deploy, run migrations, change RLS, rotate keys, alter backups/door credentials, modify world records, or change existing player accounts without a separate explicit approval.
 
+## Isolated interface prototype
+
+Added `ilox-pwa/owner-pilot/index.html` on the isolated security branch. It is a standalone visual prototype for the private owner area and is not linked from the normal navigation. It shows the independent identity step, ten-question enrollment concept, three-question challenge, and required abuse controls.
+
+The prototype deliberately has no working authentication, no email/OTP request, no answer inputs, no local persistence, no calls to Supabase, and no authorization effect. It is not part of the live `deploy/render-ilox` branch and has not been deployed. The HTML is a review artifact only; backend contracts, identity bootstrap, Edge Function implementation, tests, and deployment remain future gated work.
+
 ## Explicit non-actions so far
 
 - No questions or answers collected.
