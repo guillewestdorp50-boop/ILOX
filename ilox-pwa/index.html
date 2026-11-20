@@ -3,7 +3,7 @@
 <style>
 :root{--gold:#d5ae6b;--cream:#f5e8c9;--wood:#61391f}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1b110b;color:var(--cream);font-family:Georgia,serif}
-#game{height:100dvh;width:100vw;position:relative;overflow:hidden;background-attachment:scroll;background-color:#21140d;background-image:url('./truco-table.avif');background-repeat:no-repeat;background-position:center 54%;background-size:cover}
+#game{height:100dvh;width:100vw;position:relative;overflow:hidden;background:#2b190f}\n#game::before{content:'';position:absolute;inset:-22px;z-index:0;background-image:linear-gradient(90deg,#1a0d07aa,#1a0d0755,#1a0d07aa),url('./truco-table.avif');background-position:center;background-size:cover;filter:blur(12px) brightness(.78) saturate(1.08);transform:scale(1.04);pointer-events:none}\n#game::after{content:'';position:absolute;z-index:0;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,177.7778vh);height:min(100dvh,56.25vw);background:url('./truco-table.avif') center/100% 100% no-repeat;pointer-events:none;box-shadow:0 0 38px #160b06aa}\n.room{z-index:1}
 .top{position:absolute;z-index:5;top:0;left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;background:linear-gradient(#100a07dd,#100a0766);font:700 11px system-ui;letter-spacing:.13em}
 .brand{font:700 17px Georgia;color:#e6c78e;letter-spacing:.2em}.score{color:#f4dcae}
 .room{position:absolute;inset:0;perspective:1000px;overflow:hidden}
@@ -37,7 +37,7 @@
 .status{position:absolute;z-index:8;bottom:calc(35% + 8px);left:50%;transform:translateX(-50%);font:700 10px system-ui;letter-spacing:.1em;text-shadow:0 2px 5px #000;text-align:center;width:90%}
 .toast{position:absolute;z-index:12;top:58px;left:50%;transform:translateX(-50%);padding:8px 14px;background:#170e09dd;border:1px solid #c69a5a;border-radius:20px;font:11px system-ui;white-space:nowrap;opacity:0;transition:opacity .2s}.toast.show{opacity:1}
 @media(max-height:600px){.myhand{height:37%;bottom:7%}.card{height:clamp(105px,27vh,170px);width:clamp(66px,10vw,125px)}.status{bottom:43%}}\n@media(max-width:600px){.card{width:clamp(72px,21vw,108px);height:clamp(118px,22vh,170px)}.myhand{bottom:7%;height:34%;gap:0}.controls{bottom:8px;padding:0 10px}.action{padding:10px 13px;font-size:9px}}
-@media(orientation:landscape){#game{background-position:center 53%;background-size:cover}}\n@media(orientation:portrait){#game{background-position:center 50%;background-size:cover}}\n</style></head><body><main id="game">
+@media(orientation:landscape){#game::after{width:min(100vw,177.7778vh);height:min(100dvh,56.25vw)}}\n@media(orientation:portrait){#game::after{width:100vw;height:56.25vw}}\n</style></head><body><main id="game">
 <header class="top" style="display:none"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
 <section class="room"><div class="backwall" style="display:none"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
 <div class="table" style="display:none"><div class="tablegrain"></div></div><div class="opcards" id="opcards" style="display:none"><i class="backcard"></i><i class="backcard"></i><i class="backcard"></i></div>
