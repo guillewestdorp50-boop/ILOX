@@ -20,7 +20,7 @@ const PUBLISHABLE_KEY = readKey("SUPABASE_PUBLISHABLE_KEYS", "SUPABASE_ANON_KEY"
 const SECRET_KEY = readKey("SUPABASE_SECRET_KEYS", "SUPABASE_SERVICE_ROLE_KEY");
 
 const corsHeaders = {
-  "access-control-allow-origin": ORIGIN,
+  "access-control-allow-origin": ALLOWED_ORIGIN,
   "access-control-allow-headers": "authorization, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-max-age": "86400",
