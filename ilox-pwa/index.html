@@ -81,6 +81,112 @@
   .myhand{bottom:8%;height:43%;gap:5px}
 }
 
+
+/* Rediseño visual integral de la mesa y la mano */
+:root{--gold:#e4c27e;--cream:#f8f3e6;--wood:#243b32}
+html,body,#game{background:#14251f;color:#f8f3e6}
+#game::before{
+  background-image:linear-gradient(90deg,#071710bb,#10251c55,#071710bb),url('./truco-table.avif');
+  filter:blur(13px) brightness(.58) saturate(.72);
+}
+#game::after{
+  background-image:linear-gradient(180deg,#07171035,#07171055),url('./truco-table.avif');
+  box-shadow:0 0 42px #000b;
+}
+.top{
+  background:linear-gradient(#071710e8,#07171088);
+  border-bottom:1px solid #d5ae6b55;
+}
+.brand{color:#f0d69e}
+.center{
+  top:40%;
+  gap:clamp(10px,2vw,22px);
+}
+.played{
+  width:clamp(86px,12vw,116px);
+  height:auto;
+  aspect-ratio:.625;
+  border-radius:9px;
+  background-color:#f7f1e3;
+  border:3px solid #e6d4ad;
+  box-shadow:0 12px 24px #000b,0 0 0 1px #725a36;
+}
+.myhand{
+  bottom:10%;
+  height:43%;
+  gap:clamp(7px,1.2vw,16px);
+  padding:0 12px;
+  align-items:flex-end;
+}
+.card{
+  width:clamp(104px,17vw,145px);
+  height:auto;
+  aspect-ratio:.625;
+  flex:0 0 auto;
+  border:4px solid #f5edda;
+  border-radius:10px;
+  background-color:#fbf7eb !important;
+  background-clip:padding-box;
+  box-shadow:0 12px 24px #000c,0 0 0 1px #8d744d;
+  isolation:isolate;
+  overflow:hidden;
+}
+.card:before{
+  display:block;
+  inset:3px;
+  border:1px solid #b99d6c;
+  border-radius:5px;
+  z-index:2;
+}
+.card.selected{--lift:-20px;box-shadow:0 18px 28px #000d,0 0 0 3px #f0ce83}
+.status{
+  bottom:calc(10% + 43% + 12px);
+  width:min(90%,520px);
+  padding:9px 16px;
+  border:1px solid #d8b87599;
+  border-radius:22px;
+  background:linear-gradient(90deg,#10271feF,#1d3a2feF);
+  color:#fff2d5;
+  box-shadow:0 5px 16px #0009;
+  letter-spacing:.12em;
+}
+.controls{
+  bottom:10px;
+  padding:0 2%;
+  align-items:center;
+}
+.action{
+  border:1px solid #d8bd82;
+  border-radius:22px;
+  background:linear-gradient(180deg,#304d3d,#14291f);
+  color:#fff1d0;
+  box-shadow:0 6px 18px #000a;
+  padding:13px 22px;
+}
+.action.primary{
+  background:linear-gradient(180deg,#36a66a,#17633f);
+  border-color:#9cdbac;
+  color:#fff;
+}
+.action:disabled{opacity:.45}
+.toast{
+  background:#10271fee;
+  border-color:#d8bd82;
+  color:#fff2d5;
+}
+@media(max-height:600px){
+  .myhand{bottom:10%;height:43%}
+  .card{width:clamp(96px,16vw,132px);height:auto;aspect-ratio:.625}
+  .center{top:38%}
+  .status{bottom:calc(10% + 43% + 8px)}
+}
+@media(max-width:600px){
+  .myhand{bottom:10%;height:43%;gap:6px}
+  .card{width:clamp(92px,18vw,132px);height:auto;aspect-ratio:.625}
+  .controls{bottom:8px;padding:0 10px}
+  .action{padding:11px 14px;font-size:9px}
+}
+
 </style></head><body><main id="game">
 <header class="top" style="display:none"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
 <section class="room"><div class="backwall" style="display:none"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
