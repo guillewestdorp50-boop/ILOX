@@ -1,25 +1,64 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#24170f"><title>ILOX · Truco en primera persona</title>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#21140d"><title>ILOX · Truco argentino</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1a100a;color:#fff;font-family:system-ui,Arial,sans-serif}
-#scene{position:fixed;inset:0;width:100%;height:100%;object-fit:fill;user-select:none}
-.hitzone{position:absolute;bottom:8%;height:38%;width:17%;border:0;background:transparent;border-radius:18px;cursor:pointer;outline:0}
-.hitzone:focus,.hitzone.selected{background:linear-gradient(0deg,#f7d48b55,transparent 75%);box-shadow:0 0 0 2px #f4d18b99 inset}
-#c1{left:28%}#c2{left:39%}#c3{left:50%}#c4{left:61%}
-#play{position:absolute;bottom:3%;left:50%;transform:translateX(-50%);border:1px solid #e5c17c;border-radius:22px;padding:10px 24px;background:#2b1b11eF;color:#f8e8c7;font-weight:800;letter-spacing:.12em;font-size:11px;box-shadow:0 3px 12px #0008}
-#play:disabled{opacity:.45}
-#hint{position:absolute;left:50%;bottom:1%;transform:translate(-50%,100%);font-size:10px;color:#f7e5c5;text-shadow:0 1px 4px #000}
-@media(max-width:600px){#c1{left:8%;width:20%}#c2{left:27%;width:20%}#c3{left:46%;width:20%}#c4{left:65%;width:20%}#play{bottom:2%;padding:9px 18px}}
-</style></head><body>
-<img id="scene" alt="Vista en primera persona de una partida de truco argentino: tus manos sostienen cartas españolas sobre una mesa grande de madera, con otros jugadores y un mate."/>
-<button class="hitzone" id="c1" aria-label="Seleccionar primera carta"></button><button class="hitzone" id="c2" aria-label="Seleccionar segunda carta"></button><button class="hitzone" id="c3" aria-label="Seleccionar tercera carta"></button><button class="hitzone" id="c4" aria-label="Seleccionar cuarta carta"></button>
-<button id="play" disabled>TIRAR CARTA</button><div id="hint">TOCÁ UNA CARTA PARA SELECCIONARLA</div>
+:root{--gold:#d5ae6b;--cream:#f5e8c9;--wood:#61391f}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1b110b;color:var(--cream);font-family:Georgia,serif}
+#game{height:100dvh;width:100vw;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#75502f 0,#382317 48%,#150d08 100%)}
+.top{position:absolute;z-index:5;top:0;left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;background:linear-gradient(#100a07dd,#100a0766);font:700 11px system-ui;letter-spacing:.13em}
+.brand{font:700 17px Georgia;color:#e6c78e;letter-spacing:.2em}.score{color:#f4dcae}
+.room{position:absolute;inset:48px 0 0;perspective:1000px;overflow:hidden}
+.backwall{position:absolute;inset:0 0 42%;background:linear-gradient(180deg,#25170f,#57371f 70%,#21140d);border-bottom:8px solid #29170d}
+.window{position:absolute;top:7%;left:50%;transform:translateX(-50%);width:min(32vw,260px);height:21%;border:9px solid #25170f;background:linear-gradient(90deg,#263a30,#9a895c,#314435);box-shadow:0 0 40px #d3a15a33}
+.opponent{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:210px;height:140px;text-align:center}
+.op-head{width:72px;height:72px;border-radius:50%;margin:auto;background:radial-gradient(circle at 45% 35%,#d9a77b 0 30%,#74452e 32% 65%,#21130d 67%);box-shadow:0 8px 15px #0008}
+.op-body{width:190px;height:90px;margin:-4px auto 0;border-radius:90px 90px 10px 10px;background:linear-gradient(90deg,#292d25,#596049,#26271f);box-shadow:0 10px 20px #0009}
+.op-label{font:10px system-ui;letter-spacing:.15em;color:#e9d2a8;margin-top:-78px;position:relative}
+.table{position:absolute;left:-16%;width:132%;height:65%;bottom:7%;border-radius:50%;transform:rotateX(56deg);transform-origin:center bottom;background:radial-gradient(ellipse at 50% 40%,#95643a 0,#6e4528 55%,#3c2416 78%,#24150d 100%);border:18px solid #321d10;box-shadow:0 28px 0 #160d08,0 35px 35px #000b,inset 0 0 0 5px #b07a43,inset 0 0 50px #21130c}
+.table:after{content:"";position:absolute;inset:6%;border:2px solid #c18b4b66;border-radius:50%}
+.tablegrain{position:absolute;inset:10%;opacity:.12;background:repeating-linear-gradient(8deg,transparent 0 18px,#e3b57a 19px 20px,transparent 21px 37px);border-radius:50%}
+.center{position:absolute;z-index:2;left:50%;top:49%;transform:translate(-50%,-50%);width:100%;height:150px;display:flex;justify-content:center;align-items:center;gap:10px}
+.played{width:70px;height:104px;border-radius:8px;background:#eee0c2;color:#291c12;border:2px solid #d3b98a;box-shadow:0 8px 14px #0008;display:grid;place-items:center;font: bold 27px Georgia;transform:rotate(-5deg)}
+.played small{font:10px system-ui;display:block}
+.opcards{position:absolute;z-index:3;top:35%;left:50%;transform:translateX(-50%);display:flex;gap:-14px}
+.backcard{width:42px;height:62px;margin-left:-12px;border-radius:5px;border:2px solid #d8c29a;background:repeating-linear-gradient(45deg,#7b1f1e 0 4px,#e6d7b4 4px 6px);box-shadow:0 3px 6px #0008}
+.myhand{position:absolute;z-index:6;left:0;right:0;bottom:-2px;height:35%;display:flex;align-items:flex-end;justify-content:center;gap:clamp(5px,2vw,18px);padding:0 12px 20px;pointer-events:none}
+.handglow{position:absolute;bottom:-13%;left:50%;transform:translateX(-50%);width:95%;height:88%;border-radius:50% 50% 0 0;background:radial-gradient(ellipse at center,#d9a36a66,transparent 70%);pointer-events:none}
+.hand{position:absolute;bottom:-5%;width:42%;height:56%;background:radial-gradient(ellipse at 50% 45%,#dba77c 0 45%,#a96d4e 65%,transparent 70%);filter:drop-shadow(0 -5px 8px #0008);pointer-events:none}
+.hand.left{left:-14%;transform:rotate(18deg)}.hand.right{right:-14%;transform:rotate(-18deg)}
+.card{pointer-events:auto;position:relative;width:clamp(82px,22vw,145px);height:clamp(128px,31vh,205px);border-radius:10px;border:2px solid #d9c49a;background:linear-gradient(135deg,#fff8e7,#e8d8b7);color:#25180f;box-shadow:0 9px 18px #0009,inset 0 0 0 3px #fff9;transform:rotate(var(--rot)) translateY(var(--lift,0));transform-origin:bottom center;transition:transform .18s,box-shadow .18s;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:manipulation}
+.card:before{content:"";position:absolute;inset:5px;border:1px solid #b99b69;border-radius:6px;pointer-events:none}
+.card.red{color:#9d2920}.card .rank{position:absolute;top:8px;left:9px;font:bold 18px Georgia}.card .rank.bottom{top:auto;left:auto;bottom:8px;right:9px;transform:rotate(180deg)}
+.card .suit{font-size:clamp(37px,9vw,58px);line-height:1}.card .name{font:9px system-ui;letter-spacing:.08em;margin-top:8px}
+.card.selected{--lift:-34px;box-shadow:0 18px 30px #000c,0 0 0 3px var(--gold);z-index:4}
+.card.playedout{opacity:0;transform:translateY(-230px) scale(.75);pointer-events:none}
+.controls{position:absolute;z-index:10;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:9px;align-items:center}
+.action{border:1px solid #d5ae6b;border-radius:24px;background:linear-gradient(#49301e,#24150d);color:#f6e7c7;padding:12px 20px;font:800 10px system-ui;letter-spacing:.13em;box-shadow:0 4px 12px #0009;white-space:nowrap}
+.action.primary{background:linear-gradient(#b88b4c,#71451f);color:#21150c}.action:disabled{opacity:.38}
+.status{position:absolute;z-index:8;bottom:calc(35% + 8px);left:50%;transform:translateX(-50%);font:700 10px system-ui;letter-spacing:.1em;text-shadow:0 2px 5px #000;text-align:center;width:90%}
+.toast{position:absolute;z-index:12;top:58px;left:50%;transform:translateX(-50%);padding:8px 14px;background:#170e09dd;border:1px solid #c69a5a;border-radius:20px;font:11px system-ui;white-space:nowrap;opacity:0;transition:opacity .2s}.toast.show{opacity:1}
+@media(max-height:600px){.myhand{height:42%;padding-bottom:12px}.card{height:clamp(105px,35vh,155px);width:clamp(68px,17vw,110px)}.opponent{top:4%}.table{height:70%;bottom:0}.status{bottom:42%}}
+</style></head><body><main id="game">
+<header class="top"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
+<section class="room"><div class="backwall"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
+<div class="table"><div class="tablegrain"></div></div><div class="opcards" id="opcards"><i class="backcard"></i><i class="backcard"></i><i class="backcard"></i></div>
+<div class="center" id="center"><div style="font:11px system-ui;letter-spacing:.14em;color:#f2d7a8;text-shadow:0 2px 5px #000">LA MESA ESTÁ LISTA</div></div>
+<div class="myhand" id="myhand"><div class="handglow"></div><div class="hand left"></div><div class="hand right"></div></div>
+</section>
+<div class="status" id="status">ELEGÍ UNA CARTA DE TU MANO</div><div class="toast" id="toast"></div>
+<div class="controls"><button class="action" id="new">NUEVA MANO</button><button class="action primary" id="throw" disabled>TIRAR CARTA</button></div>
+</main>
 <script>
-const scene=document.getElementById('scene');
-fetch('./truco-scene.jpg.b64').then(r=>r.text()).then(b=>{scene.src='data:image/jpeg;base64,'+b.trim()}).catch(()=>{scene.alt='No se pudo cargar la escena de la mesa';});
-const zones=[...document.querySelectorAll('.hitzone')],play=document.getElementById('play'),hint=document.getElementById('hint');let selected=-1;
-zones.forEach((z,i)=>z.addEventListener('click',()=>{selected=i;zones.forEach((x,j)=>x.classList.toggle('selected',i===j));play.disabled=false;hint.textContent='CARTA '+(i+1)+' SELECCIONADA'}));
-play.addEventListener('click',()=>{if(selected<0)return;hint.textContent='CARTA '+(selected+1)+' LISTA PARA JUGAR';play.disabled=true;zones[selected].classList.remove('selected');selected=-1});
+const suits=[{s:'⚔',n:'ESPADA',c:'dark'},{s:'🪙',n:'ORO',c:'gold'},{s:'🥤',n:'COPA',c:'red'},{s:'♣',n:'BASTO',c:'dark'}];
+const ranks=['1','2','3','4','5','6','7','10','11','12'];
+let hand=[],selected=-1,played=0,scoreMe=0,scoreRival=0,round=0;
+const $=id=>document.getElementById(id);
+function makeDeck(){let d=[];for(let si=0;si<4;si++)for(const r of ranks)d.push({r,s:suits[si].s,n:suits[si].n,c:si===2?'red':'dark',v:r});return d}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function say(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1500)}
+function renderHand(){const root=$('myhand');root.querySelectorAll('.card').forEach(x=>x.remove());hand.forEach((c,i)=>{const el=document.createElement('button');el.className='card '+c.c+(selected===i?' selected':'');el.style.setProperty('--rot',((i-1)*7)+'deg');el.setAttribute('aria-label',c.r+' de '+c.n);el.innerHTML='<span class="rank">'+c.r+'</span><span class="suit">'+c.s+'</span><span class="name">'+c.n+'</span><span class="rank bottom">'+c.r+'</span>';el.addEventListener('click',()=>{selected=selected===i?-1:i;renderHand();$('throw').disabled=selected<0;$('status').textContent=selected<0?'ELEGÍ UNA CARTA DE TU MANO':'SELECCIONASTE '+c.r+' DE '+c.n});root.appendChild(el)})}
+function deal(){hand=shuffle(makeDeck()).slice(0,3);selected=-1;played=0;$('center').innerHTML='<div style="font:11px system-ui;letter-spacing:.14em;color:#f2d7a8;text-shadow:0 2px 5px #000">LA MANO COMIENZA</div>';$('opcards').innerHTML='<i class="backcard"></i><i class="backcard"></i><i class="backcard"></i>';$('throw').disabled=true;$('status').textContent='ELEGÍ UNA CARTA DE TU MANO';renderHand();say('¡Cartas repartidas!')}
+function throwCard(){if(selected<0||!hand[selected])return;const c=hand.splice(selected,1)[0];const slot=document.createElement('div');slot.className='played '+c.c;slot.innerHTML='<span>'+c.r+'<small>'+c.s+'</small></span>';const empty=$('center').querySelector('div[style]');if(empty)empty.remove();$('center').appendChild(slot);played++;selected=-1;$('throw').disabled=true;renderHand();$('status').textContent='TIRASTE '+c.r+' DE '+c.n+' · EL RIVAL ESTÁ JUGANDO';setTimeout(()=>{if(played<3){const rival=makeDeck()[Math.floor(Math.random()*40)];const rs=document.createElement('div');rs.className='played';rs.style.transform='rotate(5deg)';rs.innerHTML='<span>'+rival.r+'<small>'+rival.s+'</small></span>';$('center').appendChild(rs);$('opcards').querySelector('.backcard')?.remove();$('status').textContent='RONDA '+played+' · TU TURNO';if(hand.length===0){const winner=Math.random()>.5;winner?scoreMe++:scoreRival++;$('mine').textContent=scoreMe;$('theirs').textContent=scoreRival;$('status').textContent=winner?'GANASTE LA MANO':'EL RIVAL GANÓ LA MANO';say(winner?'¡Buena! Punto para vos':'Punto para el rival')}}else{$('status').textContent='MANO TERMINADA · REPARTÍ DE NUEVO'}},750)}
+$('throw').addEventListener('click',throwCard);$('new').addEventListener('click',deal);deal();
 </script>
-<script>if("serviceWorker"in navigator){let once=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(once)return;once=true;location.reload()});addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});await r.update()}catch(e){}})}</script>
+<script>if("serviceWorker"in navigator){addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});await r.update()}catch(e){}})}</script>
 </body></html>
