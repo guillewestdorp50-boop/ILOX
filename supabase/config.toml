@@ -1,0 +1,4 @@
+project_id = "wihbxfebobfmohmqqhkt"
+
+[functions.ilox-owner-security]
+verify_jwt = true
