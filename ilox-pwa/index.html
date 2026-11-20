@@ -202,6 +202,52 @@ html,body,#game{background:#14251f;color:#f8f3e6}
   box-shadow:0 14px 22px #000a !important;
 }
 
+
+/* Acabado definitivo de las cartas: sin tarjeta contenedora ni madera visible */
+.card{
+  width:clamp(102px,17vw,140px) !important;
+  height:auto !important;
+  aspect-ratio:0.625 !important;
+  border:0 !important;
+  outline:0 !important;
+  border-radius:3px !important;
+  background-color:#f4ead2 !important;
+  background-clip:border-box !important;
+  box-shadow:0 7px 13px #0007 !important;
+  overflow:hidden !important;
+  padding:0 !important;
+}
+.card:before{display:none !important}
+.card.selected{
+  transform:rotate(var(--rot)) translateY(-18px) !important;
+  box-shadow:0 11px 18px #0009 !important;
+}
+.myhand{
+  display:flex !important;
+  justify-content:center !important;
+  align-items:flex-end !important;
+  gap:clamp(6px,1.3vw,14px) !important;
+  bottom:9% !important;
+  height:42% !important;
+}
+.center{top:39% !important}
+.status{
+  bottom:calc(9% + 42% + 10px) !important;
+  max-width:520px;
+}
+.played{
+  border:0 !important;
+  outline:0 !important;
+  border-radius:3px !important;
+  background-color:#f4ead2 !important;
+  box-shadow:0 8px 15px #0008 !important;
+}
+@media(max-width:600px){
+  .card{width:clamp(92px,18vw,128px) !important}
+  .myhand{bottom:9% !important;height:42% !important;gap:5px !important}
+  .controls{bottom:8px !important}
+}
+
 </style></head><body><main id="game">
 <header class="top" style="display:none"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
 <section class="room"><div class="backwall" style="display:none"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
