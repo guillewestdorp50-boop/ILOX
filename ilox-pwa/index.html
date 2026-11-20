@@ -43,6 +43,44 @@
 .card:before{inset:3px;border-color:#9c8059}
 .card .rank,.card .suit,.card .name{display:none}
 .played{background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Cartas_Tat%C3%BA.png/1280px-Cartas_Tat%C3%BA.png');background-size:1000% 400%;background-repeat:no-repeat;background-color:#eee0c2;color:transparent;border:1px solid #d3b98a}
+
+/* Ajuste fino: una sola silueta de carta y mano ordenada */
+.card{
+  width:clamp(104px,18vw,145px);
+  height:auto;
+  aspect-ratio:0.625;
+  flex:0 0 auto;
+  border:0;
+  border-radius:8px;
+  background-color:transparent;
+  box-shadow:0 8px 16px #0009;
+  overflow:hidden;
+}
+.card:before{display:none}
+.card.selected{--lift:-22px}
+.myhand{
+  bottom:8%;
+  height:43%;
+  gap:clamp(5px,1.2vw,14px);
+  padding:0 10px;
+  align-items:flex-end;
+}
+.center{top:41%}
+.status{
+  bottom:calc(8% + 43% + 12px);
+  width:min(90%,520px);
+}
+@media(max-height:600px){
+  .card{width:clamp(92px,17vw,132px);height:auto;aspect-ratio:0.625}
+  .myhand{bottom:8%;height:44%;gap:clamp(4px,1vw,10px)}
+  .center{top:40%}
+  .status{bottom:calc(8% + 44% + 10px)}
+}
+@media(max-width:600px){
+  .card{width:clamp(94px,18vw,132px);height:auto;aspect-ratio:0.625}
+  .myhand{bottom:8%;height:43%;gap:5px}
+}
+
 </style></head><body><main id="game">
 <header class="top" style="display:none"><div class="brand">ILOX</div><div>TRUCO ARGENTINO</div><div class="score">VOS <b id="mine">0</b> — <b id="theirs">0</b> RIVAL</div></header>
 <section class="room"><div class="backwall" style="display:none"><div class="window"></div><div class="opponent"><div class="op-head"></div><div class="op-body"></div><div class="op-label">TU CONTRINCANTE</div></div></div>
