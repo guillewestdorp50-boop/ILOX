@@ -127,7 +127,7 @@ $("copy-error-report").addEventListener("click", async () => {
     "Navegador: " + navigator.userAgent,
     "Descripción: " + description,
     "Nota: no se incluyen correo, código de acceso, respuestas privadas ni tokens."
-  ].join("\\n");
+  ].join("\n");
   try {
     await navigator.clipboard.writeText(report);
     status("error-report-status", "Informe copiado. Podés pegarlo en un mensaje para compartirlo.", "good");
