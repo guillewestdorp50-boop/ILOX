@@ -89,6 +89,15 @@ async function handle(request: Request): Promise<Response> {
     const body = await request.json();
     if (!isRecord(body) || typeof body.action !== "string") return reply({ error: "invalid_request" }, 400);
 
+    if (body.action === "status") {
+      const security = await rpc("ilox_owner_get_security", { p_owner_user_id: owner.id });
+      return reply({
+        ok: true,
+        enrolled: !!security,
+        lockedUntil: security?.locked_until ?? null,
+      });
+    }
+
     if (body.action === "enroll") {
       if (!Array.isArray(body.questions) || body.questions.length !== 10) return reply({ error: "invalid_questions" }, 400);
       const verifiers: Record<string, { question: string; verifier: string }> = {};
