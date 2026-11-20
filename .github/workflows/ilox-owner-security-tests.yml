@@ -25,5 +25,16 @@ jobs:
           deno-version: v2.x
       - name: Type-check owner security Edge Function
         run: deno check supabase/functions/ilox-owner-security/index.ts
+      - name: Check owner page JavaScript syntax
+        run: |
+          python - <<'PY'
+          import pathlib, re
+          html = pathlib.Path("ilox-pwa/owner-pilot/index.html").read_text()
+          match = re.search(r'<script type="module">(.*?)</script>', html, re.S)
+          if not match:
+              raise SystemExit("Owner page module script not found")
+          pathlib.Path("/tmp/ilox-owner-pilot.mjs").write_text(match.group(1))
+          PY
+          node --check /tmp/ilox-owner-pilot.mjs
       - name: Test owner security cryptographic helpers
         run: deno test supabase/functions/ilox-owner-security/security-core.test.ts
