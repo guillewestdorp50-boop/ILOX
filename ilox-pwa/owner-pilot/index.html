@@ -21,7 +21,8 @@ body{min-height:100vh}.wrap{max-width:980px;margin:auto;padding:22px clamp(14px,
 <article class="panel" id="login-panel">
 <h2>1 · Verificar identidad</h2><p class="sub">Ingresá con el correo permanente del propietario. Las cuentas anónimas del juego no tienen permiso.</p>
 <div class="field"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" placeholder="Tu correo de propietario"></div>
-<div class="actions"><button class="btn primary" id="send-otp">ENVIAR CÓDIGO</button></div>
+<div class="actions"><button class="btn primary" id="send-otp">ENVIAR CÓDIGO</button><button class="btn" id="open-error-report" type="button">INFORMAR ERROR</button></div>
+<div class="hidden" id="error-report-area"><div class="field"><label for="error-description">¿Qué ocurrió?</label><textarea id="error-description" maxlength="1200" placeholder="Contanos qué estabas haciendo y qué mensaje apareció. No incluyas códigos ni contraseñas."></textarea></div><div class="actions"><button class="btn" id="copy-error-report" type="button">COPIAR INFORME</button><button class="btn" id="close-error-report" type="button">CANCELAR</button></div><div class="status" id="error-report-status" aria-live="polite"></div></div>
 <div id="otp-area" class="hidden"><div class="field"><label for="otp">Código de seis dígitos recibido por correo</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Código de acceso"></div><button class="btn primary" id="verify-otp">VERIFICAR Y ENTRAR</button></div>
 <div class="status" id="login-status" aria-live="polite"></div>
 </article>
@@ -103,6 +104,42 @@ for (let i = 1; i <= 10; i++) {
   answer.append(aLabel, aInput);
   item.append(heading, question, answer); $("enroll-questions").append(item);
 }
+
+$("open-error-report").addEventListener("click", () => {
+  show("error-report-area");
+  $("error-description").focus();
+});
+$("close-error-report").addEventListener("click", () => {
+  show("error-report-area", false);
+  $("error-description").value = "";
+  status("error-report-status", "");
+});
+$("copy-error-report").addEventListener("click", async () => {
+  const description = $("error-description").value.trim();
+  if (!description) {
+    status("error-report-status", "Describí brevemente el problema antes de copiar el informe.", "bad");
+    return;
+  }
+  const report = [
+    "ILOX · INFORME DE ERROR",
+    "Fecha: " + new Date().toISOString(),
+    "Pantalla: " + window.location.href.split("?")[0].split("#")[0],
+    "Navegador: " + navigator.userAgent,
+    "Descripción: " + description,
+    "Nota: no se incluyen correo, código de acceso, respuestas privadas ni tokens."
+  ].join("\\n");
+  try {
+    await navigator.clipboard.writeText(report);
+    status("error-report-status", "Informe copiado. Podés pegarlo en un mensaje para compartirlo.", "good");
+  } catch (_) {
+    const field = document.createElement("textarea");
+    field.value = report; field.setAttribute("readonly", "");
+    field.style.position = "fixed"; field.style.opacity = "0";
+    document.body.append(field); field.select();
+    const copied = document.execCommand("copy"); field.remove();
+    status("error-report-status", copied ? "Informe copiado. Podés pegarlo en un mensaje para compartirlo." : "No se pudo copiar automáticamente. Seleccioná y copiá el texto del informe.", copied ? "good" : "bad");
+  }
+});
 
 $("send-otp").addEventListener("click", async () => {
   status("login-status", "Solicitando código…");
