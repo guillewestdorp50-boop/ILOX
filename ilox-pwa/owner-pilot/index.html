@@ -41,7 +41,7 @@ body{min-height:100vh}.wrap{max-width:980px;margin:auto;padding:22px clamp(14px,
 
 <article class="panel wide hidden" id="challenge-panel">
 <h2>3 · Autorizar una acción</h2><p class="sub">El servidor selecciona tres preguntas distintas al azar. El permiso resultante dura 60 segundos y queda ligado a una sola acción.</p>
-<div class="field"><label for="target-action">Identificador de la acción protegida</label><input id="target-action" value="owner.settings" maxlength="64" autocomplete="off"></div>
+<div class="notice" style="margin:0">Esta vista previa solo prueba la autenticación y el desafío. No ejecuta ni habilita acciones reales del mundo.</div>
 <div class="actions"><button class="btn primary" id="start-challenge">GENERAR DESAFÍO DE TRES PREGUNTAS</button></div>
 <div id="challenge-area" class="hidden"><div class="challenge-list" id="challenge-questions"></div><div class="actions"><button class="btn primary" id="submit-answers">VALIDAR RESPUESTAS</button></div></div>
 <div class="status" id="challenge-status" aria-live="polite"></div>
@@ -176,7 +176,7 @@ $("start-challenge").addEventListener("click", async () => {
   $("start-challenge").disabled = true; show("challenge-area", false); challengeId = null; challengeItems = [];
   status("challenge-status", "Seleccionando tres preguntas seguras…");
   try {
-    const result = await api("challenge", { targetAction: $("target-action").value.trim() });
+    const result = await api("challenge", { targetAction: "owner.preview.test" });
     challengeId = result.challengeId; challengeItems = result.questions;
     const container = $("challenge-questions"); container.replaceChildren();
     for (const item of challengeItems) {
@@ -201,7 +201,7 @@ $("submit-answers").addEventListener("click", async () => {
     const result = await api("verify", { challengeId, answers });
     for (const item of challengeItems) $("challenge-answer-" + item.id).value = "";
     challengeId = null; challengeItems = []; show("challenge-area", false);
-    status("challenge-status", "Identidad confirmada. Autorización de un solo uso emitida para " + result.targetAction + ", con vencimiento a los 60 segundos. Todavía no ejecuta ninguna operación del mundo: esa integración se habilitará por separado.", "good");
+    status("challenge-status", "Identidad confirmada. Autorización de prueba de un solo uso emitida, con vencimiento a los 60 segundos. No habilita ni ejecuta operaciones del mundo.", "good");
   } catch (error) { challengeId = null; challengeItems = []; show("challenge-area", false); status("challenge-status", errorText(error), "bad"); }
   finally { $("submit-answers").disabled = false; }
 });
