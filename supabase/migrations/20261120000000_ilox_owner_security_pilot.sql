@@ -1,6 +1,5 @@
 -- ILOX v127 owner-security pilot.
--- Review-only migration: do not apply to the live project until the owner identity
--- and deployment plan are explicitly approved.
+-- Review-only migration. Do not apply to the live project until separately approved.
 
 create table if not exists private.ilox_owner_security (
   owner_user_id uuid primary key,
@@ -61,6 +60,7 @@ set search_path = ''
 as $$
 declare
   v_count integer;
+  i integer;
 begin
   if p_owner_user_id is null or jsonb_typeof(p_verifiers) <> 'object' then
     raise exception 'invalid_enrollment';
@@ -113,19 +113,26 @@ declare
   v_expires timestamptz := now() + interval '5 minutes';
   v_security private.ilox_owner_security%rowtype;
 begin
-  select * into v_security from private.ilox_owner_security
-  where owner_user_id = p_owner_user_id for update;
+  select * into v_security
+  from private.ilox_owner_security
+  where owner_user_id = p_owner_user_id
+  for update;
   if not found then raise exception 'owner_not_enrolled'; end if;
   if v_security.locked_until is not null and v_security.locked_until > now() then
     raise exception 'owner_temporarily_locked';
   end if;
-  if (select count(*) from private.ilox_owner_challenges c
-      where c.owner_user_id = p_owner_user_id and c.created_at > now() - interval '10 minutes') >= 10 then
+  if (
+    select count(*) from private.ilox_owner_challenges c
+    where c.owner_user_id = p_owner_user_id
+      and c.created_at > now() - interval '10 minutes'
+  ) >= 10 then
     raise exception 'owner_rate_limited';
   end if;
-  if p_question_ids is null or cardinality(p_question_ids) <> 3
-    or (select count(distinct x) from unnest(p_question_ids) x) <> 3
-    or exists(select 1 from unnest(p_question_ids) x where x < 1 or x > 10)
+  if p_question_ids is null
+    or cardinality(p_question_ids) <> 3
+    or (select count(distinct x) from unnest(p_question_ids) as q(x)) <> 3
+    or exists(select 1 from unnest(p_question_ids) as q(x) where x < 1 or x > 10)
+    or p_target_action is null
     or p_target_action !~ '^[a-z][a-z0-9_.:-]{2,63}$' then
     raise exception 'invalid_challenge';
   end if;
@@ -144,12 +151,15 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare v_row private.ilox_owner_challenges%rowtype;
+declare
+  v_row private.ilox_owner_challenges%rowtype;
 begin
   update private.ilox_owner_challenges
   set consumed_at = now()
-  where id = p_challenge_id and owner_user_id = p_owner_user_id
-    and consumed_at is null and expires_at > now()
+  where id = p_challenge_id
+    and owner_user_id = p_owner_user_id
+    and consumed_at is null
+    and expires_at > now()
   returning * into v_row;
   if not found then return null; end if;
   return jsonb_build_object(
@@ -166,7 +176,9 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare v_failed integer; v_locked timestamptz;
+declare
+  v_failed integer;
+  v_locked timestamptz;
 begin
   update private.ilox_owner_security
   set failed_attempts = case when failed_attempts >= 4 then 0 else failed_attempts + 1 end,
@@ -185,56 +197,15 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare v_id uuid; v_expires timestamptz := now() + interval '60 seconds';
+declare
+  v_id uuid;
+  v_expires timestamptz := now() + interval '60 seconds';
 begin
-  if p_target_action !~ '^[a-z][a-z0-9_.:-]{2,63}(owner_user_id,target_action,expires_at)
-  values (p_owner_user_id,p_target_action,v_expires)
-  returning id into v_id;
-  insert into private.ilox_owner_audit(owner_user_id,event_type,target_action)
-  values (p_owner_user_id,'grant_issued',p_target_action);
-  return jsonb_build_object('grant_id',v_id,'expires_at',v_expires);
-end;
-$$;
-
-create or replace function public.ilox_owner_consume_grant(
-  p_owner_user_id uuid, p_grant_id uuid, p_target_action text
-)
-returns boolean
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare v_id uuid;
-begin
-  update private.ilox_owner_grants
-  set consumed_at = now()
-  where id = p_grant_id and owner_user_id = p_owner_user_id
-    and target_action = p_target_action and consumed_at is null and expires_at > now()
-  returning id into v_id;
-  if not found then return false; end if;
-  insert into private.ilox_owner_audit(owner_user_id,event_type,target_action)
-  values (p_owner_user_id,'grant_consumed',p_target_action);
-  return true;
-end;
-$$;
-
-revoke all on function public.ilox_owner_enroll(uuid,jsonb) from public, anon, authenticated;
-revoke all on function public.ilox_owner_get_security(uuid) from public, anon, authenticated;
-revoke all on function public.ilox_owner_start_challenge(uuid,smallint[],text) from public, anon, authenticated;
-revoke all on function public.ilox_owner_claim_challenge(uuid,uuid) from public, anon, authenticated;
-revoke all on function public.ilox_owner_record_failure(uuid) from public, anon, authenticated;
-revoke all on function public.ilox_owner_issue_grant(uuid,text) from public, anon, authenticated;
-revoke all on function public.ilox_owner_consume_grant(uuid,uuid,text) from public, anon, authenticated;
-
-grant execute on function public.ilox_owner_enroll(uuid,jsonb) to service_role;
-grant execute on function public.ilox_owner_get_security(uuid) to service_role;
-grant execute on function public.ilox_owner_start_challenge(uuid,smallint[],text) to service_role;
-grant execute on function public.ilox_owner_claim_challenge(uuid,uuid) to service_role;
-grant execute on function public.ilox_owner_record_failure(uuid) to service_role;
-grant execute on function public.ilox_owner_issue_grant(uuid,text) to service_role;
-grant execute on function public.ilox_owner_consume_grant(uuid,uuid,text) to service_role;
- then raise exception 'invalid_action'; end if;
-  update private.ilox_owner_security set failed_attempts = 0, locked_until = null
+  if p_target_action is null or p_target_action !~ '^[a-z][a-z0-9_.:-]{2,63}$' then
+    raise exception 'invalid_action';
+  end if;
+  update private.ilox_owner_security
+  set failed_attempts = 0, locked_until = null
   where owner_user_id = p_owner_user_id;
   insert into private.ilox_owner_grants(owner_user_id,target_action,expires_at)
   values (p_owner_user_id,p_target_action,v_expires)
@@ -253,12 +224,16 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare v_id uuid;
+declare
+  v_id uuid;
 begin
   update private.ilox_owner_grants
   set consumed_at = now()
-  where id = p_grant_id and owner_user_id = p_owner_user_id
-    and target_action = p_target_action and consumed_at is null and expires_at > now()
+  where id = p_grant_id
+    and owner_user_id = p_owner_user_id
+    and target_action = p_target_action
+    and consumed_at is null
+    and expires_at > now()
   returning id into v_id;
   if not found then return false; end if;
   insert into private.ilox_owner_audit(owner_user_id,event_type,target_action)
