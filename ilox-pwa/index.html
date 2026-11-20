@@ -125,7 +125,7 @@
           });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error("Servidor de informes respondió HTTP " + response.status + ": " + JSON.stringify(result).slice(0,1000));
-          if (status) status.textContent = "INFORME COMPLETO ENVIADO ✓\nID: "+(result.report_id || "registrado")+"\nErrores capturados: "+allErrors.length+"\nEventos técnicos: "+allRuntimeEvents.length+"\nComprobaciones: "+JSON.stringify(diagnostics);
+          if (status) status.textContent = "INFORME COMPLETO ENVIADO ✓\nID: "+(result.report_id || "registrado")+"\nErrores capturados: "+allErrors.length+"\nEventos técnicos: "+allRuntimeEvents.length+"\nDiagnóstico técnico íntegro guardado en el servidor para revisión.";
           if (button) button.textContent = "INFORME COMPLETO ENVIADO ✓";
         } catch (error) {
           if (status) status.textContent = "No se pudo enviar automáticamente: " + String(error) + ". Sacá una captura de este panel.";
