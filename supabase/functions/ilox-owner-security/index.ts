@@ -83,6 +83,8 @@ async function handle(request: Request): Promise<Response> {
   if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
   const origin = request.headers.get("origin");
   if (origin && origin !== ORIGIN) return reply({ error: "not_found" }, 404, false);
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > 24000) return reply({ error: "request_too_large" }, 413);
   if (!SUPABASE_URL || !PUBLISHABLE_KEY || !SECRET_KEY || !OWNER_PEPPER || OWNER_PEPPER.length < 32 || !OWNER_USER_ID) {
     return reply({ error: "service_not_configured" }, 503);
   }
@@ -149,7 +151,7 @@ async function handle(request: Request): Promise<Response> {
     }
 
     if (body.action === "verify") {
-      if (typeof body.challengeId !== "string" || !Array.isArray(body.answers) || body.answers.length !== 3) {
+      if (typeof body.challengeId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.challengeId) || !Array.isArray(body.answers) || body.answers.length !== 3) {
         return reply({ error: "invalid_request" }, 400);
       }
       const claimed = await rpc("ilox_owner_claim_challenge", {
