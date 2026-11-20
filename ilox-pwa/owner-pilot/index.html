@@ -4,44 +4,199 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101c19">
-<title>ILOX · Acceso del propietario (prototipo)</title>
+<title>ILOX · Acceso del propietario</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1513;--panel:#13231f;--panel2:#192e28;--line:#ffffff18;--ink:#f1f0e8;--muted:#a3b4a9;--gold:#e6c987;--mint:#8fc5a2;--red:#d58e7d}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 0%,#25443766,transparent 40%),var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1040px;margin:auto;padding:28px clamp(16px,4vw,42px) 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#f2d99e,#b77c45);color:#14251f;font-weight:900;font-size:25px}.brand b{display:block;letter-spacing:.18em;font-size:19px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.16em}.back{color:var(--muted);text-decoration:none;font-size:12px}.back:hover{color:var(--gold)}.eyebrow{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.2em}.intro{padding:42px 0 28px;max-width:720px}.intro h1{font-size:clamp(32px,6vw,54px);line-height:1.04;letter-spacing:-.055em;margin:10px 0 13px}.intro p{color:#bfcec3;max-width:650px;margin:0}.notice{display:flex;gap:12px;align-items:flex-start;border:1px solid #d5a76d55;background:#a47a2918;border-radius:12px;padding:14px 16px;margin:24px 0 28px;color:#e8d8b6;font-size:12px}.notice strong{display:block;color:#f0d69a;margin-bottom:2px}.lock{font-size:20px}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}.panel{background:linear-gradient(145deg,#172b25,#10201c);border:1px solid var(--line);border-radius:16px;padding:22px;min-width:0}.panel h2{font-size:17px;margin:0 0 5px;letter-spacing:-.02em}.sub{font-size:12px;color:var(--muted);margin:0 0 20px}.steps{display:grid;gap:10px}.step{display:grid;grid-template-columns:32px 1fr auto;gap:11px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:11px;background:#ffffff05}.num{width:30px;height:30px;border-radius:9px;background:#e6c98718;color:var(--gold);display:grid;place-items:center;font-weight:800;font-size:12px}.step b{display:block;font-size:12px}.step small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.state{font-size:9px;letter-spacing:.1em;color:#b5c7bb}.state.wait{color:var(--gold)}.identity{display:grid;gap:10px}.identity label{font-size:11px;color:#d6e0d7}.identity input{width:100%;border:1px solid #ffffff25;border-radius:8px;padding:13px;background:#091511;color:var(--ink);font:inherit;outline:none}.identity input:focus{border-color:var(--gold)}.btn{border:1px solid #e6c98780;border-radius:8px;padding:12px 14px;background:#e6c98718;color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.12em}.btn:disabled{opacity:.5;cursor:not-allowed}.locked{margin-top:18px;padding:14px;border-radius:10px;background:#0b1714;border:1px dashed #ffffff28;color:var(--muted);font-size:11px}.locked b{display:block;color:#d6e0d7;margin-bottom:4px}.questions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.q{padding:10px;border:1px dashed #ffffff25;border-radius:8px;color:#9eafa4;font-size:10px}.challenge{display:grid;gap:9px;margin-top:14px}.challenge div{padding:12px;border-radius:9px;background:#ffffff06;border:1px solid var(--line);color:#9eafa4;font-size:11px}.foot{margin-top:24px;color:#71877b;font-size:9px;letter-spacing:.12em;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}@media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.back{padding-top:9px}.intro{padding-top:30px}.panel{padding:18px}}@media(max-width:390px){.questions{grid-template-columns:1fr}}
+:root{color-scheme:dark;--bg:#091310;--panel:#14231e;--panel2:#1a3028;--line:#ffffff1c;--ink:#f1f0e8;--muted:#a3b4a9;--gold:#e6c987;--mint:#8fc5a2;--red:#d58e7d}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 80% 0%,#25443766,transparent 42%),var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+body{min-height:100vh}.wrap{max-width:980px;margin:auto;padding:22px clamp(14px,4vw,38px) 54px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:18px}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#f2d99e,#b77c45);color:#14251f;font-weight:900;font-size:24px}.brand b{display:block;letter-spacing:.18em;font-size:19px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.16em}.back{color:var(--muted);text-decoration:none;font-size:12px}.intro{padding:34px 0 22px;max-width:720px}.eyebrow{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.2em}.intro h1{font-size:clamp(32px,6vw,52px);line-height:1.04;letter-spacing:-.055em;margin:9px 0 12px}.intro p{color:#bfcec3;margin:0}.notice{border:1px solid #d5a76d55;background:#a47a2918;border-radius:12px;padding:13px 15px;margin:18px 0 22px;color:#e8d8b6;font-size:12px}.notice b{display:block;color:#f0d69a;margin-bottom:3px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel{background:linear-gradient(145deg,#172b25,#10201c);border:1px solid var(--line);border-radius:15px;padding:20px;min-width:0}.panel.wide{grid-column:1/-1}.panel h2{font-size:17px;margin:0 0 4px}.sub{font-size:12px;color:var(--muted);margin:0 0 17px}.field{display:grid;gap:6px;margin:10px 0}.field label{font-size:11px;color:#d6e0d7}.field input,.field textarea{width:100%;border:1px solid #ffffff25;border-radius:8px;padding:12px;background:#091511;color:var(--ink);font:inherit;outline:none}.field input:focus,.field textarea:focus{border-color:var(--gold)}.field textarea{min-height:60px;resize:vertical}.btn{border:1px solid #e6c98780;border-radius:8px;padding:12px 15px;background:#e6c98718;color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.12em;cursor:pointer}.btn.primary{background:linear-gradient(145deg,#e9d29d,#b98c53);color:#17231d;border:0}.btn:disabled{opacity:.45;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.hidden{display:none!important}.status{min-height:18px;font-size:12px;color:var(--muted);margin-top:12px;overflow-wrap:anywhere}.status.good{color:var(--mint)}.status.bad{color:var(--red)}.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.qitem{padding:11px;border:1px solid var(--line);border-radius:10px;background:#ffffff05}.qitem strong{display:block;font-size:10px;color:var(--gold);letter-spacing:.1em;margin-bottom:4px}.qitem .field{margin:6px 0}.qitem .field input{padding:10px;font-size:13px}.challenge-list{display:grid;gap:10px}.foot{margin-top:22px;color:#71877b;font-size:9px;letter-spacing:.12em;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media(max-width:700px){.grid{grid-template-columns:1fr}.panel.wide{grid-column:auto}.qgrid{grid-template-columns:1fr}.panel{padding:17px}.intro{padding-top:27px}}@media(max-width:380px){.top{align-items:flex-start}.back{padding-top:8px}}
 </style>
 </head>
 <body>
 <main class="wrap">
 <header class="top"><div class="brand"><span class="mark">I</span><span><b>ILOX</b><small>CONTROL DEL PROPIETARIO</small></span></div><a class="back" href="../">← Volver a ILOX</a></header>
-<section class="intro"><div class="eyebrow">ÁREA PRIVADA · PILOTO DE SEGURIDAD</div><h1>La llave de tu mundo.</h1><p>Un acceso independiente para proteger las acciones críticas del propietario, sin interferir con tu personaje ni con las partidas multijugador.</p></section>
-<div class="notice"><span class="lock">🔒</span><div><strong>Prototipo visual aislado — acceso todavía desactivado</strong>Esta pantalla no inicia sesión, no envía correos, no guarda respuestas y no autoriza acciones. La conexión segura del servidor se implementará y probará antes de habilitarla.</div></div>
+<section class="intro"><div class="eyebrow">ÁREA PRIVADA · SEGURIDAD DEL PROPIETARIO</div><h1>La llave de tu mundo.</h1><p>Acceso independiente de tu personaje y de la sesión multijugador. La verificación y las respuestas se procesan del lado del servidor.</p></section>
+<div class="notice"><b>Protección separada del juego</b>Esta área no modifica tus mundos ni construcciones. Las respuestas no se guardan en el navegador, no se envían a ChatGPT y nunca aparecen en los registros del servidor.</div>
+
 <section class="grid">
-<article class="panel"><h2>Cómo se protegerá el acceso</h2><p class="sub">Dos comprobaciones independientes, antes de cualquier acción de propietario.</p>
-<div class="steps">
-<div class="step"><span class="num">01</span><span><b>Identidad verificada</b><small>Cuenta privada del propietario, separada del jugador anónimo.</small></span><span class="state">PENDIENTE</span></div>
-<div class="step"><span class="num">02</span><span><b>Diez preguntas privadas</b><small>Se configuran desde esta área; nunca se comparten en el chat.</small></span><span class="state">PENDIENTE</span></div>
-<div class="step"><span class="num">03</span><span><b>Desafío aleatorio de tres</b><small>El servidor elige tres preguntas distintas en cada autorización.</small></span><span class="state">PENDIENTE</span></div>
-<div class="step"><span class="num">04</span><span><b>Permiso de un solo uso</b><small>Vence rápido y queda ligado a una acción concreta.</small></span><span class="state">PENDIENTE</span></div>
-</div>
+<article class="panel" id="login-panel">
+<h2>1 · Verificar identidad</h2><p class="sub">Ingresá con el correo permanente del propietario. Las cuentas anónimas del juego no tienen permiso.</p>
+<div class="field"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="email" placeholder="Tu correo de propietario"></div>
+<div class="actions"><button class="btn primary" id="send-otp">ENVIAR CÓDIGO</button></div>
+<div id="otp-area" class="hidden"><div class="field"><label for="otp">Código de seis dígitos recibido por correo</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Código de acceso"></div><button class="btn primary" id="verify-otp">VERIFICAR Y ENTRAR</button></div>
+<div class="status" id="login-status" aria-live="polite"></div>
 </article>
-<article class="panel"><h2>Identidad del propietario</h2><p class="sub">El acceso final utilizará verificación por correo (OTP o enlace seguro).</p>
-<form class="identity" onsubmit="event.preventDefault();document.querySelector('#prototype-msg').textContent='Desactivado en este prototipo: todavía no se envía ningún correo.'">
-<label for="email">Correo de la cuenta privada</label><input id="email" type="email" placeholder="Se habilitará al conectar Auth" disabled autocomplete="off">
-<button class="btn" type="submit" disabled>ENVIAR CÓDIGO DE ACCESO</button>
-</form>
-<div class="locked"><b>🔐 Verificación no conectada</b>El propietario todavía no está vinculado a una identidad autorizada. No se adivinará ni se tomará el nombre del personaje como prueba.</div>
-<p id="prototype-msg" class="sub" aria-live="polite" style="margin:12px 0 0">Modo demostración: sin conexión al backend.</p>
+
+<article class="panel hidden" id="owner-panel">
+<h2>Sesión privada</h2><p class="sub" id="owner-state">Identidad verificada.</p>
+<div class="notice" style="margin:0">La sesión privada vive solo en memoria de esta pantalla. Al cerrarla, tendrás que verificarte otra vez.</div>
+<div class="actions"><button class="btn" id="logout">CERRAR SESIÓN</button></div>
 </article>
-<article class="panel"><h2>Las diez preguntas</h2><p class="sub">En el sistema real, las respuestas se procesarán únicamente en el servidor y se almacenarán como verificadores protegidos.</p>
-<div class="questions"><div class="q">Pregunta 01 · Sin configurar</div><div class="q">Pregunta 02 · Sin configurar</div><div class="q">Pregunta 03 · Sin configurar</div><div class="q">Pregunta 04 · Sin configurar</div><div class="q">Pregunta 05 · Sin configurar</div><div class="q">Pregunta 06 · Sin configurar</div><div class="q">Pregunta 07 · Sin configurar</div><div class="q">Pregunta 08 · Sin configurar</div><div class="q">Pregunta 09 · Sin configurar</div><div class="q">Pregunta 10 · Sin configurar</div></div>
-<div class="locked"><b>Las respuestas no se muestran ni se guardan acá.</b>Esta maqueta no solicita datos personales ni respuestas de seguridad.</div>
+
+<article class="panel wide hidden" id="enroll-panel">
+<h2>2 · Configurar tus diez preguntas</h2><p class="sub">Elegí preguntas que puedas recordar. Escribí respuestas consistentes, sin datos que quieras compartir con otras personas. No hay recuperación de respuestas: si las olvidás, habrá que restablecer el acceso mediante un procedimiento seguro.</p>
+<div class="qgrid" id="enroll-questions"></div>
+<div class="actions"><button class="btn primary" id="save-enrollment">GUARDAR CONFIGURACIÓN PRIVADA</button></div>
+<div class="status" id="enroll-status" aria-live="polite"></div>
 </article>
-<article class="panel"><h2>Ejemplo del desafío</h2><p class="sub">La selección real será criptográficamente aleatoria y se hará del lado del servidor.</p>
-<div class="challenge"><div>Pregunta seleccionada · 1 de 3</div><div>Pregunta seleccionada · 2 de 3</div><div>Pregunta seleccionada · 3 de 3</div></div>
-<div class="locked"><b>Protecciones obligatorias</b>Intentos limitados · bloqueo progresivo · desafío con vencimiento · errores genéricos · registro sin respuestas · cierre ante cualquier fallo.</div>
+
+<article class="panel wide hidden" id="challenge-panel">
+<h2>3 · Autorizar una acción</h2><p class="sub">El servidor selecciona tres preguntas distintas al azar. El permiso resultante dura 60 segundos y queda ligado a una sola acción.</p>
+<div class="field"><label for="target-action">Identificador de la acción protegida</label><input id="target-action" value="owner.settings" maxlength="64" autocomplete="off"></div>
+<div class="actions"><button class="btn primary" id="start-challenge">GENERAR DESAFÍO DE TRES PREGUNTAS</button></div>
+<div id="challenge-area" class="hidden"><div class="challenge-list" id="challenge-questions"></div><div class="actions"><button class="btn primary" id="submit-answers">VALIDAR RESPUESTAS</button></div></div>
+<div class="status" id="challenge-status" aria-live="polite"></div>
 </article>
 </section>
-<footer class="foot"><span>ILOX · OWNER SECURITY PILOT</span><span>NO CONECTADO · NO DESPLEGADO · NO AUTORIZA ACCIONES</span></footer>
+<footer class="foot"><span>ILOX · OWNER SECURITY</span><span>SESIÓN PRIVADA · RESPUESTAS NO PERSISTENTES</span></footer>
 </main>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+const SUPABASE_URL = "https://wihbxfebobfmohmqqhkt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
+const API_URL = SUPABASE_URL + "/functions/v1/ilox-owner-security";
+const auth = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
+let accessToken = null;
+let challengeId = null;
+let challengeItems = [];
+
+const $ = id => document.getElementById(id);
+function status(id, message, kind = "") {
+  const el = $(id); el.textContent = message; el.className = "status" + (kind ? " " + kind : "");
+}
+function show(id, yes = true) { $(id).classList.toggle("hidden", !yes); }
+async function api(action, data = {}) {
+  if (!accessToken) throw new Error("Primero verificá tu identidad.");
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json", apikey: SUPABASE_KEY, authorization: "Bearer " + accessToken },
+    body: JSON.stringify({ action, ...data })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || "No se pudo completar la operación.");
+  return result;
+}
+function errorText(error) {
+  const messages = {
+    unauthorized: "La identidad no está autorizada como propietaria.",
+    service_not_configured: "El servicio privado todavía no está configurado.",
+    not_enrolled: "Todavía no configuraste las diez preguntas.",
+    already_enrolled: "Las preguntas ya fueron configuradas y no se pueden reemplazar desde esta pantalla.",
+    temporarily_locked: "Acceso temporalmente bloqueado por intentos fallidos.",
+    rate_limited: "Se alcanzó el límite de desafíos. Esperá antes de volver a intentar.",
+    verification_failed: "Las respuestas no coinciden. El desafío quedó cerrado."
+  };
+  return messages[error.message] || error.message || "Ocurrió un error.";
+}
+
+for (let i = 1; i <= 10; i++) {
+  const item = document.createElement("div"); item.className = "qitem";
+  const heading = document.createElement("strong"); heading.textContent = "PREGUNTA " + String(i).padStart(2, "0");
+  const question = document.createElement("div"); question.className = "field";
+  const qLabel = document.createElement("label"); qLabel.textContent = "Tu pregunta";
+  const qInput = document.createElement("input"); qInput.id = "question-" + i; qInput.maxLength = 120; qInput.placeholder = "Escribí una pregunta personal";
+  question.append(qLabel, qInput);
+  const answer = document.createElement("div"); answer.className = "field";
+  const aLabel = document.createElement("label"); aLabel.textContent = "Respuesta privada";
+  const aInput = document.createElement("input"); aInput.id = "answer-" + i; aInput.type = "password"; aInput.maxLength = 256; aInput.autocomplete = "new-password"; aInput.placeholder = "No se mostrará al escribir";
+  answer.append(aLabel, aInput);
+  item.append(heading, question, answer); $("enroll-questions").append(item);
+}
+
+$("send-otp").addEventListener("click", async () => {
+  status("login-status", "Solicitando código…");
+  $("send-otp").disabled = true;
+  try {
+    const email = $("email").value.trim();
+    if (!email) throw new Error("Ingresá el correo de propietario.");
+    const { error } = await auth.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) throw error;
+    show("otp-area");
+    status("login-status", "Si el correo corresponde a una cuenta existente, recibirás un código de acceso.", "good");
+  } catch (error) { status("login-status", errorText(error), "bad"); }
+  finally { $("send-otp").disabled = false; }
+});
+
+$("verify-otp").addEventListener("click", async () => {
+  status("login-status", "Verificando identidad…");
+  $("verify-otp").disabled = true;
+  try {
+    const { data, error } = await auth.auth.verifyOtp({
+      email: $("email").value.trim(), token: $("otp").value.trim(), type: "email"
+    });
+    if (error) throw error;
+    if (!data.session?.access_token || data.user?.is_anonymous) throw new Error("La sesión no es una identidad permanente.");
+    accessToken = data.session.access_token;
+    const state = await api("status");
+    show("login-panel", false); show("owner-panel");
+    show("enroll-panel", !state.enrolled); show("challenge-panel", state.enrolled);
+    $("owner-state").textContent = state.enrolled ? "Identidad verificada · preguntas configuradas." : "Identidad verificada · falta configurar tus diez preguntas.";
+    status("login-status", "");
+  } catch (error) {
+    accessToken = null;
+    status("login-status", errorText(error), "bad");
+  } finally { $("verify-otp").disabled = false; }
+});
+
+$("save-enrollment").addEventListener("click", async () => {
+  $("save-enrollment").disabled = true;
+  status("enroll-status", "Protegiendo las respuestas en el servidor…");
+  try {
+    const questions = [];
+    for (let i = 1; i <= 10; i++) questions.push({
+      id: i, question: $("question-" + i).value, answer: $("answer-" + i).value
+    });
+    await api("enroll", { questions });
+    for (let i = 1; i <= 10; i++) { $("answer-" + i).value = ""; $("question-" + i).value = ""; }
+    show("enroll-panel", false); show("challenge-panel");
+    status("enroll-status", "Configuración privada guardada.", "good");
+    $("owner-state").textContent = "Identidad verificada · diez preguntas configuradas.";
+  } catch (error) { status("enroll-status", errorText(error), "bad"); }
+  finally { $("save-enrollment").disabled = false; }
+});
+
+$("start-challenge").addEventListener("click", async () => {
+  $("start-challenge").disabled = true; show("challenge-area", false); challengeId = null; challengeItems = [];
+  status("challenge-status", "Seleccionando tres preguntas seguras…");
+  try {
+    const result = await api("challenge", { targetAction: $("target-action").value.trim() });
+    challengeId = result.challengeId; challengeItems = result.questions;
+    const container = $("challenge-questions"); container.replaceChildren();
+    for (const item of challengeItems) {
+      const wrap = document.createElement("div"); wrap.className = "qitem";
+      const label = document.createElement("label"); label.textContent = item.question; label.htmlFor = "challenge-answer-" + item.id;
+      const input = document.createElement("input"); input.type = "password"; input.id = "challenge-answer-" + item.id; input.autocomplete = "off"; input.maxLength = 256; input.placeholder = "Respuesta";
+      const field = document.createElement("div"); field.className = "field"; field.append(label, input); wrap.append(field); container.append(wrap);
+    }
+    show("challenge-area");
+    status("challenge-status", "Desafío válido hasta " + new Date(result.expiresAt).toLocaleTimeString(), "good");
+  } catch (error) { status("challenge-status", errorText(error), "bad"); }
+  finally { $("start-challenge").disabled = false; }
+});
+
+$("submit-answers").addEventListener("click", async () => {
+  $("submit-answers").disabled = true;
+  status("challenge-status", "Validando respuestas…");
+  try {
+    const answers = challengeItems.map(item => ({
+      id: item.id, answer: $("challenge-answer-" + item.id).value
+    }));
+    const result = await api("verify", { challengeId, answers });
+    for (const item of challengeItems) $("challenge-answer-" + item.id).value = "";
+    challengeId = null; challengeItems = []; show("challenge-area", false);
+    status("challenge-status", "Identidad confirmada. Autorización de un solo uso emitida para " + result.targetAction + ", con vencimiento a los 60 segundos. Todavía no ejecuta ninguna operación del mundo: esa integración se habilitará por separado.", "good");
+  } catch (error) { challengeId = null; challengeItems = []; show("challenge-area", false); status("challenge-status", errorText(error), "bad"); }
+  finally { $("submit-answers").disabled = false; }
+});
+
+$("logout").addEventListener("click", async () => {
+  accessToken = null; challengeId = null; challengeItems = [];
+  try { await auth.auth.signOut(); } catch (_) {}
+  $("otp").value = ""; $("email").value = "";
+  show("owner-panel", false); show("enroll-panel", false); show("challenge-panel", false); show("login-panel");
+  status("login-status", "Sesión privada cerrada.");
+});
+</script>
 </body>
 </html>
