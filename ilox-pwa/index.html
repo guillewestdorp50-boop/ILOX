@@ -28,7 +28,7 @@
   <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><h1 id="client-title">Bienvenido</h1><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
 </section>
 <div class="invite-modal" id="invite-modal" hidden>
-  <div class="invite-card"><button class="modal-close" id="invite-close" aria-label="Cerrar">×</button><h2>Crear invitación</h2><p>Generá un código de un solo uso para dar acceso a WEST-VILL.</p><label>Tipo de cuenta</label><select id="invite-role"><option value="conductor">Conductor</option><option value="pasajero">Pasajero</option></select><button class="btn" id="invite-generate">Generar código</button><div id="invite-result" class="invite-result"></div></div>
+  <div class="invite-card"><button class="modal-close" id="invite-close" aria-label="Cerrar">×</button><h2>Crear invitación</h2><p>Generá un código de un solo uso para dar acceso a WEST-VILL.</p><div class="client-muted">Esta invitación habilita exclusivamente una cuenta de conductor y es de un solo uso.</div><button class="btn" id="invite-generate">Generar código</button><div id="invite-result" class="invite-result"></div></div>
 </div>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
@@ -56,7 +56,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=1" defer></script><script src="./admin.js?v=4" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=2" defer></script><script src="./admin.js?v=4" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
