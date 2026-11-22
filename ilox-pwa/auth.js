@@ -10,6 +10,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 async function api(body,token){const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});const data=await res.json();if(!res.ok||data.error)throw new Error(data.error||'No se pudo completar la operación.');return data;}
 function error(t){$('#auth-error').textContent=t||'';}
 function drawAuth(){
+ document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{role=b.dataset.role;mode='login';error('');drawAuth();});
  $('#auth-screen').hidden=false;$('#role-choices').hidden=!!role;$('#auth-form-wrap').hidden=!role;
  if(!role){$('#auth-title').textContent='¿Cómo vas a ingresar?';$('#auth-subtitle').textContent='Elegí tu tipo de cuenta para continuar.';return;}
  const label=role==='admin'?'ADMINISTRACIÓN':role.toUpperCase();
