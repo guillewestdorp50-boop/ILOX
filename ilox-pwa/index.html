@@ -2,14 +2,14 @@
 <html lang="es-AR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101e35"><meta name="description" content="Panel administrativo WEST-VILL">
-<link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" href="./icon-192.svg">
-<link rel="stylesheet" href="./admin.css"><title>WEST-VILL Admin</title>
+<meta name="theme-color" content="#101e35"><meta name="description" content="Aplicación de viajes y administración WEST-VILL">
+<link rel="manifest" href="./manifest.webmanifest?v=3"><link rel="icon" href="./icon-192.svg">
+<link rel="stylesheet" href="./admin.css?v=3"><title>WEST-VILL · Viajes y Administración</title>
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>ADMINISTRACIÓN</small></div></div>
+  <div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>VIAJES Y ADMINISTRACIÓN</small></div></div>
   <div class="side-label">GESTIÓN</div>
   <nav class="nav">
     <button class="nav-item active" data-page="inicio"><span>▦</span> Resumen</button>
@@ -28,14 +28,12 @@
 <section class="content">
 <div class="page-head"><div><div class="eyebrow">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
 <div id="page-content"></div>
-<footer>WEST-VILL ADMIN <span>·</span> Panel de gestión</footer>
+<footer>WEST-VILL · VIAJES Y ADMINISTRACIÓN</footer>
 </section>
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="./admin.js" defer></script><script>
-// La PWA solicita orientación vertical; los navegadores compatibles la bloquean en portrait.
-(async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock('portrait')}catch(_){}})();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+<script src="./admin.js?v=3" defer></script><script>
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=3'));
 </script>
 </body></html>

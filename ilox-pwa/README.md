@@ -1,21 +1,18 @@
-# ILOX PWA — World Hub
+# WEST-VILL · Aplicación de viajes y administración
 
-Standalone ILOX progressive web app shell. It is deliberately isolated under `/ilox/` and does not modify the PDA // ZONA project.
+Esta carpeta contiene la PWA que Render publica como aplicación principal.
 
-## Current working features
-- Responsive home dashboard and navigation.
-- Separate sections for inventory, friends, construction, exploration and options.
-- Real link into the independently deployed third-person 3D forest preview.
-- Installable PWA manifest and app icon.
-- Service worker caching the application shell.
-- Reduced-motion preference persisted locally and fullscreen control.
+## Alcance
+- Panel administrativo de solicitudes, viajes, clientes, ingresos, gastos y cuentas pendientes.
+- Diseño adaptable de una sola aplicación, con navegación vertical en móviles.
+- Manifiesto instalable configurado para abrir en modo independiente y orientación vertical.
+- Service worker propio de WEST-VILL, sin reutilizar cachés del juego ILOX anterior.
 
-## Honest feature status
-Inventory, multiplayer/friends, and construction editor are clearly marked as in development. No fake resources, friends, cloud saves, or server connections are shown.
+## Separación y preservación
+- Los archivos del juego 3D y su interfaz antigua no forman parte de esta PWA.
+- Se conserva sin modificaciones `multiplayer.js` y el proyecto Supabase existente para no destruir la identidad/chat ni los datos históricos.
+- No se modifica ninguna tabla, migración ni registro de Supabase.
+- El panel actual todavía mantiene los registros de formularios en memoria local de la vista; no se presenta como persistencia ya conectada.
 
-## Preview
-Published at `/ilox/` by the repository Pages workflow. The 3D world link opens `/forest/`.
-
-Preview shell revision: 1. Initial deployment validates the independent PWA route before user testing.
-
-Validation run trigger: enabled after registering the workflow on the default branch.
+## Publicación
+Render publica esta carpeta desde el servicio existente `ilox-mundo-abierto`.
