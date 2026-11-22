@@ -28,6 +28,7 @@
 
 /* WEST-VILL acceso por rol y portal de usuarios */
 [hidden]{display:none!important}
+.app-shell{display:none}
 .auth-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 18px;background:radial-gradient(ellipse at 50% 0%,#1c3655 0%,#0b1424 58%)}
 .auth-card{width:min(100%,440px);background:#111f34;border:1px solid #2b405c;border-radius:18px;padding:28px;box-shadow:0 22px 70px #0007}
 .auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:38px}.auth-mark{width:48px;height:48px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#21456c,#142b49);border:1px solid #4a6d91;font:800 16px Manrope}
