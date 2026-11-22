@@ -4,9 +4,32 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=6"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=6">
-<link rel="stylesheet" href="./admin.css?v=4"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=5"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
+
+<section class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="auth-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div>
+    <p class="auth-eyebrow">ACCESO A LA PLATAFORMA</p>
+    <h1 id="auth-title">¿Cómo vas a ingresar?</h1>
+    <p class="auth-subtitle" id="auth-subtitle">Elegí tu tipo de cuenta para continuar.</p>
+    <div class="role-choices" id="role-choices">
+      <button class="role-choice" data-role="conductor"><span>↗</span><b>CONDUCTOR</b><small>Gestioná tus viajes</small></button>
+      <button class="role-choice" data-role="pasajero"><span>⌖</span><b>PASAJERO</b><small>Solicitá y seguí tus viajes</small></button>
+    </div>
+    <div id="auth-form-wrap" hidden></div>
+    <div class="auth-error" id="auth-error" role="alert"></div>
+  </div>
+  <div class="auth-foot">WEST-VILL · ACCESO PRIVADO</div>
+</section>
+<section class="client-screen" id="client-screen" hidden>
+  <header class="client-top"><div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div><div class="client-user"><span id="client-greeting"></span><button class="btn secondary" id="client-logout">Salir</button></div></header>
+  <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><h1 id="client-title">Bienvenido</h1><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
+</section>
+<div class="invite-modal" id="invite-modal" hidden>
+  <div class="invite-card"><button class="modal-close" id="invite-close" aria-label="Cerrar">×</button><h2>Crear invitación</h2><p>Generá un código de un solo uso para dar acceso a WEST-VILL.</p><label>Tipo de cuenta</label><select id="invite-role"><option value="conductor">Conductor</option><option value="pasajero">Pasajero</option></select><button class="btn" id="invite-generate">Generar código</button><div id="invite-result" class="invite-result"></div></div>
+</div>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
   <div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div>
@@ -24,7 +47,7 @@
   <div class="sidebar-foot"><span class="status-dot"></span> Panel del administrador <small>WEST-VILL · PRIVADO</small></div>
 </aside>
 <main class="main">
-<header class="topbar"><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button><div class="crumb">WEST-VILL <span>/</span> <b id="crumb">Resumen</b></div><div class="top-right"><span class="live-pill"><i></i> ADMIN</span><div class="profile">WV</div></div></header>
+<header class="topbar"><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button><div class="crumb">WEST-VILL <span>/</span> <b id="crumb">Resumen</b></div><div class="top-right"><button class="btn invite-open" id="invite-open">＋ Invitar usuario</button><span class="live-pill"><i></i> ADMIN</span><div class="profile">WV</div><button class="btn secondary admin-logout" id="admin-logout">Salir</button></div></header>
 <section class="content">
 <div class="page-head"><div><div class="eyebrow">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
 <div id="page-content"></div>
@@ -33,7 +56,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="./admin.js?v=4" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=1" defer></script><script src="./admin.js?v=4" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -50,6 +73,6 @@
   window.addEventListener('pointerdown',forcePortrait,{once:true,passive:true});
   window.addEventListener('touchstart',forcePortrait,{once:true,passive:true});
 })();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=6'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=7'));
 </script>
 </body></html>
