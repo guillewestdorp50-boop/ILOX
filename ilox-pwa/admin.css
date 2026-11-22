@@ -4,8 +4,8 @@
 @media(max-width:1050px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:28px 24px}.section-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.sidebar{transform:translateX(-100%);transition:transform .22s;width:260px;box-shadow:15px 0 35px #0008}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.topbar{height:60px;padding:0 17px}.menu-btn{display:block;border:1px solid #2a405b;background:#142640;color:#e7f0fa;border-radius:8px;width:37px;height:35px;font-size:17px}.crumb{margin-right:auto;margin-left:12px;font-size:11px}.live-pill{display:none}.content{padding:26px 16px 20px}.page-head{align-items:flex-start;flex-direction:column;margin-bottom:21px}.date-chip{font-size:10px}.metrics{gap:9px}.metric{padding:14px;min-height:117px}.metric-value{font-size:21px}.metric-top{font-size:11px}.metric-icon{width:27px;height:27px}.panel{padding:15px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
 
-/* WEST-VILL: formato vertical obligatorio en móviles, tablets y escritorio */
-.app-shell{width:100%;max-width:560px;min-height:100dvh;margin:0 auto;overflow-x:hidden}
+/* WEST-VILL: aplicación de viajes, adaptable y sin marco lateral */
+.app-shell{width:100%;max-width:none;min-height:100dvh;margin:0;overflow-x:hidden}
 .sidebar{transform:translateX(-100%);width:min(280px,84vw);box-shadow:15px 0 35px #0008}
 .sidebar.open{transform:translateX(0)}
 .main{margin-left:0;width:100%;min-width:0}
@@ -13,7 +13,7 @@
 .menu-btn{display:block;border:1px solid #2a405b;background:#142640;color:#e7f0fa;border-radius:8px;width:37px;height:35px;font-size:17px}
 .crumb{margin-right:auto;margin-left:12px;font-size:11px}
 .live-pill{display:none}
-.content{padding:25px 16px 20px}
+.content{width:100%;padding:25px 16px 20px}
 .page-head{align-items:flex-start;flex-direction:column;margin-bottom:21px}
 .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .metric{padding:14px;min-height:117px}
@@ -24,5 +24,4 @@
 .form-grid{grid-template-columns:1fr}
 .field.full{grid-column:auto}
 .table-wrap{max-width:100%;overflow-x:auto}
-@media(min-width:561px){.app-shell{box-shadow:0 0 70px #0008;border-left:1px solid #1d3049;border-right:1px solid #1d3049}}
 @media(max-width:360px){.content{padding-left:12px;padding-right:12px}.metric{padding:11px}.metric-value{font-size:18px}}
