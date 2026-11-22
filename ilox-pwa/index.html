@@ -33,5 +33,9 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="./admin.js" defer></script><script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));</script>
+<script src="./admin.js" defer></script><script>
+// La PWA solicita orientación vertical; los navegadores compatibles la bloquean en portrait.
+(async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock('portrait')}catch(_){}})();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+</script>
 </body></html>
