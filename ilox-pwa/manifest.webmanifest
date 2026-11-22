@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "WEST-VILL · Viajes y Administración",
+  "name": "WEST-VILL · Logística de viajes",
   "short_name": "WEST-VILL",
-  "description": "Aplicación de viajes y administración WEST-VILL",
+  "description": "Aplicación de logística de viajes WEST-VILL",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",

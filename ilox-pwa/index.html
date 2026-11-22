@@ -2,14 +2,14 @@
 <html lang="es-AR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101e35"><meta name="description" content="Aplicación de viajes y administración WEST-VILL">
-<link rel="manifest" href="./manifest.webmanifest?v=4"><link rel="icon" href="./icon-192.svg">
-<link rel="stylesheet" href="./admin.css?v=4"><title>WEST-VILL · Viajes y Administración</title>
+<meta name="theme-color" content="#101e35"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
+<link rel="manifest" href="./manifest.webmanifest?v=5"><link rel="icon" href="./icon-192.svg?v=5">
+<link rel="stylesheet" href="./admin.css?v=4"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>VIAJES Y ADMINISTRACIÓN</small></div></div>
+  <div class="brand"><div class="brand-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div>
   <div class="side-label">GESTIÓN</div>
   <nav class="nav">
     <button class="nav-item active" data-page="inicio"><span>▦</span> Resumen</button>
@@ -28,7 +28,7 @@
 <section class="content">
 <div class="page-head"><div><div class="eyebrow">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
 <div id="page-content"></div>
-<footer>WEST-VILL · VIAJES Y ADMINISTRACIÓN</footer>
+<footer>WEST-VILL · LOGÍSTICA DE VIAJES</footer>
 </section>
 </main>
 </div>
@@ -50,6 +50,6 @@
   window.addEventListener('pointerdown',forcePortrait,{once:true,passive:true});
   window.addEventListener('touchstart',forcePortrait,{once:true,passive:true});
 })();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=4'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=5'));
 </script>
 </body></html>
