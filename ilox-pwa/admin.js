@@ -99,7 +99,7 @@ async function loadPage(which){
   }else if(which==='ingresos'){
  const data=await rows('westvill_income','*','received_at');
  const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
- page('Ingresos',panel('Billetera automática','<p class="muted">Cada cotización que un pasajero acepta se registra automáticamente. No hace falta cargarla a mano.</p><div class="ledger-summary ledger-positive">'+money(total)+'</div>')+panel('Ingresos confirmados',data.length?table(['VIAJE','IMPORTE','FECHA'],data.map(x=>'<tr><td>'+esc(x.description)+'</td><td class="ledger-positive ledger-amount">+ '+money(x.amount)+'</td><td>'+fmt(x.received_at)+'</td></tr>').join('')):empty('Todavía no hay cotizaciones aceptadas.')));
+ page('Ingresos',panel('Billetera automática','<p class="muted">Cada cotización que un pasajero acepta se registra automáticamente. El importe completo se acredita también al conductor asignado, sin comisión.</p><div class="ledger-summary ledger-positive">'+money(total)+'</div>')+panel('Ingresos confirmados',data.length?table(['VIAJE','CONDUCTOR','IMPORTE','FECHA'],data.map(x=>'<tr><td>'+esc(x.description)+'</td><td>'+esc(personName(x.driver_id)||'Sin asignar')+'</td><td class="ledger-positive ledger-amount">+ '+money(x.amount)+'</td><td>'+fmt(x.received_at)+'</td></tr>').join('')):empty('Todavía no hay cotizaciones aceptadas.')));
   }else if(which==='gastos'){
  const data=await rows('westvill_expenses','*','spent_at');
  const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
@@ -126,10 +126,13 @@ async function assign(id){
    fare:req.quote_price||0,quote_km:req.quote_km,quote_minutes:req.quote_minutes,status:'programado'
   }).select('id').single();
   if(tripError)throw new Error('No se pudo crear el viaje: '+tripError.message);
+  const {error:incomeAssignError}=await sb.from('westvill_income').update({driver_id:driver.id}).eq('request_id',req.id);
+  if(incomeAssignError){await sb.from('westvill_trips').delete().eq('id',trip.id);throw new Error('El viaje se creó, pero no se pudo asignar el ingreso al conductor: '+incomeAssignError.message);}
   const {data:updated,error:updateError}=await sb.from('westvill_requests').update({
    assigned_driver_id:driver.id,status:'aceptada',updated_at:new Date().toISOString()
   }).eq('id',req.id).eq('status','pendiente').select('id').maybeSingle();
   if(updateError||!updated){
+   await sb.from('westvill_income').update({driver_id:null}).eq('request_id',req.id).eq('driver_id',driver.id);
    await sb.from('westvill_trips').delete().eq('id',trip.id);
    throw new Error(updateError?.message||'La solicitud ya no está pendiente. Actualizá la bandeja.');
   }
