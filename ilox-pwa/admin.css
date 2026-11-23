@@ -125,4 +125,4 @@ body.admin-mode button,body.admin-mode .nav-item,body.admin-mode .metric-link{ -
 
 /* Ajustes solicitados: encabezado seguro y mensajes grandes en administración */
 @media(max-width:700px){body.admin-mode .topbar{height:calc(60px + max(env(safe-area-inset-top),14px));padding-top:max(env(safe-area-inset-top),14px);padding-left:12px;padding-right:12px;}}
-body.admin-mode .admin-chat-message{font-size:15px!important;line-height:1.5!important;overflow-wrap:anywhere;margin:10px 0!important;}
+body.admin-mode .admin-chat-message{font-family:Manrope,system-ui,sans-serif!important;font-size:26px!important;font-weight:800!important;line-height:1.3!important;overflow-wrap:anywhere;margin:14px 0!important;}
