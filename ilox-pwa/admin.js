@@ -23,6 +23,18 @@ async function rows(table,select='*',order='created_at'){const q=sb.from(table).
 async function loadPeople(){const all=await rows('westvill_profiles','id,username,display_name,role,is_available,created_at','created_at');cache.drivers=all.filter(x=>x.role==='conductor');cache.passengers=all.filter(x=>x.role==='pasajero');$('#driver-badge').textContent=cache.drivers.length;return all}
 async function loadStatuses(){const s=await rows('westvill_driver_status','driver_id,status,location_label,notes,created_at','created_at');const seen=new Set();cache.statuses=s.filter(x=>{if(seen.has(x.driver_id))return false;seen.add(x.driver_id);return true;});}
 async function loadRequests(){cache.requests=await rows('westvill_requests','*','created_at');$('#request-badge').textContent=cache.requests.filter(x=>x.status==='pendiente').length;}
+async function checkUnansweredTrips(){
+ if(!adminProfile?.id)return;
+ const cutoff=new Date(Date.now()-5*60*1000).toISOString();
+ const {data,error}=await sb.from('westvill_trips').select('id,passenger_id,driver_id,origin,destination,assigned_at').eq('driver_response','pendiente').is('admin_wait_alerted_at',null).lte('assigned_at',cutoff).limit(50);
+ if(error)return;
+ for(const trip of data||[]){
+  const {data:marked,error:markError}=await sb.from('westvill_trips').update({admin_wait_alerted_at:new Date().toISOString()}).eq('id',trip.id).is('admin_wait_alerted_at',null).select('id').maybeSingle();
+  if(markError||!marked)continue;
+  const {error:noticeError}=await sb.from('westvill_notifications').insert({user_id:adminProfile.id,title:'Viaje esperando confirmación',body:'El conductor todavía no respondió después de 5 minutos: '+trip.origin+' → '+trip.destination+'. Podés reasignarlo o contactar al pasajero.',kind:'trip_waiting',trip_id:trip.id});
+  if(!noticeError)toast('ALERTA: hay un viaje esperando confirmación hace 5 minutos.');
+ }
+}
 function personName(id){return [...cache.drivers,...cache.passengers].find(p=>p.id===id)?.display_name||'Cuenta';}
 function driverList(filter='all'){const list=filter==='available'?cache.drivers.filter(d=>d.is_available):filter==='unavailable'?cache.drivers.filter(d=>!d.is_available):cache.drivers;return list.map(d=>{const s=cache.statuses.find(x=>x.driver_id===d.id);return '<tr><td><button class="text-action" data-person="'+d.id+'">'+esc(d.display_name)+'</button></td><td>'+esc(d.username)+'</td><td><span class="tag '+(d.is_available?'good':'')+'">'+(d.is_available?'DISPONIBLE':'NO DISPONIBLE')+'</span></td><td><b>'+esc(s?labels[s.status]||s.status:'SIN INFORMAR')+'</b>'+(s?.location_label?'<div class="muted">'+esc(s.location_label)+'</div>':'')+'</td><td>'+fmt(s?.created_at)+'</td></tr>';}).join('')||'<tr><td colspan="5">No hay conductores en esta lista.</td></tr>'}
 function table(headers,body){return '<div class="table-wrap"><table><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>'}
@@ -104,4 +116,4 @@ async function assign(id){
  }catch(e){toast(e.message||'No se pudo asignar el viaje.');if(button){button.disabled=false;button.textContent='Asignar viaje';}}
 }
 
-window.initAdminPanel=async function(profile){adminProfile=profile;nav();if(poll)clearInterval(poll);poll=setInterval(()=>{if(activePage==='conductores'||activePage==='inicio')loadPage(activePage);},10000);$('#admin-logout').onclick=async()=>{await sb.auth.signOut();location.reload()};await loadPage('inicio');};
+window.initAdminPanel=async function(profile){adminProfile=profile;nav();if(poll)clearInterval(poll);poll=setInterval(()=>{checkUnansweredTrips();if(activePage==='conductores'||activePage==='inicio'||activePage==='viajes'||activePage==='solicitudes')loadPage(activePage);},10000);await checkUnansweredTrips();$('#admin-logout').onclick=async()=>{await sb.auth.signOut();location.reload()};await loadPage('inicio');};
