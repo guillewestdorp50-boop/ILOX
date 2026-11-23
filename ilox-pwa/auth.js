@@ -63,7 +63,7 @@ async function renderSchoolPasses(page){
  const monthName=month.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
  const firstOffset=(month.getDay()+6)%7,daysInMonth=new Date(year,monthIndex+1,0).getDate();
  const today=new Date();today.setHours(0,0,0,0);
- const reserved=new Set(booked.filter(r=>!active||r.school_pass_id===active.id).map(r=>String(r.travel_at||'').slice(0,10)));
+ const reserved=new Set(booked.map(r=>String(r.travel_at||'').slice(0,10)));
  const cells=[];
  for(let i=0;i<firstOffset;i++)cells.push('<span></span>');
  for(let day=1;day<=daysInMonth;day++){
