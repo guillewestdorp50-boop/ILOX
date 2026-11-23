@@ -4,13 +4,13 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="HandheldFriendly" content="true"><style>html,body{touch-action:pan-x pan-y;overscroll-behavior:contain}*{ -webkit-tap-highlight-color:transparent }</style><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="WEST-VILL"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=7"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=7"><link rel="apple-touch-icon" href="./west-vill-logistica.jpg?v=7">
-<link rel="stylesheet" href="./admin.css?v=25"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=26"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
 <section class="auth-screen" id="auth-screen">
   <div class="auth-card">
-    <div class="auth-brand"><div class="auth-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div>
+    <button class="theme-toggle" id="theme-auth" type="button" data-theme-toggle>☀ Día</button><div class="auth-brand"><div class="auth-mark">WV</div><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div>
     <p class="auth-eyebrow">ACCESO A LA PLATAFORMA</p>
     <h1 id="auth-title">¿Cómo vas a ingresar?</h1>
     <p class="auth-subtitle" id="auth-subtitle">Elegí tu tipo de cuenta para continuar.</p>
@@ -25,7 +25,7 @@
   <div class="auth-foot">WEST-VILL · ACCESO PRIVADO</div>
 </section>
 <section class="client-screen" id="client-screen" hidden>
-  <header class="client-top"><div class="brand"><button class="brand-mark client-profile-button" id="client-profile-open" type="button" aria-label="Abrir mi perfil">WV</button><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div><div class="client-user"><span id="client-greeting"></span><button class="btn secondary" id="client-logout">Salir</button></div></header>
+  <header class="client-top"><div class="brand"><button class="brand-mark client-profile-button" id="client-profile-open" type="button" aria-label="Abrir mi perfil">WV</button><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div><div class="client-user"><button class="theme-toggle" type="button" data-theme-toggle>☀ Día</button><span id="client-greeting"></span><button class="btn secondary" id="client-logout">Salir</button></div></header>
   <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><button class="btn secondary" id="client-back" type="button" style="margin:0 0 12px">← VOLVER</button><h1 id="client-title">Bienvenido</h1><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="ingresos" id="tab-income" hidden>Ingresos</button><button data-client-tab="gastos" id="tab-expenses" hidden>Gastos</button><button data-client-tab="pad" id="tab-pad" hidden>Mi PAD</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
 </section>
 <div class="invite-modal" id="invite-modal" hidden>
@@ -52,7 +52,7 @@
   <div class="sidebar-foot"><span class="status-dot"></span> Panel del administrador <small>WEST-VILL · PRIVADO</small></div>
 </aside>
 <main class="main">
-<header class="topbar"><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button><button class="btn secondary" id="admin-back" type="button" style="margin-left:8px;padding:9px 11px">← VOLVER</button><div class="crumb">WEST-VILL <span>/</span> <b id="crumb">Resumen</b></div><div class="top-right"><button class="btn invite-open" id="invite-open">＋ Invitar usuario</button><span class="live-pill"><i></i> ADMIN</span><button class="profile profile-button" id="admin-profile-open" type="button" aria-label="Abrir perfil de administración">WV</button><button class="btn secondary admin-logout" id="admin-logout">Salir</button></div></header>
+<header class="topbar"><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button><button class="btn secondary" id="admin-back" type="button" style="margin-left:8px;padding:9px 11px">← VOLVER</button><div class="crumb">WEST-VILL <span>/</span> <b id="crumb">Resumen</b></div><div class="top-right"><button class="theme-toggle" type="button" data-theme-toggle>☀ Día</button><button class="btn invite-open" id="invite-open">＋ Invitar usuario</button><span class="live-pill"><i></i> ADMIN</span><button class="profile profile-button" id="admin-profile-open" type="button" aria-label="Abrir perfil de administración">WV</button><button class="btn secondary admin-logout" id="admin-logout">Salir</button></div></header>
 <section class="content">
 <div class="page-head"><div><div class="eyebrow">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
 <div id="page-content"></div>
@@ -61,7 +61,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=35" defer></script><script src="./admin.js?v=32" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=36" defer></script><script src="./admin.js?v=32" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -84,6 +84,8 @@
   document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
   document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 })();
+<script src="./theme.js?v=1" defer></script>
+<script>
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=38'));
 </script>
 </body></html>
