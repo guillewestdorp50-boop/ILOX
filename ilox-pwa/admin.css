@@ -217,6 +217,6 @@ body.theme-day [data-trip-progress]{background:#20bd78!important}
 body.theme-day .theme-toggle{background:#edf3f8!important;color:#24445f!important;border-color:#bdcbd9!important}
 
 
-/* Rótulo del encabezado de administración: compacto y siempre en una línea. */
-.page-head .admin-page-eyebrow{display:inline-block!important;width:max-content!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;font-size:10px!important;font-weight:800!important;letter-spacing:.08em!important;line-height:1.2!important;margin:0 0 8px!important;}
-@media(max-width:600px){.page-head .admin-page-eyebrow{font-size:9px!important;letter-spacing:.055em!important;}}
+/* Rótulo del centro de operaciones: independiente de .eyebrow y de las reglas globales de tipografía. */
+#admin-center-label{display:block!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;overflow:visible!important;font-family:"DM Sans",system-ui,sans-serif!important;font-size:10px!important;font-weight:800!important;letter-spacing:.08em!important;line-height:1.2!important;margin:0 0 8px!important;padding:0!important;color:#7ea9d2!important;}
+@media(max-width:600px){#admin-center-label{font-size:9px!important;letter-spacing:.055em!important;}}
