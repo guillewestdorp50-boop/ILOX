@@ -215,3 +215,7 @@ body.theme-day .chat-bubble.mine .chat-message-time{color:#3c6d57!important}
 body.theme-day .client-row div[style*="background"],body.theme-day .client-panel div[style*="background"]{background-color:#edf3f8!important;color:#26394d!important}
 body.theme-day [data-trip-progress]{background:#20bd78!important}
 body.theme-day .theme-toggle{background:#edf3f8!important;color:#24445f!important;border-color:#bdcbd9!important}
+
+/* Ajuste de rótulo superior: CENTRO DE OPERACIONES en una sola línea */
+body.admin-mode .page-head .eyebrow{font-size:11px!important;letter-spacing:.12em!important;line-height:1.25!important;white-space:nowrap!important;max-width:100%;}
+@media(max-width:430px){body.admin-mode .page-head .eyebrow{font-size:10px!important;letter-spacing:.10em!important;}}
