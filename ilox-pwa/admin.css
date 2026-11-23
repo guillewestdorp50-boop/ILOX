@@ -94,3 +94,6 @@ body.admin-mode button,body.admin-mode .nav-item,body.admin-mode .metric-link{ -
 .sidebar>.nav .side-label{flex-shrink:0}
 .sidebar>.nav .nav-item{flex-shrink:0}
 @media(max-height:720px){.sidebar{padding-top:16px;padding-bottom:12px}.brand{padding-bottom:20px}.side-label-spaced{margin-top:18px}}
+
+/* Billetera WEST-VILL */
+.ledger-summary{font-size:clamp(25px,5vw,36px);font-weight:850;letter-spacing:-.5px;padding:10px 0}.ledger-positive{color:#20c879!important}.ledger-negative{color:#ff5b64!important}.ledger-amount{font-weight:800;white-space:nowrap}
