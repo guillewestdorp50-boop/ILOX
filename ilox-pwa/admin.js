@@ -93,8 +93,8 @@ async function loadPage(which){
   $('#admin-chat-person').onchange=()=>{adminChatTarget=$('#admin-chat-person').value;loadPage('mensajes');};
   $('#admin-chat-form')?.addEventListener('submit',async e=>{e.preventDefault();const body=String(new FormData(e.currentTarget).get('body')||'').trim();if(!body||!adminChatTarget)return;const {error}=await sb.from('westvill_messages').insert({sender_id:adminProfile.id,recipient_id:adminChatTarget,body});if(error){toast('No se pudo enviar: '+error.message);return;}loadPage('mensajes');});
 
- const ms=await rows('westvill_messages','*','created_at');
- page('Mensajes',panel('Espejo de conversaciones','<p class="muted">Administración puede consultar todos los mensajes entre conductores y pasajeros. No hace falta aprobar ni habilitar cada conversación.</p>'+(ms.length?ms.slice(0,120).map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p>'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join(''):empty('Todavía no hay mensajes.'))));
+ const allMessages=await rows('westvill_messages','*','created_at');
+ page('Mensajes',panel('Espejo de conversaciones','<p class="muted">Administración puede consultar todos los mensajes entre conductores y pasajeros. No hace falta aprobar ni habilitar cada conversación.</p>'+(allMessages.length?allMessages.slice(0,120).map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p>'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join(''):empty('Todavía no hay mensajes.'))));
  }else if(which==='ingresos'||which==='gastos'){
  const income=which==='ingresos',t=income?'westvill_income':'westvill_expenses',date=income?'received_at':'spent_at';
  const data=await rows(t,'*',date);const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
