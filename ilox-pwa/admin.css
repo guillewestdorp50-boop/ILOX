@@ -137,3 +137,12 @@ body.admin-mode button,body.admin-mode .nav-item,body.admin-mode .metric-link{ -
 /* Ajustes solicitados: encabezado seguro y mensajes grandes en administración */
 @media(max-width:700px){body.admin-mode .topbar{height:calc(60px + max(env(safe-area-inset-top),14px));padding-top:max(env(safe-area-inset-top),14px);padding-left:12px;padding-right:12px;}}
 body.admin-mode .admin-chat-message{font-family:Manrope,system-ui,sans-serif!important;font-size:18px!important;font-weight:800!important;line-height:1.45!important;overflow-wrap:anywhere;margin:14px 0!important;}
+
+
+/* Espejo de conversaciones: lista contenida con desplazamiento propio; no modifica el chat activo. */
+body.admin-mode .conversation-mirror-log{height:min(54vh,520px);min-height:220px;max-height:520px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#456582 #0c192b;padding:4px 10px 4px 2px;border:1px solid #263b57;border-radius:10px;background:#0c192b}
+body.admin-mode .conversation-mirror-log .client-row{padding:12px 4px;border-bottom:1px solid #263b57}
+body.admin-mode .conversation-mirror-log .client-row:last-child{border-bottom:0}
+body.admin-mode .conversation-mirror-log::-webkit-scrollbar{width:6px}
+body.admin-mode .conversation-mirror-log::-webkit-scrollbar-thumb{background:#456582;border-radius:8px}
+@media(max-width:600px){body.admin-mode .conversation-mirror-log{height:52vh;min-height:210px;max-height:420px;padding-right:8px}}
