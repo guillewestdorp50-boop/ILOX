@@ -224,3 +224,7 @@ body.admin-mode .page-head .eyebrow{font-size:11px!important;letter-spacing:.12e
 /* WEST-VILL: rótulo CENTRO DE OPERACIONES compacto y fijo en una sola línea */
 body.admin-mode .content .page-head > div:first-child > .eyebrow{display:block!important;width:max-content!important;max-width:100%!important;font-size:10px!important;font-weight:800!important;letter-spacing:.07em!important;line-height:1.2!important;white-space:nowrap!important;overflow:visible!important;margin:0 0 8px!important;}
 @media(max-width:600px){body.admin-mode .content .page-head > div:first-child > .eyebrow{font-size:9px!important;letter-spacing:.055em!important;}}
+
+
+/* Corrección definitiva del rótulo superior en administración */
+body.admin-mode .page-head .eyebrow{font-size:9px!important;line-height:1.2!important;letter-spacing:.045em!important;white-space:nowrap!important;display:block!important;width:max-content!important;max-width:100%!important;}
