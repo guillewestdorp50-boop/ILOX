@@ -48,6 +48,14 @@ async function loadPage(which){
  const names=Object.fromEntries(cache.passengers.map(p=>[p.id,p.display_name]));
   const reqHtml=cache.requests.map(r=>{const who=cache.passengers.find(p=>p.id===r.passenger_id)?.display_name||'Pasajero';const info='<p>'+fmt(r.travel_at)+' · '+r.passengers+' pasajero(s) · '+esc(r.status)+'</p>'+(r.notes?'<p>'+esc(r.notes)+'</p>':'');const action=r.status==='pendiente'?'<div class="assign-row"><select id="driver-'+r.id+'"><option value="">Elegir conductor disponible</option>'+cache.drivers.filter(d=>d.is_available).map(d=>'<option value="'+d.id+'">'+esc(d.display_name)+'</option>').join('')+'</select><button class="btn" data-assign="'+r.id+'">Asignar viaje</button></div>':'<p class="muted">Conductor asignado: '+esc(personName(r.assigned_driver_id))+'</p>';return panel(esc(who)+' · '+esc(r.origin)+' → '+esc(r.destination),info+action);}).join('');
   page('Solicitudes de pasajeros',reqHtml||panel('Bandeja vacía',empty('Todavía no llegaron solicitudes.')));
+   document.querySelectorAll('[data-assign]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+     const requestId=btn.dataset.assign;
+     const select=$('#driver-'+requestId);
+     if(!select?.value){toast('Primero elegí a Guille W u otro conductor disponible.');return;}
+     await assign(requestId);
+    });
+   });
  }else if(which==='viajes'){
  cache.trips=await rows('westvill_trips','*','created_at');
  page('Viajes',panel('Registro de viajes',cache.trips.length?table(['ORIGEN','DESTINO','PASAJERO','CONDUCTOR','FECHA','ESTADO'],cache.trips.map(t=>'<tr><td>'+esc(t.origin)+'</td><td>'+esc(t.destination)+'</td><td>'+esc(personName(t.passenger_id))+'</td><td>'+esc(personName(t.driver_id))+'</td><td>'+fmt(t.travel_at)+'</td><td>'+esc(t.status)+'</td></tr>').join('')):empty('Todavía no hay viajes asignados.')));
