@@ -87,7 +87,7 @@ async function loadPage(which){
  cache.trips=await rows('westvill_trips','*','created_at');
  const completed=cache.trips.filter(t=>t.status==='completado');
  page('Viajes completos',panel('Historial de viajes completados','<div class="balance green">'+completed.length+' COMPLETADOS</div>'+(completed.length?table(['ORIGEN','DESTINO','PASAJERO','CONDUCTOR','FECHA','ESTADO'],completed.map(t=>'<tr><td>'+esc(t.origin)+'</td><td>'+esc(t.destination)+'</td><td>'+esc(personName(t.passenger_id))+'</td><td>'+esc(personName(t.driver_id))+'</td><td>'+fmt(t.finished_at||t.travel_at)+'</td><td><span class="tag good">✓ COMPLETADO</span></td></tr>').join('')):empty('Todavía no hay viajes completados.'))));
-  else if(which==='mensajes'){
+ }else if(which==='mensajes'){
    const allMessages=await rows('westvill_messages','*','created_at');
    const people=[...cache.passengers,...cache.drivers],target=adminChatTarget||'';
    const thread=target?allMessages.filter(m=>(m.sender_id===adminProfile.id&&m.recipient_id===target)||(m.sender_id===target&&m.recipient_id===adminProfile.id)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)):[];
