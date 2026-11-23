@@ -97,3 +97,27 @@ body.admin-mode button,body.admin-mode .nav-item,body.admin-mode .metric-link{ -
 
 /* Billetera WEST-VILL */
 .ledger-summary{font-size:clamp(25px,5vw,36px);font-weight:850;letter-spacing:-.5px;padding:10px 0}.ledger-positive{color:#20c879!important}.ledger-negative{color:#ff5b64!important}.ledger-amount{font-weight:800;white-space:nowrap}
+
+
+/* AUMENTO DE LEGIBILIDAD · primera etapa solicitada */
+.field label,.field input,.field select,.field textarea,
+.auth-fields label,.auth-fields input,.invite-card label,.invite-card select,
+.auth-subtitle,.auth-switch,.auth-back,.auth-error,
+.client-form label,.client-form input,.client-form textarea,.client-form select,
+.client-chat select,.client-chat input,.chat-bubble,.notice-row p,
+.client-muted,.client-row,.client-user,.client-heading p,
+.pad-note-label,.pad-note-label input,.pad-current,.request-received p {
+  font-size:16px!important;
+}
+.muted,.empty-inline,.metric-top,.metric-note,.date-chip,.crumb,
+.nav-item,.nav-item i,.sidebar-foot,.sidebar-foot small,
+.btn,.tag,th,td,.client-tabs button,.client-row .client-muted,
+.client-panel p,.client-panel li,.text-action,.assign-row select,
+.toast,.invite-result,.role-choice small,.role-choice b,
+.auth-brand small,.auth-eyebrow,.auth-foot,.side-label,
+.live-pill,.eyebrow,footer,.panel-head .muted {
+  font-size:16px!important;
+}
+.client-row b,.client-row strong,td b,td strong {
+  font-size:16px!important;
+}
