@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="HandheldFriendly" content="true"><style>html,body{touch-action:pan-x pan-y;overscroll-behavior:contain}*{ -webkit-tap-highlight-color:transparent }</style><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="WEST-VILL"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=7"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=7"><link rel="apple-touch-icon" href="./west-vill-logistica.jpg?v=7">
-<link rel="stylesheet" href="./admin.css?v=30"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=31"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
@@ -54,7 +54,7 @@
 <main class="main">
 <header class="topbar"><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button><button class="btn secondary" id="admin-back" type="button" style="margin-left:8px;padding:9px 11px">← VOLVER</button><div class="crumb">WEST-VILL <span>/</span> <b id="crumb">Resumen</b></div><div class="top-right"><button class="theme-toggle" type="button" data-theme-toggle>☀ Día</button><button class="btn invite-open" id="invite-open">＋ Invitar usuario</button><span class="live-pill"><i></i> ADMIN</span><button class="profile profile-button" id="admin-profile-open" type="button" aria-label="Abrir perfil de administración">WV</button><button class="btn secondary admin-logout" id="admin-logout">Salir</button></div></header>
 <section class="content">
-<div class="page-head"><div><div class="eyebrow admin-page-eyebrow">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
+<div class="page-head"><div><div id="admin-center-label">CENTRO DE OPERACIONES</div><h1 id="page-title">Resumen general</h1><p id="page-subtitle">Controlá la actividad y los números de WEST-VILL.</p></div><div class="date-chip" id="today"></div></div>
 <div id="page-content"></div>
 <footer>WEST-VILL · LOGÍSTICA DE VIAJES</footer>
 </section>
@@ -87,6 +87,6 @@
 </script>
 <script src="./theme.js?v=2" defer></script>
 <script>
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=43'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=44'));
 </script>
 </body></html>
