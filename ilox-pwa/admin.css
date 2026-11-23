@@ -53,3 +53,16 @@ body.client-mode .client-screen{display:block!important}
 .pad-note-label{display:grid;gap:7px;color:#a9bbcf;font-size:11px;font-weight:700;margin-top:14px}
 .pad-note-label input{width:100%;border:1px solid #314967;border-radius:8px;background:#0c192b;color:#eef4fb;padding:12px;font:13px 'DM Sans'}
 @media(max-width:430px){.driver-pad-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.driver-pad-button{min-height:62px;font-size:10px}}
+
+/* Panel administrativo: texto seleccionable y controles reales */
+.app-shell,.app-shell *{-webkit-user-select:text!important;user-select:text!important}
+.app-shell button,.app-shell input,.app-shell select,.app-shell textarea{ -webkit-user-select:text!important;user-select:text!important}
+.metric-link{display:block;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.metric-link:hover{border-color:#5a91bd;transform:translateY(-1px)}
+.text-action{border:0;background:none;color:#d9edff;text-decoration:underline;text-underline-offset:3px;font:700 13px 'DM Sans';padding:0;cursor:pointer;text-align:left}
+.text-action:hover{color:#71dca8}
+.filter-row{margin-bottom:15px}
+.assign-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.assign-row select{min-width:210px;max-width:100%;border:1px solid #314967;border-radius:8px;background:#0c192b;color:#eef4fb;padding:11px;font:13px 'DM Sans'}
+.pad-activity h3{font:700 14px Manrope;color:#dce9f7}
+@media(max-width:600px){.assign-row select{width:100%}.metric-link{min-height:115px}}
