@@ -1,5 +1,5 @@
-const CACHE='west-vill-travel-v42';
-const CORE=['./','./index.html','./manifest.webmanifest?v=6','./admin.css?v=14','./auth.js?v=30','./admin.js?v=28','./west-vill-logistica.jpg?v=6'];
+const CACHE='west-vill-travel-v43';
+const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=14','./auth.js?v=30','./admin.js?v=28','./west-vill-logistica.jpg?v=7'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
