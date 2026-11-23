@@ -65,5 +65,35 @@ async function loadPage(which){
  }catch(e){page('Error al cargar '+esc(which),panel('No se pudo consultar la información','<p>'+esc(e.message)+'</p><button class="btn" id="retry-page">Reintentar</button>'));$('#retry-page').onclick=()=>loadPage(which);}
 }
 async function showPerson(id){const p=[...cache.drivers,...cache.passengers].find(x=>x.id===id);if(!p)return;let detail='<p><b>Nombre:</b> '+esc(p.display_name)+'</p><p><b>Usuario:</b> '+esc(p.username)+'</p><p><b>Tipo:</b> '+esc(p.role)+'</p><p><b>Alta:</b> '+fmt(p.created_at)+'</p>';if(p.role==='conductor'){const s=cache.statuses.find(x=>x.driver_id===id);detail+='<p><b>Disponibilidad:</b> '+(p.is_available?'Disponible':'No disponible')+'</p><p><b>Estado PAD:</b> '+esc(s?labels[s.status]||s.status:'Sin informar')+'</p><p><b>Último aviso:</b> '+fmt(s?.created_at)+'</p><p><b>Ubicación:</b> '+esc(s?.location_label||'No informada')+'</p>';}page('Ficha de '+esc(p.display_name),panel('Datos de la cuenta',detail,'<button class="btn secondary" id="back-list">Volver</button>'));$('#back-list').onclick=()=>loadPage(activePage);}
-async function assign(id){const driverId=$('#driver-'+id)?.value,driver=cache.drivers.find(d=>d.id===driverId),req=cache.requests.find(r=>r.id===id);if(!driver||!req){toast('Elegí un conductor disponible.');return;}const {error:e}=await sb.from('westvill_requests').update({assigned_driver_id:driver.id,status:'aceptada'}).eq('id',id);if(e){toast('No se pudo asignar: '+e.message);return;}const {error:t}=await sb.from('westvill_trips').insert({request_id:id,passenger_id:req.passenger_id,driver_id:driver.id,origin:req.origin,destination:req.destination,travel_at:req.travel_at,fare:0,status:'programado'});if(t){await sb.from('westvill_requests').update({assigned_driver_id:null,status:'pendiente'}).eq('id',id);toast('No se pudo crear el viaje: '+t.message);return;}toast('Viaje asignado a '+driver.display_name);loadPage('solicitudes');}
+async function assign(id){
+ const button=document.querySelector('[data-assign="'+id+'"]');
+ const driverId=$('#driver-'+id)?.value;
+ const driver=cache.drivers.find(d=>d.id===driverId);
+ const req=cache.requests.find(r=>r.id===id);
+ if(!driver||!req){toast('Elegí un conductor disponible.');return;}
+ if(button){button.disabled=true;button.textContent='Asignando…';}
+ try{
+  const {data:trip,error:tripError}=await sb.from('westvill_trips').insert({
+   request_id:req.id,passenger_id:req.passenger_id,driver_id:driver.id,
+   origin:req.origin,destination:req.destination,travel_at:req.travel_at,
+   fare:0,status:'programado'
+  }).select('id').single();
+  if(tripError)throw new Error('No se pudo crear el viaje: '+tripError.message);
+  const {data:updated,error:updateError}=await sb.from('westvill_requests').update({
+   assigned_driver_id:driver.id,status:'aceptada',updated_at:new Date().toISOString()
+  }).eq('id',req.id).eq('status','pendiente').select('id').maybeSingle();
+  if(updateError||!updated){
+   await sb.from('westvill_trips').delete().eq('id',trip.id);
+   throw new Error(updateError?.message||'La solicitud ya no está pendiente. Actualizá la bandeja.');
+  }
+  const {error:noticeError}=await sb.from('westvill_notifications').insert({
+   user_id:driver.id,title:'Nuevo viaje asignado',
+   body:'Administración te asignó un viaje: '+req.origin+' → '+req.destination,
+   kind:'trip_assigned',trip_id:trip.id
+  });
+  toast(noticeError?'Viaje asignado. Aviso guardado pendiente de notificación.':'Viaje asignado y notificación enviada a '+driver.display_name);
+  await loadPage('solicitudes');
+ }catch(e){toast(e.message||'No se pudo asignar el viaje.');if(button){button.disabled=false;button.textContent='Asignar viaje';}}
+}
+
 window.initAdminPanel=async function(profile){adminProfile=profile;nav();if(poll)clearInterval(poll);poll=setInterval(()=>{if(activePage==='conductores'||activePage==='inicio')loadPage(activePage);},10000);$('#admin-logout').onclick=async()=>{await sb.auth.signOut();location.reload()};await loadPage('inicio');};
