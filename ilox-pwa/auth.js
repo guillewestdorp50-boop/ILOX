@@ -58,9 +58,8 @@ async function renderSchoolPasses(page){
  if(reqError)throw reqError;
  const booked=requests||[],allPasses=passes||[];
  const counts=Object.fromEntries(allPasses.map(p=>[p.id,booked.filter(r=>r.school_pass_id===p.id).length]));
- const active=allPasses.find(p=>(counts[p.id]||0)<8)||allPasses[0]||null;
+ const active=allPasses.find(p=>(counts[p.id]||0)<8)||null;
  const editing=booked.find(r=>r.id===schoolEditingRequestId)||null;
- if(editing){schoolSelectedDates=new Set([String(editing.travel_at||'').slice(0,10)]);}
  const now=new Date(),month=new Date(now.getFullYear(),now.getMonth()+schoolCalendarOffset,1),year=month.getFullYear(),monthIndex=month.getMonth();
  const monthName=month.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
  const firstOffset=(month.getDay()+6)%7,daysInMonth=new Date(year,monthIndex+1,0).getDate();
@@ -96,7 +95,7 @@ async function renderSchoolPasses(page){
    renderSchoolPasses(page);
   }catch(e){alert('No se pudo completar: '+e.message);send.disabled=false;send.textContent=editing?'GUARDAR CAMBIOS':'ENVIAR SOLICITUD DE VIAJE';}
  };
- page.querySelectorAll('[data-school-edit]').forEach(btn=>btn.onclick=()=>{schoolEditingRequestId=btn.dataset.schoolEdit;schoolSelectedDates.clear();renderSchoolPasses(page);});
+ page.querySelectorAll('[data-school-edit]').forEach(btn=>btn.onclick=()=>{schoolEditingRequestId=btn.dataset.schoolEdit;schoolSelectedDates.clear();const item=booked.find(r=>r.id===schoolEditingRequestId);if(item){const d=new Date(item.travel_at);const current=new Date();schoolCalendarOffset=(d.getFullYear()-current.getFullYear())*12+d.getMonth()-current.getMonth();schoolSelectedDates.add(String(item.travel_at||'').slice(0,10));}renderSchoolPasses(page);});
  page.querySelectorAll('[data-school-delete]').forEach(btn=>btn.onclick=async()=>{const item=booked.find(r=>r.id===btn.dataset.schoolDelete);if(!item)return;if(!confirm('¿Eliminar esta solicitud de viaje escolar? También dejará de aparecer en Administración.'))return;btn.disabled=true;const {error}=await sb.from('westvill_requests').delete().eq('id',item.id).eq('passenger_id',profile.id);if(error){alert('No se pudo eliminar: '+error.message);btn.disabled=false;return;}if(schoolEditingRequestId===item.id)schoolEditingRequestId=null;schoolSelectedDates.clear();alert('Solicitud eliminada.');renderSchoolPasses(page);});
 }
 
