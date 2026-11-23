@@ -230,3 +230,12 @@ body.theme-day .theme-toggle{background:#edf3f8!important;color:#24445f!importan
 @media(max-width:680px){.client-top{gap:7px}.client-user{gap:6px}.wallet-chip{padding:5px 7px;gap:5px;border-radius:10px}.wallet-chip small{font-size:7px}.wallet-chip b{font-size:10px}.wallet-symbol{font-size:17px}.admin-wallet-chip{margin-right:2px}.topbar .top-right{gap:6px}}
 @media(max-width:390px){.client-user>.theme-toggle{display:none}.wallet-chip b{font-size:9px}.wallet-chip{padding:4px 6px}}
 body.theme-day .wallet-chip{background:linear-gradient(135deg,#e4f8ed,#d4f1e2)!important;border-color:#72bd94!important;color:#17452f!important}body.theme-day .wallet-chip b{color:#17452f!important}body.theme-day .wallet-chip small{color:#397b59!important}body.theme-day .wallet-symbol{color:#168b54!important}
+
+
+/* Saldo principal del conductor: ubicado en el espacio libre del encabezado personal */
+.client-heading{position:relative;min-height:205px;padding-right:215px}
+.client-wallet-large{position:absolute;right:0;top:38px;min-width:190px;min-height:76px;padding:15px 17px;gap:12px;border-radius:15px;box-shadow:0 7px 22px #0003}
+.client-wallet-large .wallet-symbol{font-size:30px}
+.client-wallet-large small{font-size:9px;letter-spacing:.14em}
+.client-wallet-large b{font-size:19px}
+@media(max-width:600px){.client-heading{min-height:0;padding-right:0}.client-wallet-large{position:static;display:flex;width:max-content;min-width:190px;margin:14px 0 0 auto;padding:12px 15px}.client-wallet-large .wallet-symbol{font-size:26px}.client-wallet-large b{font-size:17px}}
