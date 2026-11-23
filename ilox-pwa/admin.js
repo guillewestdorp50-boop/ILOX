@@ -99,7 +99,7 @@ async function loadPage(which){
   }else if(which==='ingresos'){
  const data=await rows('westvill_income','*','received_at');
  const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
- page('Ingresos',panel('Billetera automática','<p class="muted">Cada cotización que un pasajero acepta se registra automáticamente. El importe completo se acredita también al conductor asignado, sin comisión.</p><div class="ledger-summary ledger-positive">'+money(total)+'</div>')+panel('Ingresos confirmados',data.length?table(['VIAJE','CONDUCTOR','IMPORTE','FECHA'],data.map(x=>'<tr><td>'+esc(x.description)+'</td><td>'+esc(personName(x.driver_id)||'Sin asignar')+'</td><td class="ledger-positive ledger-amount">+ '+money(x.amount)+'</td><td>'+fmt(x.received_at)+'</td></tr>').join('')):empty('Todavía no hay cotizaciones aceptadas.')));
+ page('Ingresos',panel('Billetera automática','<p class="muted">Cada cotización que un pasajero acepta se registra automáticamente. El importe completo se acredita también al conductor asignado, sin comisión.</p><div class="ledger-summary ledger-positive">'+money(total)+'</div>')+panel('Ingresos confirmados',data.length?table(['VIAJE','CONDUCTOR','IMPORTE','FECHA'],data.map(x=>'<tr><td>'+esc(x.description)+'</td><td>'+esc(x.driver_id?personName(x.driver_id):'Sin asignar')+'</td><td class="ledger-positive ledger-amount">+ '+money(x.amount)+'</td><td>'+fmt(x.received_at)+'</td></tr>').join('')):empty('Todavía no hay cotizaciones aceptadas.')));
   }else if(which==='gastos'){
  const data=await rows('westvill_expenses','*','spent_at');
  const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
