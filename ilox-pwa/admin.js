@@ -6,7 +6,7 @@ const fmt=d=>d?new Date(d).toLocaleString('es-AR'):'—';
 const labels={libre:'LIBRE',viaje:'EN VIAJE',cargando:'CARGANDO',cargado:'CARGADO',descargando:'DESCARGANDO',demorado:'DEMORADO',accidente:'ACCIDENTE',deposito:'EN DEPÓSITO',planta:'EN PLANTA',base:'EN BASE',casa:'EN CASA',descansando:'DESCANSANDO',cafe:'PARADA / CAFÉ',ypf:'YPF',repostando:'REPOSTANDO',otro:'OTRO'};
 let activePage='inicio',poll=null,adminProfile=null,messageFeed=null,requestFeed=null,adminChatTarget='',adminPageStack=[],cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
 function toast(t){const x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}
-function page(title,html){const titleNode=$('#page-title'),subtitleNode=$('#page-subtitle'),crumb=$('#crumb'),contentNode=$('#page-content');if(titleNode)titleNode.textContent=title;if(subtitleNode)subtitleNode.textContent='Centro de operaciones · WEST-VILL';if(crumb)crumb.textContent=title;if(contentNode)contentNode.innerHTML=html;}
+function page(title,html){$('#page-title').textContent=title;$('#page-subtitle').textContent='Centro de operaciones · WEST-VILL';const crumb=$('#crumb');if(crumb)crumb.textContent=title;$('#page-content').innerHTML=html}
 function empty(t){return '<div class="empty"><div class="empty-icon">⌁</div><strong>'+esc(t)+'</strong></div>'}
 function panel(title,body,extra=''){return '<section class="panel"><div class="panel-head"><h2>'+title+'</h2>'+extra+'</div>'+body+'</section>'}
 function nav(){
