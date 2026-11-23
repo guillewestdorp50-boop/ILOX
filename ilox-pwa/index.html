@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=6"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=6">
-<link rel="stylesheet" href="./admin.css?v=12"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=13"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
@@ -38,7 +38,9 @@
   <nav class="nav">
     <button class="nav-item active" data-page="inicio"><span>▦</span> Resumen</button>
     <button class="nav-item" data-page="solicitudes"><span>⌑</span> Solicitudes <i id="request-badge">0</i></button>
+    <button class="nav-item" data-page="anulados"><span>⊗</span> Anulados</button>
     <button class="nav-item" data-page="viajes"><span>↗</span> Viajes</button>
+    <button class="nav-item" data-page="completos"><span>✓</span> Viajes completos</button>
     <button class="nav-item" data-page="clientes"><span>♙</span> Clientes</button>
     <button class="nav-item" data-page="conductores"><span>♧</span> Conductores <i id="driver-badge">0</i></button>
     <button class="nav-item" data-page="mensajes"><span>✉</span> Mensajes</button>
@@ -59,7 +61,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=24" defer></script><script src="./admin.js?v=19" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=24" defer></script><script src="./admin.js?v=20" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
