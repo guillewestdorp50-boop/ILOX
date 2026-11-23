@@ -59,7 +59,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=18" defer></script><script src="./admin.js?v=15" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=18" defer></script><script src="./admin.js?v=16" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -76,6 +76,6 @@
   window.addEventListener('pointerdown',forcePortrait,{once:true,passive:true});
   window.addEventListener('touchstart',forcePortrait,{once:true,passive:true});
 })();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=19'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20'));
 </script>
 </body></html>
