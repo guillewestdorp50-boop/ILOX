@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="WEST-VILL"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=7"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=7"><link rel="apple-touch-icon" href="./west-vill-logistica.jpg?v=7">
-<link rel="stylesheet" href="./admin.css?v=14"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=15"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
@@ -26,7 +26,7 @@
 </section>
 <section class="client-screen" id="client-screen" hidden>
   <header class="client-top"><div class="brand"><button class="brand-mark client-profile-button" id="client-profile-open" type="button" aria-label="Abrir mi perfil">WV</button><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div><div class="client-user"><span id="client-greeting"></span><button class="btn secondary" id="client-logout">Salir</button></div></header>
-  <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><button class="btn secondary" id="client-back" type="button" style="margin:0 0 12px">← VOLVER</button><h1 id="client-title">Bienvenido</h1><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="pad" id="tab-pad" hidden>Mi PAD</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
+  <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><button class="btn secondary" id="client-back" type="button" style="margin:0 0 12px">← VOLVER</button><h1 id="client-title">Bienvenido</h1><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="gastos" id="tab-expenses" hidden>Gastos</button><button data-client-tab="pad" id="tab-pad" hidden>Mi PAD</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
 </section>
 <div class="invite-modal" id="invite-modal" hidden>
   <div class="invite-card"><button class="modal-close" id="invite-close" aria-label="Cerrar">×</button><h2>Crear invitación</h2><p>Generá un código de un solo uso para dar acceso a WEST-VILL.</p><div class="client-muted">Esta invitación habilita exclusivamente una cuenta de conductor y es de un solo uso.</div><button class="btn" id="invite-generate">Generar código</button><div id="invite-result" class="invite-result"></div></div>
@@ -61,7 +61,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=30" defer></script><script src="./admin.js?v=28" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=31" defer></script><script src="./admin.js?v=29" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -78,6 +78,6 @@
   window.addEventListener('pointerdown',forcePortrait,{once:true,passive:true});
   window.addEventListener('touchstart',forcePortrait,{once:true,passive:true});
 })();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=25'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=26'));
 </script>
 </body></html>
