@@ -84,3 +84,13 @@ body.admin-mode button,body.admin-mode .nav-item,body.admin-mode .metric-link{ -
 
 @keyframes wvBlink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(32,200,121,.7)}50%{opacity:.35;box-shadow:0 0 0 7px rgba(32,200,121,0)}}
 .request-received{border:1px solid #20bd78!important;background:linear-gradient(135deg,#102b27,#11283a)!important}.request-received-title{color:#55e39a;font-weight:800;font-size:13px;margin-bottom:10px}.request-received p{color:#d9ffea;line-height:1.5;margin:10px 0}
+
+/* Menú de administración: todos los accesos quedan visibles y desplazables en pantallas cortas. */
+.sidebar{overflow:hidden}
+.sidebar>.brand,.sidebar>.side-label,.sidebar>.sidebar-foot{flex-shrink:0}
+.sidebar>.nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:0 3px 14px 0;scrollbar-width:thin;scrollbar-color:#385675 transparent}
+.sidebar>.nav::-webkit-scrollbar{width:5px}
+.sidebar>.nav::-webkit-scrollbar-thumb{background:#385675;border-radius:8px}
+.sidebar>.nav .side-label{flex-shrink:0}
+.sidebar>.nav .nav-item{flex-shrink:0}
+@media(max-height:720px){.sidebar{padding-top:16px;padding-bottom:12px}.brand{padding-bottom:20px}.side-label-spaced{margin-top:18px}}
