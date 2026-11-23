@@ -3,7 +3,7 @@ const sb=window.wvSupabase;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
 const fmt=d=>d?new Date(d).toLocaleString('es-AR'):'—';
-const labels={libre:'LIBRE',cargando:'CARGANDO',cargado:'CARGADO',descargando:'DESCARGANDO',demorado:'DEMORADO',accidente:'ACCIDENTE',deposito:'EN DEPÓSITO',planta:'EN PLANTA',base:'EN BASE',casa:'EN CASA',descansando:'DESCANSANDO',cafe:'PARADA / CAFÉ',ypf:'YPF',repostando:'REPOSTANDO',otro:'OTRO'};
+const labels={libre:'LIBRE',viaje:'EN VIAJE',cargando:'CARGANDO',cargado:'CARGADO',descargando:'DESCARGANDO',demorado:'DEMORADO',accidente:'ACCIDENTE',deposito:'EN DEPÓSITO',planta:'EN PLANTA',base:'EN BASE',casa:'EN CASA',descansando:'DESCANSANDO',cafe:'PARADA / CAFÉ',ypf:'YPF',repostando:'REPOSTANDO',otro:'OTRO'};
 let activePage='inicio',poll=null,adminProfile=null,messageFeed=null,cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
 function toast(t){const x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}
 function page(title,html){$('#page-title').textContent=title;$('#page-subtitle').textContent='Centro de operaciones · WEST-VILL';$('#crumb').textContent=title;$('#page-content').innerHTML=html}
