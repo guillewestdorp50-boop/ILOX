@@ -4,7 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
 const fmt=d=>d?new Date(d).toLocaleString('es-AR'):'—';
 const labels={libre:'LIBRE',cargando:'CARGANDO',cargado:'CARGADO',descargando:'DESCARGANDO',demorado:'DEMORADO',accidente:'ACCIDENTE',deposito:'EN DEPÓSITO',planta:'EN PLANTA',base:'EN BASE',casa:'EN CASA',descansando:'DESCANSANDO',cafe:'PARADA / CAFÉ',ypf:'YPF',repostando:'REPOSTANDO',otro:'OTRO'};
-let activePage='inicio',poll=null,adminProfile=null,cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
+let activePage='inicio',poll=null,adminProfile=null,messageFeed=null,cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
 function toast(t){const x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}
 function page(title,html){$('#page-title').textContent=title;$('#page-subtitle').textContent='Centro de operaciones · WEST-VILL';$('#crumb').textContent=title;$('#page-content').innerHTML=html}
 function empty(t){return '<div class="empty"><div class="empty-icon">⌁</div><strong>'+esc(t)+'</strong></div>'}
@@ -71,8 +71,9 @@ async function loadPage(which){
  }else if(which==='viajes'){
  cache.trips=await rows('westvill_trips','*','created_at');
  page('Viajes',panel('Registro de viajes',cache.trips.length?table(['ORIGEN','DESTINO','PASAJERO','CONDUCTOR','FECHA','ESTADO'],cache.trips.map(t=>'<tr><td>'+esc(t.origin)+'</td><td>'+esc(t.destination)+'</td><td>'+esc(personName(t.passenger_id))+'</td><td>'+esc(personName(t.driver_id))+'</td><td>'+fmt(t.travel_at)+'</td><td>'+esc(t.status)+'</td></tr>').join('')):empty('Todavía no hay viajes asignados.')));
- }else if(which==='mensajes'){
- const ms=await rows('westvill_messages','*','created_at');page('Mensajes',panel('Conversaciones recientes',ms.length?ms.map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p>'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join(''):empty('Todavía no hay mensajes.')));
+  }else if(which==='mensajes'){
+ const ms=await rows('westvill_messages','*','created_at');
+ page('Mensajes',panel('Espejo de conversaciones','<p class="muted">Administración puede consultar todos los mensajes entre conductores y pasajeros. No hace falta aprobar ni habilitar cada conversación.</p>'+(ms.length?ms.slice(0,120).map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p>'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join(''):empty('Todavía no hay mensajes.'))));
  }else if(which==='ingresos'||which==='gastos'){
  const income=which==='ingresos',t=income?'westvill_income':'westvill_expenses',date=income?'received_at':'spent_at';
  const data=await rows(t,'*',date);const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
@@ -116,4 +117,4 @@ async function assign(id){
  }catch(e){toast(e.message||'No se pudo asignar el viaje.');if(button){button.disabled=false;button.textContent='Asignar viaje';}}
 }
 
-window.initAdminPanel=async function(profile){adminProfile=profile;nav();if(poll)clearInterval(poll);poll=setInterval(()=>{checkUnansweredTrips();if(activePage==='conductores'||activePage==='inicio'||activePage==='viajes'||activePage==='solicitudes')loadPage(activePage);},10000);await checkUnansweredTrips();$('#admin-logout').onclick=async()=>{await sb.auth.signOut();location.reload()};await loadPage('inicio');};
+window.initAdminPanel=async function(profile){adminProfile=profile;nav();if(messageFeed)sb.removeChannel(messageFeed);messageFeed=sb.channel('westvill-admin-message-mirror').on('postgres_changes',{event:'INSERT',schema:'public',table:'westvill_messages'},()=>{if(activePage==='mensajes')loadPage('mensajes');}).subscribe();if(poll)clearInterval(poll);poll=setInterval(()=>{checkUnansweredTrips();if(activePage==='conductores'||activePage==='inicio'||activePage==='viajes'||activePage==='solicitudes')loadPage(activePage);},10000);await checkUnansweredTrips();$('#admin-logout').onclick=async()=>{if(messageFeed)sb.removeChannel(messageFeed);await sb.auth.signOut();location.reload()};await loadPage('inicio');};
