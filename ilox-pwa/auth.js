@@ -88,7 +88,7 @@ async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-cli
   if(profile.role==='conductor'&&x.driver_response==='pendiente')controls='<div class="btn-row"><button class="btn" data-trip-yes="'+x.id+'">ACEPTO EL VIAJE</button><button class="btn secondary" data-trip-no="'+x.id+'">NO PUEDO REALIZARLO</button></div>';
   else if(profile.role==='conductor'&&['programado','confirmado'].includes(x.status))controls='<button class="btn" data-trip-start="'+x.id+'">INICIAR VIAJE</button>';
   else if(profile.role==='conductor'&&x.status==='en_viaje')controls='<button class="btn" data-trip-finish="'+x.id+'">FINALIZAR VIAJE</button>';
-  else if(profile.role==='conductor'&&x.status==='finalizacion_pendiente')controls='<button class="btn" data-trip-complete="'+x.id+'">INFORMAR VIAJE COMPLETADO</button>';
+  else if(profile.role==='conductor'&&x.status==='finalizacion_pendiente')controls='<div class="client-muted" style="color:#20c879;font-weight:700">✓ VIAJE FINALIZADO · ADMINISTRACIÓN FUE NOTIFICADA</div>';
   else controls='<div class="client-muted">Estado: '+esc(x.status)+'</div>';
   return '<div class="client-row"><b>'+esc(x.origin)+' → '+esc(x.destination)+'</b><div class="client-muted">'+(x.travel_at?new Date(x.travel_at).toLocaleString('es-AR'):'Fecha a confirmar')+' · '+esc(x.status)+'</div>'+line+controls+'</div>';
  }).join('');
