@@ -220,3 +220,13 @@ body.theme-day .theme-toggle{background:#edf3f8!important;color:#24445f!importan
 /* Rótulo del centro de operaciones: independiente de .eyebrow y de las reglas globales de tipografía. */
 #admin-center-label{display:block!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;overflow:visible!important;font-family:"DM Sans",system-ui,sans-serif!important;font-size:10px!important;font-weight:800!important;letter-spacing:.08em!important;line-height:1.2!important;margin:0 0 8px!important;padding:0!important;color:#7ea9d2!important;}
 @media(max-width:600px){#admin-center-label{font-size:9px!important;letter-spacing:.055em!important;}}
+
+/* Saldo disponible compacto para administración y conductor */
+.wallet-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border:1px solid #2b8b68;border-radius:13px;background:linear-gradient(135deg,#102d35,#173b3b);color:#eafff4;white-space:nowrap;box-shadow:0 3px 12px #0002;line-height:1.05;flex-shrink:0}
+.wallet-chip>span:last-child{display:flex;flex-direction:column;gap:3px}.wallet-chip small{font-size:8px;letter-spacing:.12em;font-weight:900;color:#9bd9ba}.wallet-chip b{font-size:clamp(11px,2vw,14px);font-variant-numeric:tabular-nums;color:#f1fff7}
+.wallet-symbol{font-size:20px;font-weight:900;color:#75e3a8;text-shadow:0 0 10px #45d78b88;animation:wallet-symbol-glow 2.2s ease-in-out infinite}.wallet-pulse{animation:wallet-update .55s ease-out}
+@keyframes wallet-symbol-glow{0%,100%{transform:translateY(0);opacity:.85}50%{transform:translateY(-2px);opacity:1;text-shadow:0 0 14px #45d78b}}
+@keyframes wallet-update{0%{transform:scale(1);box-shadow:0 0 0 #45d78b00}45%{transform:scale(1.045);box-shadow:0 0 18px #45d78b66}100%{transform:scale(1);box-shadow:0 3px 12px #0002}}
+@media(max-width:680px){.client-top{gap:7px}.client-user{gap:6px}.wallet-chip{padding:5px 7px;gap:5px;border-radius:10px}.wallet-chip small{font-size:7px}.wallet-chip b{font-size:10px}.wallet-symbol{font-size:17px}.admin-wallet-chip{margin-right:2px}.topbar .top-right{gap:6px}}
+@media(max-width:390px){.client-user>.theme-toggle{display:none}.wallet-chip b{font-size:9px}.wallet-chip{padding:4px 6px}}
+body.theme-day .wallet-chip{background:linear-gradient(135deg,#e4f8ed,#d4f1e2)!important;border-color:#72bd94!important;color:#17452f!important}body.theme-day .wallet-chip b{color:#17452f!important}body.theme-day .wallet-chip small{color:#397b59!important}body.theme-day .wallet-symbol{color:#168b54!important}
