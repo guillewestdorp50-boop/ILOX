@@ -146,3 +146,72 @@ body.admin-mode .conversation-mirror-log .client-row:last-child{border-bottom:0}
 body.admin-mode .conversation-mirror-log::-webkit-scrollbar{width:6px}
 body.admin-mode .conversation-mirror-log::-webkit-scrollbar-thumb{background:#456582;border-radius:8px}
 @media(max-width:600px){body.admin-mode .conversation-mirror-log{height:52vh;min-height:210px;max-height:420px;padding-right:8px}}
+
+/* WEST-VILL · Modo diurno de alto contraste */
+.theme-toggle{border:1px solid #38536f;background:#142640;color:#eaf3fc;border-radius:8px;padding:8px 10px;font:800 10px 'DM Sans',sans-serif;white-space:nowrap;cursor:pointer}
+.theme-toggle:focus-visible{outline:3px solid #65a9df;outline-offset:2px}
+.auth-card{position:relative}
+#theme-auth{display:block;margin:0 0 18px auto}
+@media(max-width:600px){.client-user .theme-toggle,.top-right .theme-toggle{padding:7px 8px;font-size:9px}}
+body.theme-day{color-scheme:light;--bg:#f3f6fa;--panel:#fff;--panel2:#edf2f7;--line:#d5dee8;--text:#172538;--muted:#526477}
+body.theme-day,body.theme-day .client-screen{background:#f3f6fa!important;color:#172538!important}
+body.theme-day .auth-screen{background:linear-gradient(145deg,#edf3f9,#f8fafc 60%,#e8eef5)!important}
+body.theme-day .auth-card,body.theme-day .invite-card{background:#fff!important;color:#172538!important;border-color:#d4dee8!important;box-shadow:0 18px 55px #20364b20}
+body.theme-day .auth-brand strong,body.theme-day .brand strong,body.theme-day h1,body.theme-day h2,body.theme-day h3{color:#172538!important}
+body.theme-day .auth-subtitle,body.theme-day .auth-switch,body.theme-day .client-heading p,body.theme-day .client-muted,body.theme-day .muted,body.theme-day .page-head p{color:#526477!important}
+body.theme-day .auth-eyebrow,body.theme-day .eyebrow{color:#245d8b!important}
+body.theme-day .auth-foot{color:#64778a!important}
+body.theme-day .auth-fields label,body.theme-day .invite-card label,body.theme-day .field label,body.theme-day .client-form label{color:#34485d!important}
+body.theme-day .auth-fields input,body.theme-day .invite-card select,body.theme-day .field input,body.theme-day .field select,body.theme-day .field textarea,body.theme-day .client-form input,body.theme-day .client-form textarea,body.theme-day .client-form select,body.theme-day .client-chat select,body.theme-day .client-chat input,body.theme-day .pad-note-label input,body.theme-day .assign-row select{background:#fff!important;color:#172538!important;border-color:#bdcbd9!important}
+body.theme-day .role-choice{background:#f2f6fa!important;color:#172538!important;border-color:#cbd7e3!important}
+body.theme-day .role-choice:hover{background:#e8f1f9!important;border-color:#4d83b0!important}
+body.theme-day .role-choice small{color:#526477!important}
+body.theme-day .role-choice span{color:#16885d!important}
+body.theme-day .client-top,body.theme-day .topbar{background:#fff!important;border-color:#d9e1e9!important}
+body.theme-day .client-user,body.theme-day .crumb,body.theme-day .crumb b{color:#34485d!important}
+body.theme-day .sidebar{background:#fff!important;border-color:#d9e1e9!important}
+body.theme-day .side-label{color:#718398!important}
+body.theme-day .nav-item{color:#34485d!important}
+body.theme-day .nav-item span{color:#55718d!important}
+body.theme-day .nav-item:hover{background:#edf3f8!important}
+body.theme-day .nav-item.active{background:#e4eff8!important;border-color:#b7cde0!important;color:#174b75!important}
+body.theme-day .nav-item.active span{color:#16885d!important}
+body.theme-day .sidebar-foot{color:#34485d!important;border-color:#d9e1e9!important}
+body.theme-day .sidebar-foot small{color:#718398!important}
+body.theme-day .content,body.theme-day .client-content{color:#172538!important}
+body.theme-day .panel,body.theme-day .client-panel{background:#fff!important;border-color:#d9e1e9!important;color:#172538!important;box-shadow:0 3px 14px #20364b0a}
+body.theme-day .metric{background:linear-gradient(145deg,#fff,#f2f6fa)!important;border-color:#d9e1e9!important;color:#172538!important}
+body.theme-day .metric-top,body.theme-day .metric-note{color:#526477!important}
+body.theme-day .metric-icon{background:#e4edf5!important;color:#315b7e!important}
+body.theme-day .date-chip{background:#f7f9fb!important;color:#34485d!important;border-color:#d2dce6!important}
+body.theme-day th{color:#526477!important;border-color:#d5dee8!important}
+body.theme-day td{color:#26394d!important;border-color:#e1e7ee!important}
+body.theme-day .empty{color:#526477!important}
+body.theme-day .empty strong{color:#26394d!important}
+body.theme-day .empty-icon{background:#edf3f8!important;border-color:#cbd8e4!important;color:#315b7e!important}
+body.theme-day .client-tabs{border-color:#d5dee8!important}
+body.theme-day .client-tabs button{background:#fff!important;border-color:#cbd7e3!important;color:#40566b!important}
+body.theme-day .client-tabs button.active{background:#e5eff8!important;border-color:#9ebbd4!important;color:#174b75!important}
+body.theme-day .client-row{color:#26394d!important;border-color:#e1e7ee!important}
+body.theme-day .client-row b,body.theme-day .client-row strong{color:#172538!important}
+body.theme-day .client-chat-log{background:#f7f9fc!important;border-color:#d4dee8!important}
+body.theme-day .chat-bubble,body.theme-day .chat-bubble.theirs{background:#e5edf5!important;color:#172538!important;box-shadow:0 2px 7px #20364b12!important}
+body.theme-day .chat-bubble.mine{background:#d9f1e5!important;color:#124b34!important}
+body.theme-day .chat-message-time,body.theme-day .chat-day-divider,body.theme-day .chat-empty{color:#53687c!important}
+body.theme-day .chat-day-divider:before,body.theme-day .chat-day-divider:after{background:#cbd7e3!important}
+body.theme-day .pad-current{background:#f0f4f8!important;border-color:#cbd7e3!important;color:#26394d!important}
+body.theme-day .driver-pad-button{background:linear-gradient(145deg,#edf3f8,#e3ebf3)!important;border-color:#bdcbd9!important;color:#243c52!important}
+body.theme-day .driver-pad-button:active,body.theme-day .driver-pad-button.selected{background:#d8f1e5!important;border-color:#45a77d!important;color:#145638!important}
+body.theme-day .tag{background:#e8eff6!important;color:#31516e!important}
+body.theme-day .tag.good{background:#ddf3e7!important;color:#145638!important;border-color:#a9d9bd!important}
+body.theme-day .tag.danger{background:#fbe7e9!important;color:#8e2630!important;border-color:#e7b6bc!important}
+body.theme-day .btn.secondary{background:#e8eff6!important;color:#25445f!important;border-color:#c3d1df!important}
+body.theme-day .text-action{color:#174f7b!important}
+body.theme-day .invite-modal{background:#17253899!important}
+body.theme-day .modal-close{color:#40566b!important}
+body.theme-day .toast{box-shadow:0 8px 25px #20364b22!important}
+body.theme-day footer{color:#718398!important}
+body.theme-day .chat-bubble.mine .chat-message-time{color:#3c6d57!important}
+body.theme-day .client-row div[style*="background"],body.theme-day .client-panel div[style*="background"]{background-color:#edf3f8!important;color:#26394d!important}
+body.theme-day [data-trip-progress]{background:#20bd78!important}
+body.theme-day .theme-toggle{background:#edf3f8!important;color:#24445f!important;border-color:#bdcbd9!important}
