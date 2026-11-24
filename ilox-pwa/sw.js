@@ -1,5 +1,5 @@
-const CACHE='west-vill-travel-v103';
-const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=43','./auth.js?v=62','./admin.js?v=62','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
+const CACHE='west-vill-travel-v104';
+const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=43','./auth.js?v=63','./admin.js?v=63','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
@@ -13,8 +13,8 @@ self.addEventListener('fetch',event=>{
 });
 self.addEventListener('push',event=>{
  let data={};try{data=event.data?event.data.json():{};}catch{}
- const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||'westvill-new-trip',renotify:true,requireInteraction:true,silent:false,vibrate:[120,70,120,70,180],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
- event.waitUntil(self.registration.showNotification(data.title||'¡Nuevo viaje asignado!',options));
+ const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||('westvill-'+Date.now()),renotify:true,requireInteraction:false,silent:false,vibrate:[120,70,120,70,180],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
+ event.waitUntil((async()=>{await self.registration.showNotification(data.title||'¡Nuevo viaje asignado!',options);await new Promise(resolve=>setTimeout(resolve,10000));const active=await self.registration.getNotifications({tag:options.tag});active.forEach(notification=>notification.close());})());
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();const raw=event.notification.data?.url||'./?tab=viajes';let target=new URL(raw,self.location.origin);if(target.origin!==self.location.origin)target=new URL('./?tab=viajes',self.location.origin);
