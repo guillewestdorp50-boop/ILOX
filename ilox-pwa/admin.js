@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);
 const sb=window.wvSupabase;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const prettyUser=s=>String(s??'').toLocaleLowerCase('es-AR').replace(/(^|[\\s_-])([\\p{L}])/gu,(_,sep,c)=>sep+c.toLocaleUpperCase('es-AR'));
+const prettyUser=s=>String(s??'').toLocaleLowerCase('es-AR').replace(/(^|[\s_-])(\p{L})/gu,(_,sep,c)=>sep+c.toLocaleUpperCase('es-AR'));
 const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
 const parseKm=value=>{const raw=String(value??'').trim().replace(/\s/g,'').replace(',','.');if(!/^\d+(?:\.\d{1,3})?$/.test(raw))return NaN;return Number(raw);};
 const parseMoney=value=>{const raw=String(value??'').trim().replace(/[.\s]/g,'').replace(',','');if(!/^\d+$/.test(raw))return NaN;return Number(raw);};
