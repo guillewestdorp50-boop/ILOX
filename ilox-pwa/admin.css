@@ -365,3 +365,53 @@ body.admin-mode .page-head-tools .date-chip span{font-size:17px;font-weight:800;
 .chat-role-button small{font-size:10px;font-weight:650;letter-spacing:0;color:#ffffffdf;line-height:1.25}
 @media(max-width:420px){.chat-role-buttons{gap:9px}.chat-role-button{min-height:104px;padding:13px 7px;font-size:11px;border-radius:14px}.chat-role-button small{font-size:9px}.chat-role-icon{width:30px;height:30px;font-size:20px}}
 body.theme-day .chat-role-button{color:#fff!important}
+
+/* WEST-VILL · Fecha y reloj legibles en Administración, Conductor y Pasajero.
+   Manrope 18px replica la tipografía de los mensajes; el modo diurno usa tinta oscura. */
+body.admin-mode .page-head-tools .date-chip,
+body.client-mode .client-live-clock{
+  font-family:Manrope,system-ui,sans-serif!important;
+  font-size:18px!important;
+  font-weight:800!important;
+  line-height:1.3!important;
+}
+body.admin-mode .page-head-tools .date-chip strong,
+body.client-mode .client-live-clock strong{
+  font-family:Manrope,system-ui,sans-serif!important;
+  font-size:18px!important;
+  font-weight:800!important;
+  line-height:1.3!important;
+}
+body.admin-mode .page-head-tools .date-chip span,
+body.client-mode .client-live-clock span{
+  font-family:Manrope,system-ui,sans-serif!important;
+  font-size:18px!important;
+  font-weight:800!important;
+  line-height:1.3!important;
+  color:#dceafa;
+}
+body.theme-day.admin-mode .page-head-tools .date-chip,
+body.theme-day.admin-mode .page-head-tools .date-chip strong,
+body.theme-day.admin-mode .page-head-tools .date-chip span,
+body.theme-day.client-mode .client-live-clock,
+body.theme-day.client-mode .client-live-clock strong,
+body.theme-day.client-mode .client-live-clock span{
+  color:#174b75!important;
+}
+body.theme-day.admin-mode .page-head-tools .date-chip,
+body.theme-day.client-mode .client-live-clock{
+  background:#f7f9fb!important;
+  border-color:#bdcbd9!important;
+}
+@media(max-width:600px){
+  body.admin-mode .page-head-tools .date-chip,
+  body.admin-mode .page-head-tools .date-chip strong,
+  body.admin-mode .page-head-tools .date-chip span,
+  body.client-mode .client-live-clock,
+  body.client-mode .client-live-clock strong,
+  body.client-mode .client-live-clock span{
+    font-size:18px!important;
+  }
+  body.admin-mode .page-head-tools .date-chip{white-space:normal;max-width:46vw;overflow-wrap:anywhere}
+  body.client-mode .client-live-clock{gap:6px;flex-wrap:wrap}
+}
