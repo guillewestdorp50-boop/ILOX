@@ -343,3 +343,10 @@ body.admin-mode .page-head-tools .date-chip span{font-size:17px;font-weight:800;
  body.admin-mode .page-head-tools .admin-wallet-chip{min-width:140px}
  body.admin-mode .page-head-tools .date-chip{min-width:140px}
 }
+
+
+/* Fecha y hora en vivo para las áreas personales */
+.client-live-clock{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;margin:8px 0 10px;color:#9eb4cb;font-variant-numeric:tabular-nums;text-align:right}
+.client-live-clock strong{font-size:11px;font-weight:700;text-transform:capitalize}
+.client-live-clock span{font-size:16px;font-weight:800;letter-spacing:.06em;color:#dceafa}
+@media(max-width:600px){.client-live-clock{gap:6px;margin:7px 0 9px}.client-live-clock strong{font-size:10px}.client-live-clock span{font-size:15px}}
