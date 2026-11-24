@@ -10,7 +10,7 @@ if(window.wvAdminClockTimer)clearInterval(window.wvAdminClockTimer);updateAdminC
 async function refreshAdminWallet(){const el=$('#admin-wallet-value');if(!el||!adminProfile)return;const [{data:income,error:ie},{data:expenses,error:ee}]=await Promise.all([sb.from('westvill_income').select('amount'),sb.from('westvill_expenses').select('amount')]);if(ie||ee)return;const total=(income||[]).reduce((s,x)=>s+Number(x.amount||0),0)-(expenses||[]).reduce((s,x)=>s+Number(x.amount||0),0);const next=money(total);if(el.textContent!==next){el.textContent=next;const wrap=$('#admin-wallet');wrap?.classList.remove('wallet-pulse');void wrap?.offsetWidth;wrap?.classList.add('wallet-pulse');}}
 function updateAdminTripProgress(){document.querySelectorAll('[data-admin-trip-progress]').forEach(el=>{const id=el.dataset.adminTripProgress,started=Date.parse(el.dataset.started||''),finished=Date.parse(el.dataset.finished||''),duration=Math.max(1,Number(el.dataset.duration||1))*60000,now=finished||Date.now(),pct=el.dataset.completed==='1'?100:(started?Math.min(100,Math.max(0,(now-started)/duration*100)):0);el.style.width=pct+'%';const car=document.querySelector('[data-admin-trip-car="'+id+'"]');if(car)car.style.left=pct+'%';const countdown=document.querySelector('[data-admin-trip-countdown="'+id+'"]');if(countdown){if(started){const left=Math.max(0,Math.ceil((duration-(now-started))/1000));countdown.textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');}else countdown.textContent='--:--';}});}
 const labels={libre:'LIBRE',viaje:'EN VIAJE',cargando:'CARGANDO',cargado:'CARGADO',descargando:'DESCARGANDO',demorado:'DEMORADO',accidente:'ACCIDENTE',deposito:'EN DEPÓSITO',planta:'EN PLANTA',base:'EN BASE',casa:'EN CASA',descansando:'DESCANSANDO',cafe:'PARADA / CAFÉ',ypf:'YPF',repostando:'REPOSTANDO',otro:'OTRO'};
-let activePage='inicio',poll=null,adminProfile=null,messageFeed=null,requestFeed=null,adminChatTarget='',adminPageStack=[],adminIncomeFeed=null,adminExpenseFeed=null,cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
+let activePage='inicio',poll=null,adminProfile=null,messageFeed=null,requestFeed=null,adminChatTarget='',adminChatRole='',adminPageStack=[],adminIncomeFeed=null,adminExpenseFeed=null,cache={drivers:[],passengers:[],requests:[],trips:[],statuses:[],messages:[]};
 function toast(t){const x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}
 function page(title,html){$('#page-title').textContent=title;$('#page-subtitle').textContent='Centro de operaciones · WEST-VILL';const crumb=$('#crumb');if(crumb)crumb.textContent=title;$('#page-content').innerHTML=html}
 function empty(t){return '<div class="empty"><div class="empty-icon">⌁</div><strong>'+esc(t)+'</strong></div>'}
@@ -138,14 +138,48 @@ async function loadPage(which){
  const completed=cache.trips.filter(t=>t.status==='completado');
  page('Viajes completos',panel('Historial de viajes completados','<div class="balance green">'+completed.length+' COMPLETADOS</div>'+(completed.length?table(['ORIGEN','DESTINO','PASAJERO','CONDUCTOR','FECHA','ESTADO'],completed.map(t=>'<tr><td>'+esc(t.origin)+'</td><td>'+esc(t.destination)+'</td><td>'+esc(personName(t.passenger_id))+'</td><td>'+esc(personName(t.driver_id))+'</td><td>'+fmt(t.finished_at||t.travel_at)+'</td><td><span class="tag good">✓ COMPLETADO</span></td></tr>').join('')):empty('Todavía no hay viajes completados.'))));
  }else if(which==='mensajes'){
+   await loadRequests();
+   cache.trips=await rows('westvill_trips','id,passenger_id,driver_id,status,origin,destination','created_at');
+   const activeStatuses=['programado','en_viaje'];
+   const canceledStatuses=['cancelada','cancelado','anulada','anulado','completado'];
+   const eligiblePassengerIds=new Set(cache.requests.filter(r=>
+     !canceledStatuses.includes(String(r.status||'').toLowerCase()) &&
+     r.admin_decision!=='rechazado' &&
+     ['pendiente','aceptada','en_viaje'].includes(String(r.status||'').toLowerCase())
+   ).map(r=>r.passenger_id).filter(Boolean));
+   const eligibleDriverIds=new Set(cache.trips.filter(t=>
+     activeStatuses.includes(String(t.status||'').toLowerCase()) && t.driver_id
+   ).map(t=>t.driver_id));
+   const eligiblePeople={
+     pasajero:cache.passengers.filter(p=>eligiblePassengerIds.has(p.id)),
+     conductor:cache.drivers.filter(p=>eligibleDriverIds.has(p.id))
+   };
    const allMessages=await rows('westvill_messages','*','created_at');
-   const people=[...cache.passengers,...cache.drivers],target=adminChatTarget||'';
-   const thread=target?allMessages.filter(m=>(m.sender_id===adminProfile.id&&m.recipient_id===target)||(m.sender_id===target&&m.recipient_id===adminProfile.id)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)):[];
-   const peer=people.find(p=>p.id===target);
-   const chatHtml='<label class="field">Responder a<select id="admin-chat-person"><option value="">Seleccioná pasajero o conductor</option>'+people.map(p=>'<option value="'+p.id+'" '+(p.id===target?'selected':'')+'>'+esc(p.display_name)+' · '+(p.role==='conductor'?'CONDUCTOR':'PASAJERO')+'</option>').join('')+'</select></label><div id="admin-chat-log" class="client-chat-log" style="margin-top:12px;min-height:180px">'+(target?(thread.map(m=>'<article class="client-row" style="text-align:'+(m.sender_id===adminProfile.id?'right':'left')+'"><b>'+(m.sender_id===adminProfile.id?'ADMINISTRACIÓN · VOS':esc(peer?.display_name||'Cuenta'))+'</b><p class="admin-chat-message">'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join('')||'<p class="muted">Todavía no hay mensajes. Escribí para iniciar la conversación.</p>'):'Elegí un pasajero o conductor para abrir la conversación.')+'</div><form id="admin-chat-form" class="client-chat-send" style="display:flex;gap:8px;margin-top:12px"><input name="body" placeholder="'+(target?'Escribí tu respuesta…':'Primero seleccioná una persona')+'" maxlength="4000" required '+(target?'':'disabled')+'><button class="btn" type="submit" '+(target?'':'disabled')+'>Enviar</button></form>';
-   page('Mensajes',panel('Conversaciones y respuestas',chatHtml)+'<p class="muted">Los mensajes se muestran en orden cronológico, con el remitente correcto.</p>'+panel('Espejo de conversaciones',allMessages.length?'<div class="conversation-mirror-log">'+allMessages.slice(0,120).map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p class="admin-chat-message">'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join('')+'</div>':empty('Todavía no hay mensajes.')));
-   $('#admin-chat-person').onchange=()=>{adminChatTarget=$('#admin-chat-person').value;loadPage('mensajes');};
-   $('#admin-chat-form').onsubmit=async e=>{e.preventDefault();const body=String(new FormData(e.currentTarget).get('body')||'').trim();if(!body||!adminChatTarget)return;const {data:sentMessage,error}=await sb.from('westvill_messages').insert({sender_id:adminProfile.id,recipient_id:adminChatTarget,body}).select('id').single();if(error){toast('No se pudo enviar: '+error.message);return;}try{await window.wvSendPush({message_id:sentMessage.id});}catch(pushErr){console.warn('Aviso push de mensaje pendiente:',pushErr);}toast('Respuesta enviada.');loadPage('mensajes');};
+   const currentRole=adminChatRole||'';
+   const target=adminChatTarget||'';
+   const roleForTarget=eligiblePeople.pasajero.some(p=>p.id===target)?'pasajero':eligiblePeople.conductor.some(p=>p.id===target)?'conductor':'';
+   if(target&&!roleForTarget){adminChatTarget='';adminChatRole='';}
+   const selectedRole=roleForTarget||currentRole;
+   const contacts=selectedRole?eligiblePeople[selectedRole]||[]:[];
+   const peer=contacts.find(p=>p.id===adminChatTarget);
+   const thread=peer?allMessages.filter(m=>(m.sender_id===adminProfile.id&&m.recipient_id===peer.id)||(m.sender_id===peer.id&&m.recipient_id===adminProfile.id)).sort((x,y)=>new Date(x.created_at)-new Date(y.created_at)):[];
+   const roleButton=(role,label,color,count)=>'<button type="button" class="btn admin-chat-role" data-admin-chat-role="'+role+'" '+(!count?'disabled':'')+' style="flex:1;min-width:145px;min-height:58px;border:1px solid '+color+';background:linear-gradient(135deg,'+(role==='pasajero'?'#123b2d':'#12344b')+',#0b1724);color:#f1f8ff;box-shadow:0 0 14px '+color+'55,inset 0 0 12px '+color+'22;opacity:'+(count?'1':'.48')+';font-weight:900;letter-spacing:.5px">'+label+' · '+count+'</button>';
+   const roleSelector='<div class="btn-row" style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px">'+roleButton('pasajero','PASAJEROS','#27d58a',eligiblePeople.pasajero.length)+roleButton('conductor','CONDUCTORES','#39a9ff',eligiblePeople.conductor.length)+'</div>';
+   const contactList=selectedRole?((eligiblePeople[selectedRole]||[]).map(p=>'<button type="button" class="btn admin-chat-contact '+(p.id===adminChatTarget?'':'secondary')+'" data-admin-chat-person="'+p.id+'" style="width:100%;text-align:left;justify-content:flex-start;margin:6px 0;padding:13px 15px;border:1px solid '+(selectedRole==='pasajero'?'#27d58a':'#39a9ff')+';background:'+(p.id===adminChatTarget?(selectedRole==='pasajero'?'#123b2d':'#12344b'):'#101d2b')+';color:#f1f8ff;box-shadow:'+(p.id===adminChatTarget?'0 0 12px '+(selectedRole==='pasajero'?'#27d58a55':'#39a9ff55'):'none')+'">'+esc(p.display_name)+' <span style="opacity:.75;font-size:12px">· '+(selectedRole==='pasajero'?'PASAJERO':'CONDUCTOR')+'</span></button>').join('')||empty('Todavía no hay '+(selectedRole==='pasajero'?'pasajeros con solicitudes activas.':'conductores con viajes asignados activos.'))):'<p class="muted">Elegí PASAJEROS o CONDUCTORES. Los accesos se habilitan únicamente cuando existe una solicitud activa o un viaje asignado.</p>';
+   const chatBody=peer?'<div id="admin-chat-log" class="client-chat-log" style="margin-top:12px;min-height:180px">'+(thread.map(m=>'<article class="client-row" style="text-align:'+(m.sender_id===adminProfile.id?'right':'left')+'"><b>'+(m.sender_id===adminProfile.id?'ADMINISTRACIÓN · VOS':esc(peer.display_name))+'</b><p class="admin-chat-message">'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join('')||'<p class="muted">Todavía no hay mensajes. Escribí para iniciar la conversación.</p>')+'</div><form id="admin-chat-form" class="client-chat-send" style="display:flex;gap:8px;margin-top:12px"><input name="body" placeholder="Escribí tu respuesta…" maxlength="4000" required><button class="btn" type="submit">Enviar</button></form>':panel('Conversación','<p class="muted">Seleccioná una persona habilitada para abrir el chat.</p>');
+   page('Mensajes',panel('Canales de comunicación',roleSelector+contactList+chatBody)+'<p class="muted">Administración puede iniciar o responder conversaciones únicamente con pasajeros que tengan una solicitud activa y conductores que tengan un viaje asignado en curso o programado.</p>'+panel('Espejo de conversaciones',allMessages.length?'<div class="conversation-mirror-log">'+allMessages.slice(0,120).map(m=>'<article class="client-row"><b>'+esc(personName(m.sender_id))+' → '+esc(personName(m.recipient_id))+'</b><p class="admin-chat-message">'+esc(m.body)+'</p><div class="muted">'+fmt(m.created_at)+'</div></article>').join('')+'</div>':empty('Todavía no hay mensajes.')));
+   document.querySelectorAll('[data-admin-chat-role]').forEach(btn=>btn.onclick=()=>{adminChatRole=btn.dataset.adminChatRole;adminChatTarget='';loadPage('mensajes');});
+   document.querySelectorAll('[data-admin-chat-person]').forEach(btn=>btn.onclick=()=>{adminChatTarget=btn.dataset.adminChatPerson;loadPage('mensajes');});
+   $('#admin-chat-form')?.addEventListener('submit',async e=>{
+     e.preventDefault();
+     const body=String(new FormData(e.currentTarget).get('body')||'').trim();
+     const allowed=eligiblePassengerIds.has(adminChatTarget)||eligibleDriverIds.has(adminChatTarget);
+     if(!body||!adminChatTarget||!allowed){toast('La conversación no está habilitada para esta cuenta.');return;}
+     const {data:sentMessage,error}=await sb.from('westvill_messages').insert({sender_id:adminProfile.id,recipient_id:adminChatTarget,body}).select('id').single();
+     if(error){toast('No se pudo enviar: '+error.message);return;}
+     try{await window.wvSendPush({message_id:sentMessage.id});}catch(pushErr){console.warn('Aviso push de mensaje pendiente:',pushErr);}
+     toast('Respuesta enviada.');loadPage('mensajes');
+   });
   }else if(which==='ingresos'){
  const data=await rows('westvill_income','*','received_at');
  const total=data.reduce((a,x)=>a+Number(x.amount||0),0);
