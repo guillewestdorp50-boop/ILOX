@@ -1,5 +1,5 @@
-const CACHE='west-vill-travel-v75';
-const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=39','./auth.js?v=41','./admin.js?v=36','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
+const CACHE='west-vill-travel-v76';
+const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=39','./auth.js?v=42','./admin.js?v=37','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
@@ -10,4 +10,13 @@ self.addEventListener('fetch',event=>{
     if(response.ok)caches.open(CACHE).then(cache=>cache.put(event.request,response.clone()));
     return response;
   }).catch(()=>caches.match(event.request).then(response=>response||caches.match('./index.html'))));
+});
+self.addEventListener('push',event=>{
+ let data={};try{data=event.data?event.data.json():{};}catch{}
+ const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||'westvill-new-trip',renotify:true,requireInteraction:true,silent:false,vibrate:[500,180,500,180,850],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
+ event.waitUntil(self.registration.showNotification(data.title||'¡Nuevo viaje asignado!',options));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();const raw=event.notification.data?.url||'./?tab=viajes';let target=new URL(raw,self.location.origin);if(target.origin!==self.location.origin)target=new URL('./?tab=viajes',self.location.origin);
+ event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{for(const client of clients){if('navigate'in client)await client.navigate(target.href);if('focus'in client)return client.focus();}return self.clients.openWindow(target.href);}));
 });
