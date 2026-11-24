@@ -284,3 +284,15 @@ body.theme-day .wallet-chip{background:linear-gradient(135deg,#e4f8ed,#d4f1e2)!i
  body.admin-mode .top-right .live-pill{display:none}
  body.admin-mode .topbar>#admin-back{font-size:10px!important}
 }
+
+
+/* El saldo de administración nunca se oculta en teléfonos: segunda fila del encabezado */
+@media(max-width:560px){
+ body.admin-mode .topbar{height:auto!important;min-height:60px;flex-wrap:wrap!important;row-gap:5px;padding-top:8px!important;padding-bottom:8px!important}
+ body.admin-mode .top-right{flex:1 1 0;flex-wrap:wrap!important;min-width:0;row-gap:5px}
+ body.admin-mode .top-right .admin-wallet-chip{display:inline-flex!important;order:-1;flex:1 0 100%;width:max-content;min-height:30px;justify-content:center;padding:5px 9px!important}
+ body.admin-mode .top-right .admin-wallet-chip .wallet-symbol{font-size:16px!important}
+ body.admin-mode .top-right .admin-wallet-chip small{font-size:7px!important}
+ body.admin-mode .top-right .admin-wallet-chip b{font-size:11px!important}
+ body.admin-mode .top-right .theme-toggle{display:inline-flex!important}
+}
