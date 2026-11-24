@@ -71,7 +71,27 @@ async function driverNotifications(){
  return data||[];
 }
 function notificationMarkup(items){
- return panel('Avisos de administración',items.length?items.map(n=>'<article class="client-row notice-row"><b>'+esc(n.title)+'</b><p>'+esc(n.body)+'</p><div class="client-muted">'+new Date(n.created_at).toLocaleString('es-AR')+(n.read_at?' · VISTO':' · NUEVO')+'</div>'+(n.kind==='trip_assigned'?'<button class="btn secondary" data-open-trip>Ver mis viajes</button>':'')+'</article>').join(''):'<p class="client-muted">No tenés avisos nuevos.</p>');
+ const groups=[],byTrip=new Map();
+ (items||[]).forEach(n=>{
+  if(n.trip_id){
+   let group=byTrip.get(n.trip_id);
+   if(!group){group={trip:true,items:[]};byTrip.set(n.trip_id,group);groups.push(group);}
+   group.items.push(n);
+  }else groups.push({trip:false,items:[n]});
+ });
+ groups.forEach(group=>group.items.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)));
+ groups.sort((a,b)=>new Date(b.items[0]?.created_at||0)-new Date(a.items[0]?.created_at||0));
+ const cards=groups.map(group=>{
+  const latest=group.items[0],unread=group.items.some(n=>!n.read_at);
+  const bodies=[...new Set(group.items.map(n=>String(n.body||'').trim()).filter(Boolean))];
+  const titles=[...new Set(group.items.map(n=>String(n.title||'').trim()).filter(Boolean))];
+  const heading=group.trip?'VIAJE · '+(latest.title||'Actualización'):latest.title;
+  const body=group.trip?bodies.map(esc).join(' · '):esc(latest.body);
+  const summary=group.trip&&group.items.length>1?'<div class="client-muted">'+group.items.length+' avisos reunidos: '+titles.map(esc).join(' · ')+'</div>':'';
+  const viewTrip=group.items.some(n=>n.kind==='trip_assigned')?'<button class="btn secondary" data-open-trip>Ver mis viajes</button>':'';
+  return '<article class="client-row notice-row"><b>'+esc(heading)+'</b><p>'+body+'</p>'+summary+'<div class="client-muted">'+new Date(latest.created_at).toLocaleString('es-AR')+(unread?' · NUEVO':' · VISTO')+'</div>'+viewTrip+'</article>';
+ }).join('');
+ return panel('Avisos de administración',cards||'<p class="client-muted">No tenés avisos nuevos.</p>');
 }
 let schoolCalendarOffset=0,schoolSelectedDates=new Set(),schoolEditingRequestId=null,schoolSelectedDestinations={};
 async function renderSchoolPasses(page){
