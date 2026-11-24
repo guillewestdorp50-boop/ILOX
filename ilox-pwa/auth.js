@@ -7,7 +7,7 @@ window.wvSupabase=sb;
 const $=s=>document.querySelector(s);
 let role=null,mode='login',profile=null,activeTab='inicio',chatTarget=null,chatTargetRole=null,notificationChannel=null,messageChannel=null,requestChannel=null,incomeChannel=null,expenseChannel=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const prettyUser=s=>String(s??'').toLocaleLowerCase('es-AR').replace(/(^|[\\s_-])([\\p{L}])/gu,(_,sep,c)=>sep+c.toLocaleUpperCase('es-AR'));
+const prettyUser=s=>String(s??'').toLocaleLowerCase('es-AR').replace(/(^|[\s_-])(\p{L})/gu,(_,sep,c)=>sep+c.toLocaleUpperCase('es-AR'));
 async function api(body,token){const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});const data=await res.json();if(!res.ok||data.error)throw new Error(data.error||'No se pudo completar la operación.');return data;}
 async function sendWestVillPush(payload){const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error('Sesión vencida: no se pudo enviar el aviso emergente.');const res=await fetch(URL+'/functions/v1/westvill-push',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify(payload)});const data=await res.json().catch(()=>({}));if(!res.ok||data.error)throw new Error(data.error||'No se pudo enviar la alerta emergente (HTTP '+res.status+').');return data;}window.wvSendPush=sendWestVillPush;
 function error(t){$('#auth-error').textContent=t||'';}
