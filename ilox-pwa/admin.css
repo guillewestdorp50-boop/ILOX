@@ -320,3 +320,26 @@ body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:16px}
  body.admin-mode .page-head-tools .admin-wallet-chip{min-width:116px;padding:7px 7px!important}
  body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:12px!important}
 }
+
+
+/* Centro de operaciones: saldo destacado y reloj local en vivo */
+body.admin-mode .page-head-tools .admin-wallet-chip{min-width:224px;min-height:66px;padding:12px 18px!important}
+body.admin-mode .page-head-tools .admin-wallet-chip .wallet-symbol{font-size:30px!important}
+body.admin-mode .page-head-tools .admin-wallet-chip small{font-size:9px!important;letter-spacing:.12em}
+body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:20px!important}
+body.admin-mode .page-head-tools .date-chip{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:224px;text-align:right;font-variant-numeric:tabular-nums}
+body.admin-mode .page-head-tools .date-chip strong{text-transform:capitalize;font-size:11px}
+body.admin-mode .page-head-tools .date-chip span{font-size:17px;font-weight:800;letter-spacing:.06em;color:#dceafa}
+@media(max-width:560px){
+ body.admin-mode .page-head-tools .admin-wallet-chip{min-width:158px;max-width:46vw;min-height:66px;padding:10px 11px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip .wallet-symbol{font-size:26px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:17px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip small{font-size:8px!important}
+ body.admin-mode .page-head-tools .date-chip{min-width:158px;max-width:46vw;padding:8px 9px;font-size:10px}
+ body.admin-mode .page-head-tools .date-chip strong{font-size:9px}
+ body.admin-mode .page-head-tools .date-chip span{font-size:15px}
+}
+@media(max-width:380px){
+ body.admin-mode .page-head-tools .admin-wallet-chip{min-width:140px}
+ body.admin-mode .page-head-tools .date-chip{min-width:140px}
+}
