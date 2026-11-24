@@ -12,7 +12,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import androidx.webkit.SafeBrowsing;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
