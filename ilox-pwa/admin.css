@@ -415,3 +415,11 @@ body.theme-day.client-mode .client-live-clock{
   body.admin-mode .page-head-tools .date-chip{white-space:normal;max-width:46vw;overflow-wrap:anywhere}
   body.client-mode .client-live-clock{gap:6px;flex-wrap:wrap}
 }
+
+
+/* Abono escolar: contraste adaptado al tema nocturno/diurno. */
+.school-pass-summary{padding:16px;border-radius:14px;background:#142943;border:1px solid #355575;color:#eef4fb;margin-bottom:14px;box-shadow:0 5px 18px #0002}
+.school-pass-summary>div:first-child{color:#fff}
+.school-pass-summary>div{color:#dce9f6}
+body.theme-day .school-pass-summary{background:#e6f3fa!important;border:1px solid #b9d9e8!important;color:#183d55!important;box-shadow:0 3px 14px #20364b12!important}
+body.theme-day .school-pass-summary>div{color:#183d55!important}
