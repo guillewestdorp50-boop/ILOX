@@ -19,6 +19,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Generate WEST-VILL launcher icons
+        run: |
+          python3 -m pip install --user Pillow
+          python3 west-vill-android/scripts/generate_icons.py
       - name: Configure Android SDK
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
