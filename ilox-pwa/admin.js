@@ -52,7 +52,7 @@ async function activateAdminPush(){const button=$('#wv-admin-push-enable'),statu
 function adminNotificationMarkup(items,trips=[]){
  const tripList=Array.isArray(trips)?trips:[];
  const tripById=new Map(tripList.map(t=>[t.id,t]));
- const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/\\s+/g,' ').trim();
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
  const tripByRoute=new Map(tripList.map(t=>[norm(t.origin)+' → '+norm(t.destination),t]));
  const groups=[],byTrip=new Map();
  (items||[]).forEach(n=>{
