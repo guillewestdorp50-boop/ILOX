@@ -296,3 +296,27 @@ body.theme-day .wallet-chip{background:linear-gradient(135deg,#e4f8ed,#d4f1e2)!i
  body.admin-mode .top-right .admin-wallet-chip b{font-size:11px!important}
  body.admin-mode .top-right .theme-toggle{display:inline-flex!important}
 }
+
+
+/* Saldo de administración: ubicado en el espacio superior derecho del encabezado del resumen */
+body.admin-mode .page-head{align-items:flex-start;flex-direction:row;gap:18px}
+body.admin-mode .page-head-title{flex:1 1 auto;min-width:0}
+body.admin-mode .page-head-tools{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;gap:9px}
+body.admin-mode .page-head-tools .admin-wallet-chip{display:inline-flex!important;min-width:190px;justify-content:center;padding:10px 15px;border-radius:13px}
+body.admin-mode .page-head-tools .admin-wallet-chip .wallet-symbol{font-size:24px}
+body.admin-mode .page-head-tools .admin-wallet-chip small{font-size:8px}
+body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:16px}
+@media(max-width:560px){
+ body.admin-mode .page-head{flex-direction:row!important;align-items:flex-start!important;gap:8px!important}
+ body.admin-mode .page-head-title{flex:1 1 0;min-width:0}
+ body.admin-mode .page-head-tools{flex:0 0 auto;align-items:flex-end;gap:6px}
+ body.admin-mode .page-head-tools .admin-wallet-chip{min-width:132px;max-width:42vw;padding:8px 9px!important;gap:6px}
+ body.admin-mode .page-head-tools .admin-wallet-chip .wallet-symbol{font-size:20px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip small{font-size:7px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:13px!important}
+ body.admin-mode .page-head-tools .date-chip{font-size:9px;padding:7px 8px}
+}
+@media(max-width:380px){
+ body.admin-mode .page-head-tools .admin-wallet-chip{min-width:116px;padding:7px 7px!important}
+ body.admin-mode .page-head-tools .admin-wallet-chip b{font-size:12px!important}
+}
