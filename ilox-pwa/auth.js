@@ -239,8 +239,8 @@ async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-cli
   let people=allPeople||[];
   if(profile.role==='pasajero'){
    const [{data:myTrips},{data:myRequests}] = await Promise.all([
-    sb.from('westvill_trips').select('driver_id').eq('passenger_id',profile.id).not('driver_id','is',null),
-    sb.from('westvill_requests').select('id').eq('passenger_id',profile.id).limit(1)
+    sb.from('westvill_trips').select('driver_id,status').eq('passenger_id',profile.id).not('driver_id','is',null).in('status',['programado','en_viaje']),
+    sb.from('westvill_requests').select('id').eq('passenger_id',profile.id).in('status',['pendiente','aceptada','en_viaje']).limit(1)
    ]);
    const assignedIds=[...new Set((myTrips||[]).map(x=>x.driver_id).filter(Boolean))];
    const hasRequestedTrip=(myRequests||[]).length>0;
