@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: ilox-mundo-abierto
-    runtime: static
-    branch: deploy/render-ilox
-    buildCommand: "echo 'ILOX static PWA: no build step required'"
-    staticPublishPath: ilox-pwa
-    autoDeployTrigger: commit
