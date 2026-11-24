@@ -42,8 +42,10 @@ async function activateDriverPush(){
   const raw=subscription.toJSON();
   const {error}=await sb.from('westvill_push_subscriptions').upsert({user_id:profile.id,endpoint:raw.endpoint,p256dh:raw.keys?.p256dh,auth:raw.keys?.auth,updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint'});
   if(error)throw error;
-  status.textContent='¡Listo! Este teléfono recibirá avisos de WEST-VILL aunque la aplicación esté cerrada.';
+  status.textContent='¡Listo! Este teléfono ya está preparado para recibir notificaciones push.';
   button.textContent='ALERTAS ACTIVADAS';
+  const confirmation=status.textContent;
+  setTimeout(()=>{if(status.isConnected&&status.textContent===confirmation)status.textContent='';},10000);
  }catch(e){status.textContent='No se pudieron activar: '+(e.message||String(e));button.textContent='REINTENTAR ACTIVACIÓN';}
  finally{if(button.textContent!=='ALERTAS ACTIVADAS')button.disabled=false;}
 }
