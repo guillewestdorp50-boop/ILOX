@@ -238,11 +238,16 @@ async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-cli
   if(peopleError)throw peopleError;
   let people=allPeople||[];
   if(profile.role==='pasajero'){
-   const {data:myTrips}=await sb.from('westvill_trips').select('driver_id').eq('passenger_id',profile.id).not('driver_id','is',null);
+   const [{data:myTrips},{data:myRequests}] = await Promise.all([
+    sb.from('westvill_trips').select('driver_id').eq('passenger_id',profile.id).not('driver_id','is',null),
+    sb.from('westvill_requests').select('id').eq('passenger_id',profile.id).limit(1)
+   ]);
    const assignedIds=[...new Set((myTrips||[]).map(x=>x.driver_id).filter(Boolean))];
-   people=people.filter(p=>p.role==='admin'||(p.role==='conductor'&&assignedIds.includes(p.id)));
-   page.innerHTML=panel('¿Con quién querés hablar?','<div class="chat-role-buttons"><button class="chat-role-button chat-role-admin" type="button" data-chat-role="admin"><span class="chat-role-icon" aria-hidden="true">✦</span><span>ADMINISTRACIÓN</span><small>Avisos y mensajes del equipo</small></button><button class="chat-role-button chat-role-driver" type="button" data-chat-role="conductor"><span class="chat-role-icon" aria-hidden="true">↗</span><span>CONDUCTOR</span><small>Hablar con tu chofer asignado</small></button></div><p class="client-muted">Los avisos del sistema y los mensajes de administración aparecerán solamente cuando elijas Administración.</p>')+'<div id="chat-conversation" hidden>'+panel('Conversación','<label class="client-muted">Contacto<select id="chat-person" disabled><option value="">Elegí un contacto</option></select></label><div class="client-chat-log" id="chat-log">Elegí con quién querés conversar.</div><form id="chat-form" class="client-chat-send"><input name="body" placeholder="Escribí un mensaje…" maxlength="4000" required><button class="btn" type="submit">Enviar</button></form>')+'</div>';
+   const hasRequestedTrip=(myRequests||[]).length>0;
+   people=people.filter(p=>(p.role==='admin'&&p.username==='sole_villalba99')||(p.role==='conductor'&&assignedIds.includes(p.id)));
+   page.innerHTML=panel('¿Con quién querés hablar?','<div class="chat-role-buttons"><button class="chat-role-button chat-role-admin" type="button" data-chat-role="admin" '+(hasRequestedTrip?'':'disabled aria-disabled="true"')+'><span class="chat-role-icon" aria-hidden="true">✦</span><span>ADMINISTRACIÓN</span><small>'+(hasRequestedTrip?'Avisos y mensajes del equipo':'Se habilita cuando solicites un viaje')+'</small></button><button class="chat-role-button chat-role-driver" type="button" data-chat-role="conductor" '+(assignedIds.length?'':'disabled aria-disabled="true"')+'><span class="chat-role-icon" aria-hidden="true">↗</span><span>CONDUCTOR</span><small>'+(assignedIds.length?'Hablar con tu chofer asignado':'Se habilita cuando Administración te asigne un conductor')+'</small></button></div><p class="client-muted">Primero solicitá un viaje para comunicarte con Administración. El chat con el conductor se habilita cuando Administración te asigne uno.</p>')+'<div id="chat-conversation" hidden>'+panel('Conversación','<label class="client-muted">Contacto<select id="chat-person" disabled><option value="">Elegí un contacto</option></select></label><div class="client-chat-log" id="chat-log">Elegí con quién querés conversar.</div><form id="chat-form" class="client-chat-send"><input name="body" placeholder="Escribí un mensaje…" maxlength="4000" required><button class="btn" type="submit">Enviar</button></form>')+'</div>';
    page.querySelectorAll('[data-chat-role]').forEach(btn=>btn.onclick=()=>{
+    if(btn.disabled)return;
     const chosen=btn.dataset.chatRole;chatTargetRole=chosen;chatTarget=null;
     $('#chat-conversation').hidden=false;
     const list=people.filter(p=>p.role===chosen),select=$('#chat-person');
