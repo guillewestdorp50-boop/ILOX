@@ -1,5 +1,5 @@
-const CACHE='west-vill-travel-v78';
-const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=39','./auth.js?v=44','./admin.js?v=39','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
+const CACHE='west-vill-travel-v79';
+const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=39','./auth.js?v=45','./admin.js?v=40','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
@@ -13,7 +13,7 @@ self.addEventListener('fetch',event=>{
 });
 self.addEventListener('push',event=>{
  let data={};try{data=event.data?event.data.json():{};}catch{}
- const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||'westvill-new-trip',renotify:true,requireInteraction:true,silent:false,vibrate:[500,180,500,180,850],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
+ const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||'westvill-new-trip',renotify:true,requireInteraction:true,silent:false,vibrate:[120,70,120,70,180],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
  event.waitUntil(self.registration.showNotification(data.title||'¡Nuevo viaje asignado!',options));
 });
 self.addEventListener('notificationclick',event=>{
