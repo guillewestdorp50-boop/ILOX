@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092713230680",
+    "project_id": "west-vill",
+    "storage_bucket": "west-vill.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092713230680:android:c3c75aea948fda8e9e752d",
+        "android_client_info": {
+          "package_name": "com.westvill.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ0d5c-n2NnoGJH3_xYVoQNoyvE877KV8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
