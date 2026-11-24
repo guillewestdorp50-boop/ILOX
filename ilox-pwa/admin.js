@@ -162,7 +162,8 @@ async function assign(id){
    body:(req.school_pass_id?'Administración te asignó un VIAJE ESCOLAR: ':'Administración te asignó un viaje: ')+req.origin+' → '+req.destination,
    kind:'trip_assigned',trip_id:trip.id
   });
-  toast(noticeError?'Viaje asignado. Aviso guardado pendiente de notificación.':'Viaje asignado y notificación enviada a '+driver.display_name);
+  let pushSent=0;try{const {data:pushData,error:pushError}=await sb.functions.invoke('westvill-push',{body:{trip_id:trip.id}});if(!pushError)pushSent=Number(pushData?.sent||0);}catch(e){console.warn('Push de viaje no enviado:',e);}
+  toast(noticeError?'Viaje asignado. Aviso guardado pendiente de notificación.':pushSent?'Viaje asignado y alerta emergente enviada a '+driver.display_name:'Viaje asignado a '+driver.display_name+'. Para recibir alertas con la app cerrada, el conductor debe activar las notificaciones en Inicio.');
   await loadPage('solicitudes');
  }catch(e){toast(e.message||'No se pudo asignar el viaje.');if(button){button.disabled=false;button.textContent='Asignar viaje';}}
 }
