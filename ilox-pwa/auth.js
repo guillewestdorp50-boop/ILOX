@@ -73,7 +73,7 @@ async function driverNotifications(){
 function notificationMarkup(items,trips=[]){
  const tripList=Array.isArray(trips)?trips:[];
  const tripById=new Map(tripList.map(t=>[t.id,t]));
- const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/\\s+/g,' ').trim();
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
  const groups=[],byTrip=new Map();
  (items||[]).forEach(n=>{
   let trip=n.trip_id?tripById.get(n.trip_id):null;
