@@ -255,10 +255,11 @@ async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-cli
     if(list.length===1){select.value=list[0].id;chatTarget=list[0].id;loadThread();}
    });
   }else if(profile.role==='conductor'){
+   chatTarget=null;chatTargetRole=null;
    const {data:myTrips,error:tripError}=await sb.from('westvill_trips').select('id,passenger_id,status').eq('driver_id',profile.id).in('status',['programado','en_viaje']);
    if(tripError)throw tripError;
    const activePassengerIds=[...new Set((myTrips||[]).map(t=>t.passenger_id).filter(Boolean))];
-   const activeTrip=activePassengerIds.length>0;
+   const activeTrip=(myTrips||[]).length>0;
    people=people.filter(p=>(p.role==='admin'&&p.username==='sole_villalba99')||(p.role==='pasajero'&&activePassengerIds.includes(p.id)));
    const adminAvailable=people.some(p=>p.role==='admin');
    const passengerAvailable=people.some(p=>p.role==='pasajero');
