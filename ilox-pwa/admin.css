@@ -350,3 +350,17 @@ body.admin-mode .page-head-tools .date-chip span{font-size:17px;font-weight:800;
 .client-live-clock strong{font-size:11px;font-weight:700;text-transform:capitalize}
 .client-live-clock span{font-size:16px;font-weight:800;letter-spacing:.06em;color:#dceafa}
 @media(max-width:600px){.client-live-clock{gap:6px;margin:7px 0 9px}.client-live-clock strong{font-size:10px}.client-live-clock span{font-size:15px}}
+
+
+/* WEST-VILL · Selector de conversación del pasajero */
+.chat-role-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0 8px}
+.chat-role-button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:112px;padding:17px 12px;border:1px solid transparent;border-radius:17px;color:#fff!important;font-family:'DM Sans',system-ui,sans-serif;font-size:14px;font-weight:900;letter-spacing:.045em;line-height:1.15;text-align:center;cursor:pointer;box-shadow:0 8px 20px #0003,inset 0 1px 0 #ffffff40;transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}
+.chat-role-button:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 12px 25px #0004,inset 0 1px 0 #ffffff55}
+.chat-role-button:active{transform:translateY(1px) scale(.985)}
+.chat-role-button:focus-visible{outline:3px solid #f5d36b;outline-offset:3px}
+.chat-role-admin{background:linear-gradient(135deg,#087b61,#13b981 58%,#35d49a);border-color:#65e2b5}
+.chat-role-driver{background:linear-gradient(135deg,#1455a0,#287ed4 58%,#48a9ed);border-color:#83c9fa}
+.chat-role-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#ffffff25;font-size:22px;line-height:1}
+.chat-role-button small{font-size:10px;font-weight:650;letter-spacing:0;color:#ffffffdf;line-height:1.25}
+@media(max-width:420px){.chat-role-buttons{gap:9px}.chat-role-button{min-height:104px;padding:13px 7px;font-size:11px;border-radius:14px}.chat-role-button small{font-size:9px}.chat-role-icon{width:30px;height:30px;font-size:20px}}
+body.theme-day .chat-role-button{color:#fff!important}
