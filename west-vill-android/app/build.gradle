@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseStorePath = System.getenv("WV_ANDROID_KEYSTORE_PATH")
+def releaseStorePassword = System.getenv("WV_ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("WV_ANDROID_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("WV_ANDROID_KEY_PASSWORD")
+
+android {
+    namespace 'com.westvill.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.westvill.app'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            if (releaseStorePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword) {
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (releaseStorePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
