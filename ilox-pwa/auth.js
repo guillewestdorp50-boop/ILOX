@@ -70,26 +70,34 @@ async function driverNotifications(){
  if(err)throw err;
  return data||[];
 }
-function notificationMarkup(items){
+function notificationMarkup(items,trips=[]){
+ const tripList=Array.isArray(trips)?trips:[];
+ const tripById=new Map(tripList.map(t=>[t.id,t]));
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/\\s+/g,' ').trim();
  const groups=[],byTrip=new Map();
  (items||[]).forEach(n=>{
-  if(n.trip_id){
-   let group=byTrip.get(n.trip_id);
-   if(!group){group={trip:true,items:[]};byTrip.set(n.trip_id,group);groups.push(group);}
+  let trip=n.trip_id?tripById.get(n.trip_id):null;
+  if(!trip&&!n.trip_id){
+   const body=norm(n.body);
+   trip=tripList.find(t=>body.includes(norm(t.origin)+' → '+norm(t.destination)))||null;
+  }
+  const key=n.trip_id||(trip?.id)||null;
+  if(key){
+   let group=byTrip.get(key);
+   if(!group){group={trip:trip||tripById.get(key)||null,items:[]};byTrip.set(key,group);groups.push(group);}
+   if(!group.trip&&trip)group.trip=trip;
    group.items.push(n);
-  }else groups.push({trip:false,items:[n]});
+  }else groups.push({trip:null,items:[n]});
  });
  groups.forEach(group=>group.items.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)));
  groups.sort((a,b)=>new Date(b.items[0]?.created_at||0)-new Date(a.items[0]?.created_at||0));
  const cards=groups.map(group=>{
   const latest=group.items[0],unread=group.items.some(n=>!n.read_at);
-  const bodies=[...new Set(group.items.map(n=>String(n.body||'').trim()).filter(Boolean))];
-  const titles=[...new Set(group.items.map(n=>String(n.title||'').trim()).filter(Boolean))];
-  const heading=group.trip?'VIAJE · '+(latest.title||'Actualización'):latest.title;
-  const body=group.trip?bodies.map(esc).join(' · '):esc(latest.body);
-  const summary=group.trip&&group.items.length>1?'<div class="client-muted">'+group.items.length+' avisos reunidos: '+titles.map(esc).join(' · ')+'</div>':'';
+  const heading=group.trip?esc(group.trip.origin)+' → '+esc(group.trip.destination):esc(latest.title||'Aviso');
+  const details=group.items.map(n=>'<div style="margin-top:5px"><b>'+esc(n.title||'Actualización')+'</b>'+(n.body?': '+esc(n.body):'')+'</div>').join('');
+  const count=group.items.length>1?'<div class="client-muted" style="margin-top:7px">'+group.items.length+' actualizaciones de este viaje</div>':'';
   const viewTrip=group.items.some(n=>n.kind==='trip_assigned')?'<button class="btn secondary" data-open-trip>Ver mis viajes</button>':'';
-  return '<article class="client-row notice-row"><b>'+esc(heading)+'</b><p>'+body+'</p>'+summary+'<div class="client-muted">'+new Date(latest.created_at).toLocaleString('es-AR')+(unread?' · NUEVO':' · VISTO')+'</div>'+viewTrip+'</article>';
+  return '<article class="client-row notice-row"><b>'+heading+'</b>'+details+count+'<div class="client-muted" style="margin-top:8px">'+new Date(latest.created_at).toLocaleString('es-AR')+(unread?' · NUEVO':' · VISTO')+'</div>'+viewTrip+'</article>';
  }).join('');
  return panel('Avisos de administración',cards||'<p class="client-muted">No tenés avisos nuevos.</p>');
 }
@@ -215,7 +223,7 @@ async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-cli
   else controls='<div class="client-muted">Estado: '+esc(x.status)+'</div>';
   return '<div class="client-row"><b>'+esc(x.origin)+' → '+esc(x.destination)+'</b><div class="client-muted">'+(x.travel_at?new Date(x.travel_at).toLocaleString('es-AR'):'Fecha a confirmar')+' · '+esc(x.status)+'</div>'+line+controls+'</div>';
  }).join('');
- const tripsPanel=panel('Mis viajes',err?'<p class="client-muted">No se pudieron cargar los viajes.</p>':(cards||'<p class="client-muted">Todavía no hay viajes asignados.</p>'));const pendingPanel=profile.role==='pasajero'?panel('Solicitudes en espera',pendingCards||'<p class="client-muted">No tenés solicitudes pendientes.</p>'):'';page.innerHTML=profile.role==='conductor'?tripsPanel+notificationMarkup(notices):notificationMarkup(notices)+pendingPanel+tripsPanel;
+ const tripsPanel=panel('Mis viajes',err?'<p class="client-muted">No se pudieron cargar los viajes.</p>':(cards||'<p class="client-muted">Todavía no hay viajes asignados.</p>'));const pendingPanel=profile.role==='pasajero'?panel('Solicitudes en espera',pendingCards||'<p class="client-muted">No tenés solicitudes pendientes.</p>'):'';page.innerHTML=profile.role==='conductor'?tripsPanel+notificationMarkup(notices,data||[]):notificationMarkup(notices)+pendingPanel+tripsPanel;
  page.querySelectorAll('[data-trip-start],[data-trip-finish],[data-trip-complete]').forEach(btn=>btn.onclick=async()=>{const id=btn.dataset.tripStart||btn.dataset.tripFinish||btn.dataset.tripComplete,action=btn.dataset.tripStart?'iniciar':btn.dataset.tripFinish?'finalizar':'completar';const ask=action==='iniciar'?'¿Iniciar el viaje y comenzar la cuenta regresiva?':'¿Finalizar el viaje y avisar a administración?';if(!confirm(ask))return;btn.disabled=true;const {data,error}=await sb.rpc('westvill_driver_trip_action',{p_trip_id:id,p_action:action});if(error||!data?.ok){alert('No se pudo actualizar: '+(error?.message||'Intentá nuevamente.'));btn.disabled=false;return;}alert(action==='iniciar'?'Viaje iniciado. El contador comenzó y pasajero y administración recibieron el aviso.':'Viaje finalizado. El contador se detuvo y administración y pasajero recibieron el aviso.');clientTab('viajes');});
  page.querySelectorAll('[data-trip-yes],[data-trip-no]').forEach(btn=>btn.onclick=async()=>{const id=btn.dataset.tripYes||btn.dataset.tripNo,response=btn.dataset.tripYes?'aceptado':'rechazado';if(!confirm(response==='aceptado'?'¿Confirmás que aceptás el viaje?':'¿Confirmás que no podés realizarlo?'))return;btn.disabled=true;const {data,error}=await sb.rpc('westvill_driver_respond',{p_trip_id:id,p_response:response});if(error||!data?.ok){alert('No se pudo enviar la respuesta: '+(error?.message||'Intentá nuevamente.'));btn.disabled=false;return;}alert(response==='aceptado'?'Viaje aceptado. Ahora podés tocar INICIAR VIAJE cuando estés listo.':'Respuesta enviada a administración y pasajero.');clientTab('viajes');});
  const tick=()=>page.querySelectorAll('[data-trip-progress]').forEach(el=>{const id=el.getAttribute('data-trip-progress'),st=Date.parse(el.dataset.started||''),end=Date.parse(el.dataset.finished||''),nowAt=end||Date.now(),duration=Math.max(1,Number(el.dataset.duration||1))*60000,pct=el.dataset.completed==='1'?100:(st?Math.min(100,Math.max(0,(nowAt-st)/duration*100)):0);el.style.width=pct+'%';const car=page.querySelector('[data-trip-car="'+id+'"]');if(car)car.style.left=pct+'%';const cd=page.querySelector('[data-trip-countdown="'+id+'"]');if(cd&&st&&el.dataset.completed!=='1'){const left=Math.max(0,Math.ceil((duration-(nowAt-st))/1000));cd.textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');}});
