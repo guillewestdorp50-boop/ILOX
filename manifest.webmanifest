@@ -1,0 +1,12 @@
+{
+  "name": "ILOX — Tu propio mundo",
+  "short_name": "ILOX",
+  "description": "Construí, explorá y jugá en tu propio mundo.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#172b26",
+  "theme_color": "#162b24"
+}

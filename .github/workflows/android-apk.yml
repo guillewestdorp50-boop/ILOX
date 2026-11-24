@@ -1,0 +1,94 @@
+name: ILOX Android APK
+
+on:
+  push:
+    branches: [main, deploy/render-ilox]
+    paths:
+      - '.github/workflows/android-apk.yml'
+      - 'ilox-pwa/**'
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - 'assets/**'
+      - 'scripts/fetch_polyhaven_assets.py'
+  workflow_dispatch:
+
+concurrency:
+  group: ilox-android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Python e icono Android
+        run: |
+          python3 -m pip install --user cairosvg
+          mkdir -p app/src/main/res/mipmap-mdpi app/src/main/res/mipmap-hdpi app/src/main/res/mipmap-xhdpi app/src/main/res/mipmap-xxhdpi app/src/main/res/mipmap-xxxhdpi
+          python3 - <<'PY'
+          import cairosvg
+          from pathlib import Path
+          svg = Path('ilox-pwa/icon.svg').read_bytes()
+          for density, size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+              cairosvg.svg2png(bytestring=svg, write_to=f'app/src/main/res/mipmap-{density}/ic_launcher.png', output_width=size, output_height=size)
+          PY
+
+      - name: Configurar Android SDK
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null
+          /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Descargar recursos 3D
+        run: python3 scripts/fetch_polyhaven_assets.py
+
+      - name: Verificar identidad de ILOX v104
+        run: |
+          grep -q "versionCode 104" app/build.gradle
+          grep -q "versionName 'V104'" app/build.gradle
+          grep -q "ILOX v104" ilox-pwa/index.html
+
+      - name: Empaquetar la versión web ILOX v104 dentro del APK
+        run: |
+          node --check ilox-pwa/game.js
+          node --check ilox-pwa/multiplayer.js
+          mkdir -p app/src/main/assets/www
+          cp ilox-pwa/index.html ilox-pwa/styles.css ilox-pwa/game.js ilox-pwa/app.js ilox-pwa/multiplayer.js ilox-pwa/manifest.webmanifest ilox-pwa/sw.js app/src/main/assets/www/
+          cp ilox-pwa/icon.svg ilox-pwa/icon-192.svg ilox-pwa/icon-512.svg app/src/main/assets/www/
+          cp -R assets app/src/main/assets/www/assets
+
+      - name: Compilar APK de prueba
+        run: gradle --no-daemon assembleDebug
+
+      - name: Publicar instalador APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ilox-v104-android
+          name: ILOX v104 — Instalador Android
+          body: Instalador Android de ILOX v104. Cabina de ascensor 6 × 6 y HUD de cinco controles renovado.
+          files: app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true
+
+# Trigger a single clean V104 build with the 6 × 6 elevator platform and the new HUD.
+# Version guard checks versionCode 104.
+
+# Reconstrucción solicitada: generar un APK Android nuevo para probarlo con el detector local.
