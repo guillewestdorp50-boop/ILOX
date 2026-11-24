@@ -37,7 +37,7 @@ async function activateDriverPush(){
   const existing=await registration.pushManager.getSubscription();
   const subscription=existing||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:(()=>{const v=WV_PUSH_PUBLIC_KEY.replace(/-/g,'+').replace(/_/g,'/');const bin=atob(v.padEnd(Math.ceil(v.length/4)*4,'='));return Uint8Array.from(bin,c=>c.charCodeAt(0));})()});
   const raw=subscription.toJSON();
-  const {error}=await sb.from('westvill_push_subscriptions').upsert({user_id:profile.id,endpoint:raw.endpoint,p256dh:raw.keys?.p256dh,auth:raw.keys?.auth,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+  const {error}=await sb.from('westvill_push_subscriptions').upsert({user_id:profile.id,endpoint:raw.endpoint,p256dh:raw.keys?.p256dh,auth:raw.keys?.auth,updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint'});
   if(error)throw error;
   status.textContent='¡Listo! Este teléfono recibirá avisos de viajes aunque WEST-VILL esté cerrada.';
   button.textContent='ALERTAS ACTIVADAS';
