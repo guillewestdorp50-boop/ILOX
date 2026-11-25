@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WestVillMessagingService extends FirebaseMessagingService {
-    private static final String CHANNEL_ID = "westvill_alerts_v1";
+    private static final String CHANNEL_ID = "westvill_alerts_v2";
     private static final AtomicInteger NEXT_ID = new AtomicInteger(1000);
 
     @Override
@@ -74,7 +74,7 @@ public class WestVillMessagingService extends FirebaseMessagingService {
                 CHANNEL_ID, "Alertas de WEST-VILL", NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription("Mensajes y avisos de viajes de WEST-VILL");
         channel.enableVibration(true);
-        channel.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+        channel.setSound(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon),
                 new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
