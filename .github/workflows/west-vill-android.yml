@@ -51,7 +51,10 @@ jobs:
           WV_ANDROID_KEY_ALIAS: ${{ secrets.WV_ANDROID_KEY_ALIAS }}
           WV_ANDROID_KEY_PASSWORD: ${{ secrets.WV_ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$WV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/west-vill-release.jks"
+          # Normalize accidental spaces/labels around the Base64 payload, then validate the recovered JKS.
+          printf '%s' "$WV_ANDROID_KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' | base64 --decode > "$RUNNER_TEMP/west-vill-release.jks"
+          keytool -list -keystore "$RUNNER_TEMP/west-vill-release.jks" -storepass "$WV_ANDROID_KEYSTORE_PASSWORD" -alias "$WV_ANDROID_KEY_ALIAS" >/dev/null
+          echo "Permanent Android signing key decoded and validated."
           echo "WV_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/west-vill-release.jks" >> "$GITHUB_ENV"
           echo "WV_ANDROID_KEYSTORE_PASSWORD=$WV_ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "WV_ANDROID_KEY_ALIAS=$WV_ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
