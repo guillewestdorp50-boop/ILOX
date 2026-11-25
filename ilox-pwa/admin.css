@@ -945,3 +945,40 @@ html.wv-native-ui-scale body.admin-mode.admin-drivers-page #page-title{
   letter-spacing:.01em!important;
   white-space:nowrap!important;
 }
+
+/* WEST-VILL · reputación y reseñas de conductores */
+.wv-rating-stars-display{display:inline-flex;align-items:center;gap:1px;vertical-align:middle;white-space:nowrap;line-height:1}
+.wv-rating-summary{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wv-rating-summary b{font-size:14px;color:var(--text,#f2f6fb)}
+.wv-rating-summary small{font-size:11px;color:var(--muted)}
+.wv-rating-trip-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0;padding:10px 12px;border:1px solid rgba(255,210,28,.22);border-radius:12px;background:rgba(255,210,28,.055)}
+.wv-rating-trip-summary>span:first-child{font-size:12px;font-weight:700;color:var(--muted)}
+.wv-rating-form{margin-top:12px;padding:14px;border:1px solid rgba(255,210,28,.3);border-radius:14px;background:linear-gradient(145deg,rgba(255,210,28,.075),rgba(15,31,49,.92))}
+.wv-rating-form>b{display:block;font-size:15px}
+.wv-rating-input{display:flex;align-items:center;gap:5px;margin:8px 0 12px}
+.wv-rating-input button{border:0;background:transparent;color:#586575;font-size:35px;line-height:1;padding:2px 4px;cursor:pointer;transition:transform .12s,color .12s}
+.wv-rating-input button.selected{color:#ffd21c;text-shadow:0 0 12px rgba(255,210,28,.38)}
+.wv-rating-input button:active{transform:scale(1.15)}
+.wv-rating-question{font-size:12px;font-weight:800;color:var(--muted);margin:8px 0}
+.wv-rating-tags{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}
+.wv-rating-tags label{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(148,171,194,.25);border-radius:999px;padding:7px 10px;font-size:12px;color:var(--text,#edf4fa);background:rgba(148,171,194,.07)}
+.wv-rating-tags input{accent-color:#ffd21c}
+.wv-rating-comment{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:8px 0}
+.wv-rating-comment textarea{display:block;width:100%;box-sizing:border-box;margin-top:6px;min-height:58px;border:1px solid rgba(148,171,194,.28);border-radius:10px;padding:10px;background:rgba(5,14,25,.55);color:var(--text,#edf4fa);font:inherit;resize:vertical}
+.wv-rating-submit{width:100%;margin-top:4px}
+.wv-rating-feedback{margin-top:8px}
+.wv-rating-submitted{margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(255,210,28,.25);background:rgba(255,210,28,.06)}
+.wv-rating-submitted>b{display:block;margin-bottom:7px;color:#ffd21c}
+.wv-rating-submitted>small{display:block;margin-top:6px;color:var(--muted)}
+.wv-rating-submitted p{margin:8px 0 0}
+.wv-rating-driver-total{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0}
+.wv-rating-driver-total strong{font-size:28px;color:var(--text,#f2f6fb)}
+.wv-rating-driver-total>span:last-child{font-size:12px;color:var(--muted)}
+.wv-rating-section-title{font-size:13px;margin:12px 0 8px}
+.wv-rating-review{padding:10px 0;border-top:1px solid rgba(148,171,194,.18)}
+.wv-rating-review p{margin:7px 0;font-size:13px}
+.wv-rating-review small{font-size:11px;color:var(--muted)}
+.wv-rating-review-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.wv-rating-review-tags span{font-size:10px;padding:4px 7px;border-radius:999px;background:rgba(255,210,28,.09);color:#ffd21c}
+.wv-admin-rating{margin-top:3px;white-space:normal;line-height:1.3}
+.wv-admin-rating small{color:var(--muted);font-size:10px}
