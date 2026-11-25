@@ -14,3 +14,10 @@ for density, size in densities.items():
     target.parent.mkdir(parents=True, exist_ok=True)
     image.resize((size, size), Image.Resampling.LANCZOS).save(target, format="PNG", optimize=True)
 print("Generated WEST-VILL launcher icons.")
+
+
+# Full-screen launch artwork uses the same unmodified PWA source image.
+splash_target = root / "west-vill-android" / "app" / "src" / "main" / "res" / "drawable-nodpi" / "westvill_splash.jpg"
+splash_target.parent.mkdir(parents=True, exist_ok=True)
+Image.open(source).convert("RGB").save(splash_target, format="JPEG", quality=94, optimize=True)
+print("Copied full-screen WEST-VILL launch artwork.")
