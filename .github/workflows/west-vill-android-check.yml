@@ -36,6 +36,7 @@ jobs:
         run: |
           mkdir -p app/src/main/res/raw
           python3 scripts/create_notification_sound.py app/src/main/res/raw/westvill_pichon.wav
+          python3 scripts/create_travel_notification_sound.py app/src/main/res/raw/westvill_viaje.wav
         working-directory: west-vill-android
       - name: Compile debug build (not for distribution)
         run: gradle --no-daemon :app:assembleDebug
