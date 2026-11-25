@@ -44,7 +44,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     private static final String APP_HOST = "west-vill-production.onrender.com";
-    private static final String START_URL = "https://west-vill-production.onrender.com/?admin=1&native=1";
+    private static final String START_URL = "https://west-vill-production.onrender.com/?native=1";
     private static final String SUPABASE_URL = "https://wihbxfebobfmohmqqhkt.supabase.co";
     private static final String SUPABASE_PUBLIC_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
     static final String EXTRA_TARGET_URL = "westvill_target_url";
