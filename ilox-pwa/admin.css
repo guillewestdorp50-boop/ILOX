@@ -825,3 +825,10 @@ html.wv-native-ui-scale body.admin-mode.admin-completed-page .completed-count{
   letter-spacing:0!important;
   white-space:nowrap!important;
 }
+
+
+/* APK WEST-VILL · Clientes: quitar saldo y fecha/hora solo en esta sección. */
+html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-tools > .admin-wallet-chip,
+html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-tools > .date-chip{
+  display:none!important;
+}
