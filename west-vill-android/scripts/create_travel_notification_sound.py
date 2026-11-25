@@ -1,74 +1,71 @@
 #!/usr/bin/env python3
-"""Generate WEST-VILL's original high-register industrial scanner travel alert."""
+"""Generate an original WEST-VILL objective-confirmation PDA sound.
+
+Sonic direction: compact mission-complete UI feedback — a dry device tick,
+a three-step electronic confirmation, and a short resonant lock-in. It uses
+rounded mid/high tones and metallic partials, not a whistle or long siren glide.
+"""
 import math
+import random
 import struct
 import sys
 import wave
 
 RATE = 44100
-DURATION = 2.35
+DURATION = 1.28
 COUNT = int(RATE * DURATION)
 audio = [0.0] * COUNT
+rng = random.Random(2711)
 
-def sweep(start, length, low, high, gain, bend=0.0, flutter=0.0, phase_offset=0.0):
+def add_tone(start, length, hz, gain, decay=7.0, detune=0.0, metallic=0.0):
     begin = int(start * RATE)
     end = min(COUNT, int((start + length) * RATE))
-    phase = phase_offset
+    phase_a = phase_b = 0.0
     for i in range(begin, end):
-        p = (i - begin) / max(1, end - begin - 1)
-        # Smooth rising scanner glide, with a subtle acceleration near the end.
-        curve = p + bend * p * (1.0 - p)
-        hz = low + (high - low) * curve
-        local = (i - begin) / RATE
-        hz *= 1.0 + flutter * math.sin(2 * math.pi * 17.0 * local)
-        phase += 2 * math.pi * hz / RATE
-        attack = min(1.0, p / 0.055)
-        release = min(1.0, (1.0 - p) / 0.12)
-        env = max(0.0, attack * release)
-        # Bright metallic partials, restrained so the upper register stays smooth.
-        voice = (math.sin(phase)
-                 + 0.24 * math.sin(2 * phase + 0.22)
-                 + 0.075 * math.sin(3 * phase + 0.51))
-        audio[i] += gain * voice * env
+        t = (i - begin) / RATE
+        phase_a += 2 * math.pi * hz / RATE
+        phase_b += 2 * math.pi * (hz * (1.0 + detune)) / RATE
+        attack = min(1.0, t / 0.006)
+        env = attack * math.exp(-decay * t / max(0.01, length))
+        # A slightly detuned body plus an inharmonic upper partial gives
+        # a compact PDA/electronic-metal character instead of a clean whistle.
+        body = 0.72 * math.sin(phase_a) + 0.28 * math.sin(phase_b + 0.2)
+        edge = math.sin(phase_a * 2.73 + 0.4) * metallic
+        audio[i] += gain * env * (body + edge)
 
-def chirp_cluster(start, length, low, high, gain, pulses=5):
+def add_tick(start, gain=0.13, length=0.035):
     begin = int(start * RATE)
     end = min(COUNT, int((start + length) * RATE))
-    phase = 0.0
     for i in range(begin, end):
-        p = (i - begin) / max(1, end - begin - 1)
-        hz = low + (high - low) * (p ** 0.82)
-        phase += 2 * math.pi * hz / RATE
-        # Rapid amplitude flutter creates the articulated "Tri-Ri-Ri" scan,
-        # not separate musical notes.
-        gate = 0.72 + 0.28 * math.sin(2 * math.pi * pulses * p) ** 2
-        env = min(1.0, p / 0.035) * min(1.0, (1.0 - p) / 0.09)
-        carrier = math.sin(phase) + 0.18 * math.sin(2 * phase + 0.3)
-        audio[i] += gain * carrier * gate * max(0.0, env)
+        t = (i - begin) / RATE
+        env = math.exp(-t * 105.0)
+        # Tiny filtered-noise click with a short resonant body.
+        noise = rng.uniform(-1.0, 1.0)
+        ring = math.sin(2 * math.pi * 1850 * t) * 0.35
+        audio[i] += gain * env * (noise * 0.55 + ring)
 
-# Three tightly connected scan articulations climb in pitch, then resolve
-# into one long, bright electronic carrier: "TriRiRirieeeee".
-chirp_cluster(0.04, 0.36, 1850, 2850, 0.46, pulses=4)
-chirp_cluster(0.32, 0.40, 2250, 3450, 0.43, pulses=5)
-chirp_cluster(0.63, 0.43, 2650, 3900, 0.40, pulses=6)
+# Device response: two restrained mechanical/electronic taps.
+add_tick(0.025, 0.12, 0.028)
+add_tick(0.105, 0.075, 0.024)
 
-# Industrial scanner lock: sustained high glide with a fine metallic shimmer.
-sweep(0.98, 1.05, 2850, 4250, 0.39, bend=0.18, flutter=0.0025)
-sweep(1.10, 0.88, 3420, 4480, 0.13, bend=-0.10, flutter=0.0015, phase_offset=0.7)
+# Three compact confirmation steps. The tones are discrete and percussive:
+# no continuous upward whistle and no alarm-like sweep.
+add_tone(0.15, 0.24, 740, 0.38, decay=5.8, detune=0.006, metallic=0.10)
+add_tone(0.34, 0.28, 988, 0.34, decay=5.2, detune=-0.004, metallic=0.12)
+add_tone(0.57, 0.43, 1245, 0.31, decay=4.0, detune=0.003, metallic=0.16)
 
-# A tiny high-frequency confirmation tick and a soft, short tail.
-sweep(1.88, 0.23, 4050, 3650, 0.20, bend=0.0)
-sweep(2.08, 0.20, 3200, 2850, 0.10, bend=0.0)
+# Quiet resonant confirmation bed and a final short lock-in click.
+add_tone(0.62, 0.48, 622, 0.105, decay=5.0, detune=0.002, metallic=0.08)
+add_tick(0.91, 0.055, 0.022)
 
 peak = max(0.001, max(abs(x) for x in audio))
-scale = 0.88 / peak
+scale = 0.82 / peak
 frames = bytearray()
-fade_in = int(0.012 * RATE)
-fade_out = int(0.16 * RATE)
+fade_out = int(0.12 * RATE)
 for i, sample in enumerate(audio):
-    edge = min(1.0, i / fade_in, (COUNT - 1 - i) / fade_out)
-    # Soft saturation tames peaks without dulling the high register.
-    shaped = math.tanh(sample * 1.05) * scale * max(0.0, edge)
+    edge = min(1.0, (COUNT - 1 - i) / fade_out)
+    # Gentle saturation adds density without making the alert piercing.
+    shaped = math.tanh(sample * 1.18) * scale * max(0.0, edge)
     frames.extend(struct.pack("<h", int(max(-1.0, min(1.0, shaped)) * 32767)))
 
 target = sys.argv[1] if len(sys.argv) > 1 else "app/src/main/res/raw/westvill_viaje.wav"
@@ -77,4 +74,4 @@ with wave.open(target, "wb") as wav:
     wav.setsampwidth(2)
     wav.setframerate(RATE)
     wav.writeframes(frames)
-print("Created original WEST-VILL high-register scanner alert: %s (%d bytes)" % (target, len(frames)))
+print("Created original WEST-VILL PDA objective-style confirmation: %s (%d bytes)" % (target, len(frames)))
