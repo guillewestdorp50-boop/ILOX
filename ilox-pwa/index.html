@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101e35"><meta name="HandheldFriendly" content="true"><style>html,body{touch-action:pan-x pan-y;overscroll-behavior:contain}*{ -webkit-tap-highlight-color:transparent }</style><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="WEST-VILL"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=7"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=7"><link rel="apple-touch-icon" href="./west-vill-logistica.jpg?v=7">
-<link rel="stylesheet" href="./admin.css?v=47"><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=48"><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
@@ -26,7 +26,7 @@
 </section>
 <section class="client-screen" id="client-screen" hidden>
   <header class="client-top"><div class="brand"><button class="brand-mark client-profile-button" id="client-profile-open" type="button" aria-label="Abrir mi perfil">WV</button><div><strong>WEST-VILL</strong><small>LOGÍSTICA DE VIAJES</small></div></div><div class="client-user"><button class="theme-toggle" type="button" data-theme-toggle>☀ Día</button><span id="client-greeting"></span><button class="btn secondary" id="client-logout">Salir</button></div></header>
-  <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><button class="btn secondary" id="client-back" type="button" style="margin:0 0 12px">← VOLVER</button><div class="client-heading-line"><h1 id="client-title">Bienvenido</h1><span class="wallet-chip client-wallet-large" id="client-wallet" hidden><span class="wallet-symbol">$</span><span><small>DINERO DISPONIBLE</small><b id="client-wallet-value">Cargando…</b></span></span></div><div class="client-live-clock" id="client-live-clock"><strong>Fecha actual</strong><span>--:--:--</span></div><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="ingresos" id="tab-income" hidden>Ingresos</button><button data-client-tab="gastos" id="tab-expenses" hidden>Gastos</button><button data-client-tab="pad" id="tab-pad" hidden>Mi PAD</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
+  <main class="client-content"><div class="client-heading"><div class="eyebrow">ÁREA PERSONAL</div><button class="btn secondary" id="client-back" type="button" style="margin:0 0 12px">← VOLVER</button><div class="client-heading-line"><h1 id="client-title">Bienvenido</h1><span class="wallet-chip client-wallet-large" id="client-wallet" hidden><span class="wallet-symbol">$</span><span><small>DINERO DISPONIBLE</small><b id="client-wallet-value">Cargando…</b></span></span></div><div class="client-live-clock" id="client-live-clock"><strong>Fecha actual</strong><span>--:--:--</span></div><p id="client-subtitle">Tu espacio de viajes y comunicación.</p></div><nav class="client-tabs"><button data-client-tab="inicio" class="active">Inicio</button><button data-client-tab="solicitudes" id="tab-request">Solicitar viaje</button><button data-client-tab="calculadora" id="tab-calculator" hidden>Calculadora</button><button data-client-tab="viajes">Mis viajes</button><button data-client-tab="ingresos" id="tab-income" hidden>Ingresos</button><button data-client-tab="gastos" id="tab-expenses" hidden>Gastos</button><button data-client-tab="pad" id="tab-pad" hidden>Mi PAD</button><button data-client-tab="mensajes">Mensajes</button></nav><div id="client-page"></div></main>
 </section>
 <div class="invite-modal" id="invite-modal" hidden>
   <div class="invite-card"><button class="modal-close" id="invite-close" aria-label="Cerrar">×</button><h2>Crear invitación</h2><p>Elegí qué tipo de cuenta podrá crear la persona que reciba el código.</p><label class="client-muted" for="invite-role">TIPO DE CUENTA<select id="invite-role"><option value="pasajero">Pasajero</option><option value="conductor" selected>Conductor</option><option value="admin">Administración</option></select></label><div class="client-muted">El código es personal, habilita el rol elegido y se puede usar una sola vez.</div><button class="btn" id="invite-generate">Generar código</button><div id="invite-result" class="invite-result"></div></div>
@@ -47,7 +47,7 @@
     <div class="side-label side-label-spaced">ADMINISTRACIÓN</div>
     <button class="nav-item" data-page="ingresos"><span>$</span> Ingresos</button>
     <button class="nav-item" data-page="gastos"><span>−</span> Gastos</button>
-    <button class="nav-item" data-page="cuentas"><span>≡</span> Cuentas pendientes</button>
+    <button class="nav-item" data-page="cuentas"><span>≡</span> Cuentas pendientes</button><button class="nav-item" data-page="tarifario"><span>✦</span> Tarifario de viajes</button>
   </nav>
   <div class="sidebar-foot"><span class="status-dot"></span> Panel del administrador <small>WEST-VILL · PRIVADO</small></div>
 </aside>
@@ -61,7 +61,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=70" defer></script><script src="./admin.js?v=68" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=71" defer></script><script src="./admin.js?v=69" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -87,6 +87,6 @@
 </script>
 <script src="./theme.js?v=2" defer></script>
 <script>
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=66'));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=67'));
 </script>
 </body></html>
