@@ -800,3 +800,28 @@ html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .dat
   justify-content:center!important;
   text-align:right!important;
 }
+
+
+/* APK WEST-VILL · Viajes completos: contador compacto, sin perfil WV ni reloj; conserva saldo. */
+html.wv-native-ui-scale body.admin-mode.admin-completed-page #admin-profile-open,
+html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools > .date-chip{
+  display:none!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools > .admin-wallet-chip{
+  display:inline-flex!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-completed-page .completed-count{
+  display:inline-block!important;
+  box-sizing:border-box!important;
+  max-width:100%!important;
+  padding:10px 14px!important;
+  font-size:clamp(16px,4.8vw,22px)!important;
+  line-height:1.2!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+}
