@@ -12,6 +12,8 @@ import sys
 import wave
 
 RATE = 44100
+PITCH_SHIFT_SEMITONES = 5
+PITCH_RATIO = 2 ** (PITCH_SHIFT_SEMITONES / 12)
 DURATION = 1.28
 COUNT = int(RATE * DURATION)
 audio = [0.0] * COUNT
@@ -23,8 +25,8 @@ def add_tone(start, length, hz, gain, decay=7.0, detune=0.0, metallic=0.0):
     phase_a = phase_b = 0.0
     for i in range(begin, end):
         t = (i - begin) / RATE
-        phase_a += 2 * math.pi * hz / RATE
-        phase_b += 2 * math.pi * (hz * (1.0 + detune)) / RATE
+        phase_a += 2 * math.pi * (hz * PITCH_RATIO) / RATE
+        phase_b += 2 * math.pi * (hz * PITCH_RATIO * (1.0 + detune)) / RATE
         attack = min(1.0, t / 0.006)
         env = attack * math.exp(-decay * t / max(0.01, length))
         # A slightly detuned body plus an inharmonic upper partial gives
@@ -41,7 +43,7 @@ def add_tick(start, gain=0.13, length=0.035):
         env = math.exp(-t * 105.0)
         # Tiny filtered-noise click with a short resonant body.
         noise = rng.uniform(-1.0, 1.0)
-        ring = math.sin(2 * math.pi * 1850 * t) * 0.35
+        ring = math.sin(2 * math.pi * 1850 * PITCH_RATIO * t) * 0.35
         audio[i] += gain * env * (noise * 0.55 + ring)
 
 # Device response: two restrained mechanical/electronic taps.
