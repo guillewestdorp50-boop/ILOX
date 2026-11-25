@@ -98,7 +98,7 @@ function tariffRangesOverlap(a,b){return Number(a.km_min)<=Number(b.km_max)&&Num
 async function renderTariffPage(){
  const config=await getTariffConfig(),bands=Array.isArray(config.distance_bands)?config.distance_bands:[];
  page('Tarifario de viajes',
-  panel('ESPERA Y TIEMPO', '<p class="muted">La primera hora configurada es gratuita. Después se cobra por cada hora adicional completa.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Horas gratuitas<input name="free_wait_hours" type="number" min="0" max="24" step="0.5" value="'+Number(config.free_wait_hours??1)+'" required></label><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form>')+
+  panel('ESPERA Y TIEMPO', '<p class="muted">La primera hora de espera es siempre gratuita. Administración solo modifica el importe de cada hora adicional completa.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form>')+
   panel('TRAMOS DE DISTANCIA','<p class="muted">Cada tramo tiene sus propios precios. La calculadora del pasajero solo mostrará importes que estén cargados aquí; no inventa ni extrapola tarifas.</p>'+(bands.length?bands.slice().sort((x,y)=>Number(x.km_min)-Number(y.km_min)).map(tariffBandRow).join(''):'<div class="empty"><strong>Todavía no hay tramos cargados.</strong><p>Agregá el primer tramo para habilitar cotizaciones.</p></div>')+
   '<form id="tariff-add-form" class="tariff-band-row tariff-band-new"><label>Desde km<input name="km_min" inputmode="decimal" placeholder="60" required></label><label>Hasta km<input name="km_max" inputmode="decimal" placeholder="60" required></label><label>Solo ida ($)<input name="one_way_price" inputmode="numeric" placeholder="70000" required></label><label>Ida y vuelta ($)<input name="round_trip_price" inputmode="numeric" placeholder="80000" required></label><div class="tariff-band-actions"><button class="btn" type="submit">＋ Agregar tramo</button></div></form>')
  );
@@ -108,9 +108,9 @@ async function renderTariffPage(){
   toast('Tarifario actualizado. La calculadora de pasajeros ya tiene los nuevos valores.');return true;
  };
  $('#tariff-wait-form').onsubmit=async e=>{
-  e.preventDefault();const fd=new FormData(e.currentTarget),free=parseKm(fd.get('free_wait_hours')),price=parseMoney(fd.get('wait_hour_price'));
-  if(!Number.isFinite(free)||free<0||free>24||!Number.isFinite(price)||price<0){toast('Revisá las horas gratuitas y el precio de espera.');return;}
-  if(await saveConfig({free_wait_hours:free,wait_hour_price:price}))await renderTariffPage();
+  e.preventDefault();const fd=new FormData(e.currentTarget),price=parseMoney(fd.get('wait_hour_price'));
+  if(!Number.isFinite(price)||price<0){toast('Ingresá un precio de espera válido.');return;}
+  if(await saveConfig({wait_hour_price:price}))await renderTariffPage();
  };
  const parseBand=form=>{
   const fd=new FormData(form),min=parseKm(fd.get('km_min')),max=parseKm(fd.get('km_max')),one=parseMoney(fd.get('one_way_price')),round=parseMoney(fd.get('round_trip_price'));
