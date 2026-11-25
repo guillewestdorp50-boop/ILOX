@@ -87,28 +87,37 @@ function adminNotificationMarkup(items,trips=[]){
 }
 
 async function getTariffConfig(){
- const {data,error}=await sb.from('westvill_tariff_config').select('price_per_km,wait_hour_price').eq('id',1).single();
+ const {data,error}=await sb.from('westvill_tariff_config').select('price_per_km_one_way,price_per_km_round_trip,wait_hour_price,free_wait_hours').eq('id',1).single();
  if(error)throw error;
  return data;
 }
 async function renderTariffPage(){
  const config=await getTariffConfig();
+ const field=(name,label,value)=>'<label class="field">'+label+' ($/km)<input name="'+name+'" inputmode="decimal" type="number" min="0" step="0.01" value="'+Number(value||0).toFixed(2)+'" required></label>';
  page('Tarifario de viajes',
-  panel('PRECIO POR KILÓMETRO', '<p class="muted">Definí un único valor por kilómetro. La calculadora del pasajero multiplica automáticamente los kilómetros ingresados por esta tarifa; para ida y vuelta duplica la distancia.</p><form id="tariff-km-form" class="form-grid"><label class="field">Precio por kilómetro ($)<input name="price_per_km" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.price_per_km||0)+'" required></label><button class="btn" type="submit">Guardar precio por km</button></form><p class="muted">Tarifa actual: <b>'+money(config.price_per_km||0)+'</b> por km</p>')+
-  panel('ESPERA Y TIEMPO', '<p class="muted">La primera hora de espera es siempre gratuita. Administración modifica el importe de cada hora adicional completa.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form>')
+  panel('TARIFA · SOLO IDA','<p class="muted">Se cobra únicamente la distancia de ida, multiplicada por este valor por kilómetro.</p><form id="tariff-one-way-form" class="form-grid">'+field('price_per_km_one_way','Precio por kilómetro',config.price_per_km_one_way)+'<button class="btn" type="submit">Guardar tarifa solo ida</button></form><p class="muted">Actual: <b>'+money(config.price_per_km_one_way)+'</b> por km</p>')+
+  panel('TARIFA · IDA Y VUELTA','<p class="muted">Se cobra la distancia total de ida y regreso. El regreso debe realizarse dentro de la primera hora para mantener esta tarifa.</p><form id="tariff-round-trip-form" class="form-grid">'+field('price_per_km_round_trip','Precio por kilómetro',config.price_per_km_round_trip)+'<button class="btn" type="submit">Guardar tarifa ida y vuelta</button></form><p class="muted">Actual: <b>'+money(config.price_per_km_round_trip)+'</b> por km</p>')+
+  panel('ESPERA Y TIEMPO','<p class="muted">La primera hora está incluida. Desde la segunda hora se cobra por cada hora adicional, con el importe que defina Administración.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form><p class="muted">Si la espera supera las 4 horas, se recomienda solicitar un nuevo viaje al momento de regresar para evitar un costo elevado.</p>')
  );
  const saveConfig=async changes=>{
   const {error}=await sb.from('westvill_tariff_config').update({...changes,updated_by:adminProfile.id,updated_at:new Date().toISOString()}).eq('id',1);
   if(error){toast('No se pudo guardar el tarifario: '+error.message);return false;}
-  toast('Tarifario actualizado. La calculadora de pasajeros ya tiene el nuevo valor.');return true;
+  toast('Tarifario actualizado. La calculadora de pasajeros ya tiene los nuevos valores.');return true;
  };
- $('#tariff-km-form').onsubmit=async e=>{
-  e.preventDefault();const price=parseMoney(new FormData(e.currentTarget).get('price_per_km'));
-  if(!Number.isFinite(price)||price<0){toast('Ingresá un precio por kilómetro válido.');return;}
-  if(await saveConfig({price_per_km:price}))await renderTariffPage();
+ const bindMoney=(formId,name,columns)=>{
+  const form=$('#'+formId);if(!form)return;
+  form.onsubmit=async e=>{
+   e.preventDefault();const raw=String(new FormData(e.currentTarget).get(name)||'').trim().replace(',','.'),price=Number(raw);
+   if(!Number.isFinite(price)||price<0){toast('Ingresá un precio válido.');return;}
+   const changes={[columns]:price};
+   if(columns==='price_per_km_one_way')changes.price_per_km=price;
+   if(await saveConfig(changes))await renderTariffPage();
+  };
  };
+ bindMoney('tariff-one-way-form','price_per_km_one_way','price_per_km_one_way');
+ bindMoney('tariff-round-trip-form','price_per_km_round_trip','price_per_km_round_trip');
  $('#tariff-wait-form').onsubmit=async e=>{
-  e.preventDefault();const price=parseMoney(new FormData(e.currentTarget).get('wait_hour_price'));
+  e.preventDefault();const price=Number(new FormData(e.currentTarget).get('wait_hour_price'));
   if(!Number.isFinite(price)||price<0){toast('Ingresá un precio de espera válido.');return;}
   if(await saveConfig({wait_hour_price:price}))await renderTariffPage();
  };
