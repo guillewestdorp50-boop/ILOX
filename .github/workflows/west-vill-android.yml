@@ -127,8 +127,8 @@ jobs:
 
       - name: Validate release version
         run: |
-          grep -q "versionCode 16" app/build.gradle
-          grep -q "versionName '1.1.3'" app/build.gradle
+          grep -q "versionCode 17" app/build.gradle
+          grep -q "versionName '1.1.4'" app/build.gradle
         working-directory: west-vill-android
 
       - name: Build signed APK
