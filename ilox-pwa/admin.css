@@ -1116,3 +1116,12 @@ html.wv-native-ui-scale body.admin-mode.admin-expenses-page #page-title{
   letter-spacing:.02em!important;
   white-space:nowrap!important;
 }
+
+
+/* APK WEST-VILL · Balance: quitar Centro de operaciones, perfil WV, saldo y fecha/hora. */
+html.wv-native-ui-scale body.admin-mode.admin-balance-page #admin-center-label,
+html.wv-native-ui-scale body.admin-mode.admin-balance-page #admin-profile-open,
+html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .admin-wallet-chip,
+html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .date-chip{
+  display:none!important;
+}
