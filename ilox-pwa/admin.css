@@ -906,3 +906,8 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap .tag{
   line-height:1.1!important;
   white-space:normal!important;
 }
+
+
+/* APK WEST-VILL · Clientes: quitar por completo la leyenda CENTRO DE OPERACIONES y dar más aire al título. */
+html.wv-native-ui-scale body.admin-mode.admin-clients-page #admin-center-label{display:none!important;}
+html.wv-native-ui-scale body.admin-mode.admin-clients-page #page-title{font-size:clamp(16px,5vw,21px)!important;}
