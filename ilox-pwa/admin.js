@@ -124,14 +124,40 @@ async function renderTariffPage(){
  };
 }
 
-function renderClientPresencePage(){
+async function loadPassengerActivity(){
+ const activity=new Map();
+ const sources=[
+  ['westvill_school_passes','passenger_id,created_at','passenger_id'],
+  ['westvill_requests','passenger_id,created_at','passenger_id'],
+  ['westvill_messages','sender_id,created_at','sender_id']
+ ];
+ const results=await Promise.allSettled(sources.map(([table,fields])=>sb.from(table).select(fields).order('created_at',{ascending:false}).limit(1000)));
+ results.forEach((result,index)=>{
+  if(result.status!=='fulfilled'||result.value.error){console.warn('No se pudo consultar actividad histórica de '+sources[index][0]+':',result.status==='rejected'?result.reason:result.value.error);return;}
+  (result.value.data||[]).forEach(row=>{
+   const id=row[sources[index][2]],stamp=row.created_at;
+   if(!id||!stamp)return;
+   const previous=activity.get(id);
+   if(!previous||Date.parse(stamp)>Date.parse(previous))activity.set(id,stamp);
+  });
+ });
+ return activity;
+}
+function renderClientPresencePage(activity=new Map()){
  const now=Date.now(),onlineCutoff=90*1000;
  const clients=[...cache.passengers].sort((a,b)=>String(a.display_name||'').localeCompare(String(b.display_name||''),'es-AR',{sensitivity:'base'}));
  const online=clients.filter(p=>p.last_seen_at&&now-Date.parse(p.last_seen_at)<=onlineCutoff).length;
- const body=clients.map(p=>{const isOnline=!!p.last_seen_at&&now-Date.parse(p.last_seen_at)<=onlineCutoff;const status=isOnline?'ONLINE':'OFFLINE';const last=p.last_seen_at?fmt(p.last_seen_at):'Nunca se conectó';return '<tr><td><b>'+esc(p.display_name||'Pasajero')+'</b></td><td><span class="wv-presence-status"><i class="wv-presence-dot '+(isOnline?'online':'offline')+'" aria-hidden="true"></i><b>'+status+'</b></span></td><td>'+esc(last)+'</td></tr>';}).join('')||'<tr><td colspan="3">Todavía no hay pasajeros registrados.</td></tr>';
- page('Clientes en línea',panel('ESTADO DE CONEXIÓN · PASAJEROS','<p class="muted">'+online+' de '+clients.length+' pasajeros en línea · Actualización automática cada 15 segundos.</p>'+table(['PASAJERO','ESTADO','ÚLTIMA VEZ EN LÍNEA'],body)));
+ const body=clients.map(p=>{
+  const isOnline=!!p.last_seen_at&&now-Date.parse(p.last_seen_at)<=onlineCutoff;
+  const status=isOnline?'ONLINE':'OFFLINE';
+  const lastSeen=p.last_seen_at;
+  const lastActivity=activity.get(p.id);
+  const detail=lastSeen?'<b>Última vez en línea:</b> '+esc(fmt(lastSeen)):lastActivity?'<b>Última actividad registrada:</b> '+esc(fmt(lastActivity)):'<b>Sin actividad registrada</b>';
+  return '<tr><td><b>'+esc(p.display_name||'Pasajero')+'</b></td><td><span class="wv-presence-status"><i class="wv-presence-dot '+(isOnline?'online':'offline')+'" aria-hidden="true"></i><b>'+status+'</b></span></td><td>'+detail+'</td></tr>';
+ }).join('')||'<tr><td colspan="3">Todavía no hay pasajeros registrados.</td></tr>';
+ page('Clientes en línea',panel('ESTADO DE CONEXIÓN · PASAJEROS','<p class="muted">'+online+' de '+clients.length+' pasajeros en línea · Actualización automática cada 15 segundos.</p>'+table(['PASAJERO','ESTADO','ÚLTIMA CONEXIÓN / ACTIVIDAD'],body)));
 }
-async function refreshClientPresencePage(){if(activePage!=='cuentas')return;try{await loadPeople();if(activePage==='cuentas')renderClientPresencePage();}catch(e){console.warn('No se pudo actualizar la presencia de pasajeros:',e);}}
+async function refreshClientPresencePage(){if(activePage!=='cuentas')return;try{await loadPeople();const activity=await loadPassengerActivity();if(activePage==='cuentas')renderClientPresencePage(activity);}catch(e){console.warn('No se pudo actualizar la presencia de pasajeros:',e);}}
 async function loadPage(which){
  if(which!=='cuentas'&&window.wvClientPresenceTimer){clearInterval(window.wvClientPresenceTimer);window.wvClientPresenceTimer=null;}
  activePage=which;document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===which));
