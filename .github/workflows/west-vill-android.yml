@@ -125,6 +125,12 @@ jobs:
           test -s app/src/main/res/raw/westvill_viaje.wav
         working-directory: west-vill-android
 
+      - name: Validate release version
+        run: |
+          grep -q "versionCode 15" app/build.gradle
+          grep -q "versionName '1.1.3'" app/build.gradle
+        working-directory: west-vill-android
+
       - name: Build signed APK
         run: gradle --no-daemon :app:assembleRelease
         working-directory: west-vill-android
