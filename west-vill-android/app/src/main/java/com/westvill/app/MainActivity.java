@@ -2,6 +2,7 @@ package com.westvill.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
@@ -50,6 +51,33 @@ public class MainActivity extends Activity {
             if (accessToken == null || accessToken.length() < 40 || accessToken.length() > 10000) return;
             FirebaseMessaging.getInstance().getToken().addOnSuccessListener(fcmToken ->
                     network.execute(() -> registerFcmToken(accessToken, fcmToken)));
+        }
+
+        @JavascriptInterface
+        public void testNotificationSound() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= 33 &&
+                        ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.POST_NOTIFICATIONS)
+                                != PackageManager.PERMISSION_GRANTED) {
+                    requestNotificationPermission();
+                    return;
+                }
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager == null) return;
+                createNotificationChannel();
+                Uri sound = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon);
+                Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                        ? new Notification.Builder(MainActivity.this, "westvill_alerts_v2")
+                        : new Notification.Builder(MainActivity.this)
+                                .setSound(sound)
+                                .setVibrate(new long[]{0, 180, 90, 180})
+                                .setPriority(Notification.PRIORITY_HIGH);
+                builder.setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle("WEST-VILL")
+                        .setContentText("Prueba del sonido Pichón")
+                        .setAutoCancel(true);
+                manager.notify(7801, builder.build());
+            });
         }
     }
 
@@ -130,10 +158,17 @@ public class MainActivity extends Activity {
 
     private void adaptNativeNotificationsUi(WebView view) {
         String script = "(function(){if(window.__wvNativeUiInstalled)return;window.__wvNativeUiInstalled=true;"
-                + "var apply=function(){var b=document.getElementById('wv-push-enable');"
+                + "var apply=function(){"
+                + "var b=document.getElementById('wv-push-enable');"
+                + "var preview=document.getElementById('wv-sound-preview');"
                 + "var s=document.getElementById('wv-push-status');"
-                + "if(b){b.hidden=true;b.style.display='none';b.setAttribute('aria-hidden','true');}"
-                + "if(s){var msg='Esta APK utiliza alertas nativas de WEST-VILL. No necesitás activar las notificaciones de Chrome.';if(s.textContent!==msg)s.textContent=msg;}"
+                + "if(b){var row=b.closest('.btn-row');if(row)row.remove();else b.remove();}"
+                + "if(preview)preview.remove();"
+                + "if(s){var msg='Esta APK utiliza alertas nativas de Android. No necesitás activar las notificaciones de Chrome.';if(s.textContent!==msg)s.textContent=msg;"
+                + "var test=document.getElementById('wv-native-sound-test');"
+                + "if(!test){test=document.createElement('button');test.id='wv-native-sound-test';test.type='button';test.className='btn secondary';test.textContent='PROBAR SONIDO DE LA APK';"
+                + "test.addEventListener('click',function(){try{if(window.WestVillPushBridge)window.WestVillPushBridge.testNotificationSound();}catch(e){console.warn('Prueba de sonido nativo:',e);}});"
+                + "s.insertAdjacentElement('afterend',test);}}"
                 + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
         view.evaluateJavascript(script, null);
     }
