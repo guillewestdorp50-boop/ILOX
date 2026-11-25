@@ -1215,3 +1215,41 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #page-title{
   letter-spacing:.02em!important;
   white-space:nowrap!important;
 }
+
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page #admin-center-label,
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page #page-subtitle,
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page #admin-profile-open,
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-tools > .admin-wallet-chip,
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-tools > .date-chip{
+  display:none!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:0!important;
+  width:100%!important;
+  margin-bottom:14px!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-title{
+  display:flex!important;
+  flex:1 1 100%!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  text-align:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-tariff-page #page-title{
+  display:block!important;
+  width:100%!important;
+  margin:0 auto!important;
+  text-align:center!important;
+  text-transform:uppercase!important;
+  font-size:clamp(18px,5.4vw,23px)!important;
+  line-height:1.2!important;
+  letter-spacing:.02em!important;
+  white-space:nowrap!important;
+}
