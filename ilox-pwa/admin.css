@@ -696,12 +696,19 @@ body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:
 @media(max-width:540px){.fare-calc-fields{grid-template-columns:1fr;padding:16px 14px 10px}.fare-field:first-child{grid-column:auto}.fare-hero{padding:22px 18px}.fare-hero-mark{font-size:37px;right:12px}.fare-wait-note,.fare-output{margin-left:14px;margin-right:14px}.fare-band-row{grid-template-columns:1fr 1fr}.tariff-band-row{grid-template-columns:1fr 1fr}.tariff-band-actions{grid-column:1/-1}.fare-footnote{padding-left:14px;padding-right:14px}}
 
 
-/* WEST-VILL APK/WebView: títulos de caja y métricas ajustados a pantallas angostas */
-body.client-mode .ledger-heading{display:inline-block;font-size:clamp(14px,5vw,20px);line-height:1.12;letter-spacing:0;white-space:nowrap}
-@media(max-width:420px){
- body.client-mode .ledger-income-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px}
- body.client-mode .ledger-income-metrics .metric{min-width:0;padding:10px 5px;min-height:96px}
- body.client-mode .ledger-income-metrics .metric-top{font-size:9px!important;line-height:1.15;letter-spacing:-.25px;white-space:nowrap}
- body.client-mode .ledger-income-metrics .metric-value{font-size:16px!important;letter-spacing:-.045em}
- body.client-mode .ledger-income-metrics .ledger-movement-label{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif!important;font-size:9px!important;font-weight:800;line-height:1.15;white-space:nowrap;letter-spacing:-.45px;font-stretch:condensed}
+/* WEST-VILL APK: ajuste aislado para Android WebView (la PWA web no cambia). */
+html.wv-native-ui-scale,html.wv-native-ui-scale body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.wv-native-ui-scale body.admin-mode .ledger-heading,
+html.wv-native-ui-scale body.client-mode .ledger-heading{display:inline-block;font-size:clamp(14px,5vw,20px);line-height:1.12;letter-spacing:0;white-space:nowrap}
+@media(max-width:600px){
+ html.wv-native-ui-scale body.admin-mode .ledger-income-metrics,
+ html.wv-native-ui-scale body.client-mode .ledger-income-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important;width:100%;min-width:0}
+ html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric,
+ html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric{box-sizing:border-box;min-width:0;width:100%;padding:9px 3px!important;min-height:96px;overflow:visible}
+ html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric-top,
+ html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric-top{display:block;min-width:0;width:100%;font-size:8px!important;line-height:1.15;letter-spacing:-.35px;white-space:nowrap;text-align:center}
+ html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric-value,
+ html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric-value{display:block;width:100%;min-width:0;font-size:13px!important;line-height:1.2;letter-spacing:-.075em;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}
+ html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .ledger-movement-label,
+ html.wv-native-ui-scale body.client-mode .ledger-income-metrics .ledger-movement-label{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif!important;font-size:8px!important;font-weight:800;line-height:1.15;white-space:nowrap;letter-spacing:-.55px;font-stretch:condensed}
 }
