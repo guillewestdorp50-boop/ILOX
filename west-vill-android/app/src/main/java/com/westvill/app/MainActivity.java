@@ -14,6 +14,11 @@ import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.ViewGroup;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -54,6 +59,9 @@ public class MainActivity extends Activity {
     private static final String[] SOUND_NAMES = {"Pichón de WEST-VILL", "Alerta de viaje WEST-VILL"};
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private WebView webView;
+    private FrameLayout appRoot;
+    private ImageView splashView;
+    private boolean splashDismissed = false;
 
     public class PushBridge {
         @JavascriptInterface
@@ -75,6 +83,7 @@ public class MainActivity extends Activity {
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
 
+        appRoot = new FrameLayout(this);
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF101E35);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
@@ -112,6 +121,7 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 Uri uri = Uri.parse(url);
                 if (!APP_HOST.equalsIgnoreCase(uri.getHost())) return;
+                dismissSplash();
                 installAuthListener();
                 adaptNativeNotificationsUi(view);
                 createNotificationChannel();
@@ -124,13 +134,31 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
-        setContentView(webView);
+        appRoot.addView(webView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        splashView = new ImageView(this);
+        splashView.setBackgroundColor(Color.rgb(10, 24, 45));
+        splashView.setImageResource(R.drawable.westvill_splash);
+        splashView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        splashView.setContentDescription("WEST-VILL - Logística de viajes");
+        appRoot.addView(splashView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(appRoot);
 
         if (WebViewFeature.isFeatureSupported(WebViewFeature.SAFE_BROWSING_ENABLE)) {
             WebViewCompat.startSafeBrowsing(this, success -> loadApp());
         } else {
             loadApp();
         }
+    }
+
+    private void dismissSplash() {
+        if (splashDismissed || splashView == null) return;
+        splashDismissed = true;
+        splashView.animate().alpha(0f).setDuration(280).withEndAction(() -> {
+            if (appRoot != null && splashView != null) appRoot.removeView(splashView);
+            splashView = null;
+        }).start();
     }
 
     private void installAuthListener() {
