@@ -100,9 +100,9 @@ async function renderTariffPage(){
   panel('ESPERA Y TIEMPO','<p class="muted">La primera hora está incluida. Desde la segunda hora se cobra por cada hora adicional, con el importe que defina Administración.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form><p class="muted">Si la espera supera las 4 horas, se recomienda solicitar un nuevo viaje al momento de regresar para evitar un costo elevado.</p>')
  );
  const saveConfig=async changes=>{
-  const {error}=await sb.from('westvill_tariff_config').update({...changes,updated_by:adminProfile.id,updated_at:new Date().toISOString()}).eq('id',1);
-  if(error){toast('No se pudo guardar el tarifario: '+error.message);return false;}
-  toast('Tarifario actualizado. La calculadora de pasajeros ya tiene los nuevos valores.');return true;
+  const {data,error}=await sb.from('westvill_tariff_config').update({...changes,updated_by:adminProfile.id,updated_at:new Date().toISOString()}).eq('id',1).select('id').single();
+  if(error||!data){toast('No se pudo confirmar el guardado del tarifario: '+(error?.message||'No se encontró la configuración.'));return false;}
+  toast('Tarifario guardado y confirmado. Se aplicará en el próximo cálculo del pasajero.');return true;
  };
  const bindMoney=(formId,name,columns)=>{
   const form=$('#'+formId);if(!form)return;
