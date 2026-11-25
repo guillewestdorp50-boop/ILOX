@@ -697,10 +697,10 @@ body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:
 
 
 /* WEST-VILL APK/WebView: títulos de caja y métricas ajustados a pantallas angostas */
-body.client-mode .ledger-heading{display:inline-block;font-size:20px;line-height:1.12;letter-spacing:0;white-space:normal}
+body.client-mode .ledger-heading{display:inline-block;font-size:clamp(14px,5vw,20px);line-height:1.12;letter-spacing:0;white-space:nowrap}
 @media(max-width:420px){
  body.client-mode .ledger-income-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px}
  body.client-mode .ledger-income-metrics .metric{min-width:0;padding:13px 11px}
  body.client-mode .ledger-income-metrics .metric:last-child{grid-column:1/-1}
- body.client-mode .ledger-income-metrics .ledger-movement-label{font-size:13px!important;line-height:1.2;white-space:normal;overflow-wrap:anywhere;letter-spacing:0}
+ body.client-mode .ledger-income-metrics .ledger-movement-label{font-size:10px!important;line-height:1.2;white-space:nowrap;overflow-wrap:normal;letter-spacing:0}
 }
