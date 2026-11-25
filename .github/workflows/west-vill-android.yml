@@ -119,8 +119,8 @@ jobs:
       - name: Prepare WEST-VILL notification sound
         run: |
           mkdir -p app/src/main/res/raw
-          base64 --decode app/src/main/assets/westvill_pichon.ogg.b64 > app/src/main/res/raw/westvill_pichon.ogg
-          test -s app/src/main/res/raw/westvill_pichon.ogg
+          python3 scripts/create_notification_sound.py app/src/main/res/raw/westvill_pichon.wav
+          test -s app/src/main/res/raw/westvill_pichon.wav
 
       - name: Build signed APK
         run: gradle --no-daemon :app:assembleRelease
