@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.CookieManager;
@@ -96,6 +97,7 @@ public class MainActivity extends Activity {
                 Uri uri = Uri.parse(url);
                 if (!APP_HOST.equalsIgnoreCase(uri.getHost())) return;
                 installAuthListener();
+                adaptNativeNotificationsUi(view);
                 createNotificationChannel();
                 requestNotificationPermission();
                 String target = getIntent().getStringExtra(EXTRA_TARGET_URL);
@@ -126,15 +128,30 @@ public class MainActivity extends Activity {
         webView.evaluateJavascript(script, null);
     }
 
+    private void adaptNativeNotificationsUi(WebView view) {
+        String script = "(function(){if(window.__wvNativeUiInstalled)return;window.__wvNativeUiInstalled=true;"
+                + "var apply=function(){var b=document.getElementById('wv-push-enable');"
+                + "var s=document.getElementById('wv-push-status');"
+                + "if(b){b.hidden=true;b.style.display='none';b.setAttribute('aria-hidden','true');}"
+                + "if(s){s.textContent='Esta APK utiliza alertas nativas de WEST-VILL. No necesitás activar las notificaciones de Chrome.';}"
+                + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
+        view.evaluateJavascript(script, null);
+    }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null && manager.getNotificationChannel("westvill_alerts_v1") == null) {
+        if (manager != null && manager.getNotificationChannel("westvill_alerts_v2") == null) {
             NotificationChannel channel = new NotificationChannel(
-                    "westvill_alerts_v1", "Alertas de WEST-VILL", NotificationManager.IMPORTANCE_HIGH);
+                    "westvill_alerts_v2", "Alertas de WEST-VILL", NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("Mensajes y avisos de viajes de WEST-VILL");
             channel.enableVibration(true);
-            channel.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, null);
+            channel.setSound(
+                    Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon),
+                    new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build());
             manager.createNotificationChannel(channel);
         }
     }
