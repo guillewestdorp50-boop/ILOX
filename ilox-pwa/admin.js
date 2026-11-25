@@ -1,3 +1,5 @@
+/* Android WEST-VILL: conserva la familia tipográfica de la PWA y ajusta solo su escala visual. */
+if(new URLSearchParams(location.search).get('native')==='1')document.documentElement.classList.add('wv-native-ui-scale');
 const $=s=>document.querySelector(s);
 const sb=window.wvSupabase;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
