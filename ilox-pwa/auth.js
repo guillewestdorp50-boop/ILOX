@@ -34,26 +34,26 @@ function playWestVillChime(){
   const schedule=()=>{
    const now=ctx.currentTime;
    const master=ctx.createGain();
-   master.gain.setValueAtTime(.62,now);
-   master.gain.exponentialRampToValueAtTime(.0001,now+.52);
+   master.gain.setValueAtTime(.48,now);
+   master.gain.exponentialRampToValueAtTime(.0001,now+.78);
    master.connect(ctx.destination);
-   // Aviso exclusivo de viaje: dos tonos electrónicos suaves, breves y ascendentes.
-   const notes=[{at:0,frequency:784,duration:.14},{at:.19,frequency:1046,duration:.19}];
+   // Firma sonora nueva de WEST-VILL: tres notas cálidas, cortas y ascendentes.
+   const notes=[{at:0,frequency:659.25,duration:.16},{at:.19,frequency:830.61,duration:.16},{at:.39,frequency:987.77,duration:.27}];
    notes.forEach(note=>{
     const osc=ctx.createOscillator(),gain=ctx.createGain();
     osc.type='sine';
     osc.frequency.setValueAtTime(note.frequency,now+note.at);
     gain.gain.setValueAtTime(.0001,now+note.at);
-    gain.gain.exponentialRampToValueAtTime(.24,now+note.at+.018);
+    gain.gain.exponentialRampToValueAtTime(.20,now+note.at+.022);
     gain.gain.exponentialRampToValueAtTime(.0001,now+note.at+note.duration);
     osc.connect(gain);gain.connect(master);
-    osc.start(now+note.at);osc.stop(now+note.at+note.duration+.02);
+    osc.start(now+note.at);osc.stop(now+note.at+note.duration+.025);
    });
   };
   if(ctx.state==='suspended')ctx.resume().then(schedule).catch(e=>console.warn('Sonido WEST-VILL:',e));else schedule();
  }catch(e){console.warn('Sonido WEST-VILL:',e);}
 }
-function selectAndPreviewWestVillSound(){try{localStorage.setItem('wv-notification-sound','west-vill-doble-tono-viaje');playWestVillChime();const status=$('#wv-push-status');if(status)status.textContent='Doble tono de viaje seleccionado. Escuchá la señal de prueba.';const adminStatus=$('#wv-admin-push-status');if(adminStatus)adminStatus.textContent='Doble tono de viaje seleccionado. Escuchá la señal de prueba.';}catch(e){playWestVillChime();}}
+function selectAndPreviewWestVillSound(){try{localStorage.setItem('wv-notification-sound','west-vill-viaje-triada');playWestVillChime();const status=$('#wv-push-status');if(status)status.textContent='Nueva señal de viaje seleccionada. Escuchá la prueba.';const adminStatus=$('#wv-admin-push-status');if(adminStatus)adminStatus.textContent='Nueva señal de viaje seleccionada. Escuchá la prueba.';}catch(e){playWestVillChime();}}
 document.addEventListener('pointerdown',unlockWestVillAudio,{once:true,passive:true});window.wvPlayChime=playWestVillChime;window.wvSelectAndPreviewSound=selectAndPreviewWestVillSound;
 function startDriverNotificationFeed(){if(notificationChannel){sb.removeChannel(notificationChannel);notificationChannel=null;}if(messageChannel){sb.removeChannel(messageChannel);messageChannel=null;}if(requestChannel){sb.removeChannel(requestChannel);requestChannel=null;}if(incomeChannel){sb.removeChannel(incomeChannel);incomeChannel=null;}if(expenseChannel){sb.removeChannel(expenseChannel);expenseChannel=null;}if(!['conductor','pasajero'].includes(profile?.role))return;if(profile.role==='pasajero'){requestChannel=sb.channel('westvill-requests-'+profile.id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'westvill_requests',filter:'passenger_id=eq.'+profile.id},()=>{if(['viajes','solicitudes','abonos'].includes(activeTab))clientTab(activeTab);}).subscribe();}notificationChannel=sb.channel('westvill-notices-'+profile.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'westvill_notifications',filter:'user_id=eq.'+profile.id},payload=>{const n=payload.new||{};playWestVillChime();if(n.kind==='quote_ready'&&profile.role==='pasajero'){clientTab('solicitudes');}else if(['inicio','viajes','solicitudes'].includes(activeTab)){clientTab(activeTab);}else if(activeTab==='mensajes'&&profile.role==='pasajero'&&chatTargetRole==='admin'){loadThread();}alert((n.title||'Nuevo aviso')+'\\n'+(n.body||'Tenés una novedad de administración.'));}).subscribe();messageChannel=sb.channel('westvill-messages-'+profile.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'westvill_messages'},payload=>{const m=payload.new||{};if(m.recipient_id===profile.id){playWestVillChime();if(activeTab==='mensajes')loadThread();}}).subscribe();if(profile.role==='conductor'){const company=isCompanyDriver(),incomeConfig={event:'*',schema:'public',table:'westvill_income'},expenseConfig={event:'*',schema:'public',table:'westvill_expenses'};if(!company){incomeConfig.filter='driver_id=eq.'+profile.id;expenseConfig.filter='created_by=eq.'+profile.id;}incomeChannel=sb.channel('westvill-income-'+profile.id).on('postgres_changes',incomeConfig,()=>{refreshClientWallet();if(['ingresos','balance'].includes(activeTab))clientTab(activeTab);}).subscribe();expenseChannel=sb.channel('westvill-expenses-'+profile.id).on('postgres_changes',expenseConfig,()=>{refreshClientWallet();if(['gastos','balance'].includes(activeTab))clientTab(activeTab);}).subscribe();}}
 function walletARS(n){return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));}
