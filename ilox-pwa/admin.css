@@ -712,3 +712,11 @@ html.wv-native-ui-scale body.client-mode .ledger-heading{display:inline-block;fo
  html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .ledger-movement-label,
  html.wv-native-ui-scale body.client-mode .ledger-income-metrics .ledger-movement-label{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif!important;font-size:8px!important;font-weight:800;line-height:1.15;white-space:nowrap;letter-spacing:-.55px;font-stretch:condensed}
 }
+
+
+/* APK: el saldo se ubica debajo de CENTRO DE OPERACIONES sin alterar sus dimensiones. */
+html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip{display:inline-flex!important;min-width:158px;max-width:46vw;min-height:66px;padding:10px 11px!important;gap:6px;justify-content:center;margin-top:8px}
+html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip .wallet-symbol{font-size:26px!important}
+html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip small{font-size:8px!important}
+html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip b{font-size:17px!important}
+@media(max-width:380px){html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip{min-width:140px}}
