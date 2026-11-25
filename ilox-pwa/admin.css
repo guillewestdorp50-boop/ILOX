@@ -982,3 +982,20 @@ html.wv-native-ui-scale body.admin-mode.admin-drivers-page #page-title{
 .wv-rating-review-tags span{font-size:10px;padding:4px 7px;border-radius:999px;background:rgba(255,210,28,.09);color:#ffd21c}
 .wv-admin-rating{margin-top:3px;white-space:normal;line-height:1.3}
 .wv-admin-rating small{color:var(--muted);font-size:10px}
+
+
+/* WEST-VILL · Conductores: filtros en una sola fila, alineados y del mismo ancho. */
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .filter-row{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:stretch!important;
+  gap:7px!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .filter-row>.btn{
+  flex:1 1 0!important;
+  min-width:0!important;
+  padding:10px 5px!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  font-size:clamp(9px,2.7vw,12px)!important;
+}
