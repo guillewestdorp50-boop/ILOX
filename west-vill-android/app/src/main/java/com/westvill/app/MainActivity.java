@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
                 + "['wv-admin-push-enable','wv-push-enable'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});"
                 + "['wv-admin-sound-preview','wv-sound-preview'].forEach(function(id){"
                 + "var sound=document.getElementById(id);if(!sound)return;"
-                + "sound.textContent='ESCUCHAR Y SELECCIONAR SONIDO';"
+                + "if(sound.textContent!=='ESCUCHAR Y SELECCIONAR SONIDO')sound.textContent='ESCUCHAR Y SELECCIONAR SONIDO';"
                 + "if(sound.dataset.wvNativeSoundBound!=='1'){sound.dataset.wvNativeSoundBound='1';"
                 + "sound.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();"
                 + "try{if(window.WestVillPushBridge)window.WestVillPushBridge.openSoundPicker();}"
