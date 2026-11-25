@@ -78,20 +78,29 @@ jobs:
                   raise ValueError(f"Decoded data is only {len(data)} bytes; this is not a plausible Android keystore.")
               path = pathlib.Path(os.environ["RUNNER_TEMP"]) / "west-vill-release.jks"
               path.write_bytes(data)
-              check = subprocess.run(
-                  ["keytool", "-list", "-keystore", str(path),
-                   "-storepass", os.environ["WV_ANDROID_KEYSTORE_PASSWORD"],
-                   "-alias", os.environ["WV_ANDROID_KEY_ALIAS"]],
-                  text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-              )
-              if check.returncode:
+              check = None
+              accepted_type = None
+              diagnostics = []
+              for store_type in ("JKS", "PKCS12"):
+                  candidate = subprocess.run(
+                      ["keytool", "-list", "-storetype", store_type, "-keystore", str(path),
+                       "-storepass", os.environ["WV_ANDROID_KEYSTORE_PASSWORD"],
+                       "-alias", os.environ["WV_ANDROID_KEY_ALIAS"]],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                  )
+                  diagnostics.append(f"{store_type}: {candidate.stdout.strip()[-600:]}")
+                  if candidate.returncode == 0:
+                      check = candidate
+                      accepted_type = store_type
+                      break
+              if check is None:
                   report.append("Keystore decode: SUCCESS")
-                  report.append("Keystore validation: FAILED (password, alias, or keystore format mismatch)")
-                  report.append("keytool diagnostic: " + check.stdout.strip()[-1200:])
-                  raise RuntimeError("The decoded file is not accepted with the configured password and alias.")
+                  report.append("Keystore validation: FAILED for JKS and PKCS12")
+                  report.append("keytool diagnostics: " + " | ".join(diagnostics))
+                  raise RuntimeError("The decoded file is not a valid JKS or PKCS12 keystore with the configured password and alias.")
               report.append(f"Decoded keystore size: {len(data)} bytes")
               report.append("Keystore decode: SUCCESS")
-              report.append("Keystore validation: SUCCESS")
+              report.append(f"Keystore validation: SUCCESS ({accepted_type})")
               with open(os.environ["GITHUB_ENV"], "a") as f:
                   f.write(f"WV_ANDROID_KEYSTORE_PATH={path}\n")
                   f.write(f"WV_ANDROID_KEYSTORE_PASSWORD={os.environ['WV_ANDROID_KEYSTORE_PASSWORD']}\n")
