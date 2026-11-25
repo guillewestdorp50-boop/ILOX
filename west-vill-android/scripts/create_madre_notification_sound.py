@@ -8,7 +8,7 @@ import wave
 RATE = 44100
 DURATION = 3.15
 COUNT = int(RATE * DURATION)
-audio = bytearray()
+audio = []
 phase = 0.0
 for i in range(COUNT):
     t = i / RATE
