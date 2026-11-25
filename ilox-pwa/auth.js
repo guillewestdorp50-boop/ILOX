@@ -253,6 +253,7 @@ function clientTab(tab){
  })();
 }
 
+function wvRatingTagLabel(tag,rating){const high=Number(rating)>=4,map={trato:high?'Amabilidad':'Trato',conduccion:high?'Conducción segura':'Conducción',puntualidad:'Puntualidad',limpieza:high?'Vehículo limpio':'Limpieza',comunicacion:high?'Buena comunicación':'Comunicación'};return map[tag]||tag;}
 function wvRatingStars(value,size=19){
  const n=Math.max(0,Math.min(5,Number(value)||0));
  return '<span class="wv-rating-stars-display" aria-label="'+n.toFixed(1).replace('.',',')+' de 5 estrellas">'+Array.from({length:5},(_,i)=>{const fill=Math.max(0,Math.min(1,n-i));return '<span class="wv-rating-star" style="font-size:'+size+'px;background:linear-gradient(90deg,#ffd21c '+(fill*100)+'%,#536274 '+(fill*100)+'%);-webkit-background-clip:text;background-clip:text;color:transparent">★</span>';}).join('')+'</span>';
@@ -269,9 +270,7 @@ async function renderDriverRatingCard(){
   sb.from('westvill_driver_ratings').select('rating,tags,comment,created_at').eq('driver_id',profile.id).neq('comment','').order('created_at',{ascending:false}).limit(8)
  ]);
  if(summaryError)throw summaryError;if(reviewsError)throw reviewsError;
- const tags=['trato','conduccion','puntualidad','limpieza','comunicacion'];
- const tagNames={trato:'Trato',conduccion:'Conducción',puntualidad:'Puntualidad',limpieza:'Limpieza',comunicacion:'Comunicación'};
- const recent=(reviews||[]).map(r=>'<article class="wv-rating-review"><div>'+wvRatingStars(r.rating,16)+' <b>'+r.rating+'/5</b></div>'+(r.tags?.length?'<div class="wv-rating-review-tags">'+r.tags.map(t=>'<span>'+esc(tagNames[t]||t)+'</span>').join('')+'</div>':'')+(r.comment?'<p>'+esc(r.comment)+'</p>':'')+'<small>'+new Date(r.created_at).toLocaleDateString('es-AR')+'</small></article>').join('');
+ const recent=(reviews||[]).map(r=>'<article class="wv-rating-review"><div>'+wvRatingStars(r.rating,16)+' <b>'+r.rating+'/5</b></div>'+(r.tags?.length?'<div class="wv-rating-review-tags">'+r.tags.map(t=>'<span>'+esc(wvRatingTagLabel(t,r.rating))+'</span>').join('')+'</div>':'')+(r.comment?'<p>'+esc(r.comment)+'</p>':'')+'<small>'+new Date(r.created_at).toLocaleDateString('es-AR')+'</small></article>').join('');
  host.insertAdjacentHTML('beforeend',panel('MI CALIFICACIÓN', '<div class="wv-rating-driver-total">'+(summary?.rating_count?wvRatingStars(summary.average_rating,25)+'<strong>'+Number(summary.average_rating).toFixed(1).replace('.',',')+'</strong><span>de 5 · '+Number(summary.rating_count)+' reseñas</span>':'<span class="client-muted">Todavía no recibiste calificaciones.</span>')+'</div>'+(recent?'<h3 class="wv-rating-section-title">Opiniones recientes de pasajeros</h3>'+recent:'<p class="client-muted">Cuando un pasajero deje una reseña, aparecerá acá de forma anónima.</p>')));
 }
 async function renderClientTab(tab){activeTab=tab;document.querySelectorAll('[data-client-tab]').forEach(b=>b.classList.toggle('active',b.dataset.clientTab===tab));const page=$('#client-page');page.innerHTML=panel('Cargando…','<span class="client-muted">Conectando con WEST-VILL.</span>');try{
@@ -362,7 +361,7 @@ async function renderClientTab(tab){activeTab=tab;document.querySelectorAll('[da
     let review='';
     if(x.status==='completado'&&x.driver_id){
      if(existing){
-      review='<div class="wv-rating-submitted"><b>✓ Ya calificaste este viaje</b><div>'+wvRatingStars(existing.rating,20)+' <span>'+existing.rating+'/5</span></div>'+(existing.tags?.length?'<small>Aspectos: '+existing.tags.map(t=>esc(t)).join(' · ')+'</small>':'')+(existing.comment?'<p>'+esc(existing.comment)+'</p>':'')+'</div>';
+      review='<div class="wv-rating-submitted"><b>✓ Ya calificaste este viaje</b><div>'+wvRatingStars(existing.rating,20)+' <span>'+existing.rating+'/5</span></div>'+(existing.tags?.length?'<small>Aspectos: '+existing.tags.map(t=>esc(wvRatingTagLabel(t,existing.rating))).join(' · ')+'</small>':'')+(existing.comment?'<p>'+esc(existing.comment)+'</p>':'')+'</div>';
      }else{
       review='<form class="wv-rating-form" data-rating-form="'+x.id+'" data-driver="'+x.driver_id+'"><b>¿Cómo fue tu experiencia con el conductor?</b><p class="client-muted">Tu calificación es anónima y ayuda a otros pasajeros.</p><div class="wv-rating-input" role="group" aria-label="Elegí de una a cinco estrellas">'+[1,2,3,4,5].map(n=>'<button type="button" data-rating-value="'+n+'" aria-label="'+n+' estrellas" aria-pressed="false">★</button>').join('')+'</div><input type="hidden" name="rating" value="0"><div class="wv-rating-question" data-rating-question>¿Qué se destacó? (opcional)</div><div class="wv-rating-tags">'+[['trato','Amabilidad'],['conduccion','Conducción segura'],['puntualidad','Puntualidad'],['limpieza','Vehículo limpio'],['comunicacion','Buena comunicación']].map(([key,label])=>'<label><input type="checkbox" name="tags" value="'+key+'"><span>'+label+'</span></label>').join('')+'</div><label class="wv-rating-comment">Comentario (opcional)<textarea name="comment" maxlength="500" rows="2" placeholder="Contanos brevemente cómo fue el viaje…"></textarea></label><button class="btn wv-rating-submit" type="submit">ENVIAR CALIFICACIÓN</button><div class="client-muted wv-rating-feedback" aria-live="polite"></div></form>';
      }
