@@ -87,52 +87,31 @@ function adminNotificationMarkup(items,trips=[]){
 }
 
 async function getTariffConfig(){
- const {data,error}=await sb.from('westvill_tariff_config').select('*').eq('id',1).single();
+ const {data,error}=await sb.from('westvill_tariff_config').select('price_per_km,wait_hour_price').eq('id',1).single();
  if(error)throw error;
  return data;
 }
-function tariffBandRow(b){
- return '<form class="tariff-band-row" data-tariff-band-form="'+esc(b.id)+'"><label>Desde km<input name="km_min" inputmode="decimal" value="'+esc(b.km_min)+'" required></label><label>Hasta km<input name="km_max" inputmode="decimal" value="'+esc(b.km_max)+'" required></label><label>Solo ida ($)<input name="one_way_price" inputmode="numeric" value="'+esc(b.one_way_price)+'" required></label><label>Ida y vuelta ($)<input name="round_trip_price" inputmode="numeric" value="'+esc(b.round_trip_price)+'" required></label><div class="tariff-band-actions"><button class="btn" type="submit">Guardar tramo</button><button class="btn secondary" type="button" data-tariff-delete="'+esc(b.id)+'">Eliminar</button></div></form>';
-}
-function tariffRangesOverlap(a,b){return Number(a.km_min)<=Number(b.km_max)&&Number(b.km_min)<=Number(a.km_max);}
 async function renderTariffPage(){
- const config=await getTariffConfig(),bands=Array.isArray(config.distance_bands)?config.distance_bands:[];
+ const config=await getTariffConfig();
  page('Tarifario de viajes',
-  panel('ESPERA Y TIEMPO', '<p class="muted">La primera hora de espera es siempre gratuita. Administración solo modifica el importe de cada hora adicional completa.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form>')+
-  panel('TRAMOS DE DISTANCIA','<p class="muted">Cada tramo tiene sus propios precios. La calculadora del pasajero solo mostrará importes que estén cargados aquí; no inventa ni extrapola tarifas.</p>'+(bands.length?bands.slice().sort((x,y)=>Number(x.km_min)-Number(y.km_min)).map(tariffBandRow).join(''):'<div class="empty"><strong>Todavía no hay tramos cargados.</strong><p>Agregá el primer tramo para habilitar cotizaciones.</p></div>')+
-  '<form id="tariff-add-form" class="tariff-band-row tariff-band-new"><label>Desde km<input name="km_min" inputmode="decimal" placeholder="60" required></label><label>Hasta km<input name="km_max" inputmode="decimal" placeholder="60" required></label><label>Solo ida ($)<input name="one_way_price" inputmode="numeric" placeholder="70000" required></label><label>Ida y vuelta ($)<input name="round_trip_price" inputmode="numeric" placeholder="80000" required></label><div class="tariff-band-actions"><button class="btn" type="submit">＋ Agregar tramo</button></div></form>')
+  panel('PRECIO POR KILÓMETRO', '<p class="muted">Definí un único valor por kilómetro. La calculadora del pasajero multiplica automáticamente los kilómetros ingresados por esta tarifa; para ida y vuelta duplica la distancia.</p><form id="tariff-km-form" class="form-grid"><label class="field">Precio por kilómetro ($)<input name="price_per_km" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.price_per_km||0)+'" required></label><button class="btn" type="submit">Guardar precio por km</button></form><p class="muted">Tarifa actual: <b>'+money(config.price_per_km||0)+'</b> por km</p>')+
+  panel('ESPERA Y TIEMPO', '<p class="muted">La primera hora de espera es siempre gratuita. Administración modifica el importe de cada hora adicional completa.</p><form id="tariff-wait-form" class="form-grid"><label class="field">Precio por hora adicional ($)<input name="wait_hour_price" inputmode="numeric" type="number" min="0" step="1" value="'+Number(config.wait_hour_price??10000)+'" required></label><button class="btn" type="submit">Guardar espera</button></form>')
  );
  const saveConfig=async changes=>{
   const {error}=await sb.from('westvill_tariff_config').update({...changes,updated_by:adminProfile.id,updated_at:new Date().toISOString()}).eq('id',1);
   if(error){toast('No se pudo guardar el tarifario: '+error.message);return false;}
-  toast('Tarifario actualizado. La calculadora de pasajeros ya tiene los nuevos valores.');return true;
+  toast('Tarifario actualizado. La calculadora de pasajeros ya tiene el nuevo valor.');return true;
+ };
+ $('#tariff-km-form').onsubmit=async e=>{
+  e.preventDefault();const price=parseMoney(new FormData(e.currentTarget).get('price_per_km'));
+  if(!Number.isFinite(price)||price<0){toast('Ingresá un precio por kilómetro válido.');return;}
+  if(await saveConfig({price_per_km:price}))await renderTariffPage();
  };
  $('#tariff-wait-form').onsubmit=async e=>{
-  e.preventDefault();const fd=new FormData(e.currentTarget),price=parseMoney(fd.get('wait_hour_price'));
+  e.preventDefault();const price=parseMoney(new FormData(e.currentTarget).get('wait_hour_price'));
   if(!Number.isFinite(price)||price<0){toast('Ingresá un precio de espera válido.');return;}
   if(await saveConfig({wait_hour_price:price}))await renderTariffPage();
  };
- const parseBand=form=>{
-  const fd=new FormData(form),min=parseKm(fd.get('km_min')),max=parseKm(fd.get('km_max')),one=parseMoney(fd.get('one_way_price')),round=parseMoney(fd.get('round_trip_price'));
-  if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<min||!(one>0)||!(round>0)){toast('Completá un tramo válido y los dos precios.');return null;}
-  return {km_min:min,km_max:max,one_way_price:one,round_trip_price:round};
- };
- $('#tariff-add-form').onsubmit=async e=>{
-  e.preventDefault();const band=parseBand(e.currentTarget);if(!band)return;
-  if(bands.some(x=>tariffRangesOverlap(x,band))){toast('Ese tramo se superpone con otro. Ajustá los kilómetros.');return;}
-  band.id=crypto.randomUUID();
-  if(await saveConfig({distance_bands:[...bands,band].sort((x,y)=>x.km_min-y.km_min)}))await renderTariffPage();
- };
- document.querySelectorAll('[data-tariff-band-form]').forEach(form=>form.onsubmit=async e=>{
-  e.preventDefault();const id=form.dataset.tariffBandForm,band=parseBand(form);if(!band)return;
-  if(bands.some(x=>x.id!==id&&tariffRangesOverlap(x,band))){toast('Ese tramo se superpone con otro. Ajustá los kilómetros.');return;}
-  const next=bands.map(x=>x.id===id?{...band,id}:x).sort((x,y)=>x.km_min-y.km_min);
-  if(await saveConfig({distance_bands:next}))await renderTariffPage();
- });
- document.querySelectorAll('[data-tariff-delete]').forEach(button=>button.onclick=async()=>{
-  const id=button.dataset.tariffDelete;if(!confirm('¿Eliminar este tramo del tarifario?'))return;
-  if(await saveConfig({distance_bands:bands.filter(x=>x.id!==id)}))await renderTariffPage();
- });
 }
 
 async function loadPage(which){
