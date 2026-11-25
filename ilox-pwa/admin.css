@@ -1172,3 +1172,6 @@ html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .d
     font-variant-numeric:tabular-nums!important;
   }
 }
+
+/* WEST-VILL · presencia de pasajeros en administración */
+.wv-presence-status{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font-size:11px;letter-spacing:.06em}.wv-presence-dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex:0 0 11px;animation:wv-presence-pulse 1.25s ease-in-out infinite}.wv-presence-dot.online{background:#20d77a;box-shadow:0 0 0 2px #20d77a30,0 0 12px #20d77a99}.wv-presence-dot.offline{background:#ed4b55;box-shadow:0 0 0 2px #ed4b5530,0 0 10px #ed4b5580}@keyframes wv-presence-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.38;transform:scale(.82)}}
