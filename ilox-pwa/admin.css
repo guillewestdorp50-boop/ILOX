@@ -517,3 +517,17 @@ html.wv-native-ui-scale body.client-mode .client-live-clock span{font-size:14px!
  html.wv-native-ui-scale body.client-mode .client-live-clock strong,
  html.wv-native-ui-scale body.client-mode .client-live-clock span{font-size:14px!important}
 }
+
+
+/* WEST-VILL PWA: tipografía aprobada y escala más compacta en teléfonos. */
+body.admin-mode,body.client-mode{font-family:'DM Sans',system-ui,sans-serif}
+body.admin-mode h1,body.admin-mode h2,body.client-mode h1,body.client-mode h2{font-family:Manrope,'DM Sans',sans-serif}
+body.admin-mode button,body.admin-mode input,body.admin-mode select,body.admin-mode textarea,body.client-mode button,body.client-mode input,body.client-mode select,body.client-mode textarea{font-family:'DM Sans',system-ui,sans-serif}
+@media(max-width:700px){
+ body.admin-mode .page-head p,body.admin-mode .muted,body.admin-mode .empty-inline,body.admin-mode .metric-top,body.admin-mode .metric-note,body.admin-mode .date-chip,body.admin-mode .nav-item,body.admin-mode .btn,body.admin-mode .tag,body.admin-mode th,body.admin-mode td,body.admin-mode .field label,body.admin-mode .field input,body.admin-mode .field select,body.admin-mode .field textarea,body.admin-mode .sidebar-foot,body.admin-mode .side-label,body.admin-mode .toast,
+ body.client-mode .client-user,body.client-mode .client-heading p,body.client-mode .client-muted,body.client-mode .client-row,body.client-mode .client-tabs button,body.client-mode .client-form label,body.client-mode .client-form input,body.client-mode .client-form select,body.client-mode .client-form textarea,body.client-mode .client-panel p,body.client-mode .toast{font-size:13px!important}
+ body.admin-mode .admin-chat-message,body.client-mode .chat-bubble{font-size:14px!important}
+ body.admin-mode .panel h2,body.client-mode .client-panel h2{font-size:14px!important}
+ body.admin-mode .page-head h1,body.client-mode .client-heading h1{font-size:clamp(23px,5.5vw,29px)!important}
+ body.admin-mode .metric-value{font-size:19px!important}
+}
