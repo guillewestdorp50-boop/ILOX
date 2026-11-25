@@ -1,4 +1,4 @@
-const CACHE='west-vill-travel-v120';
+const CACHE='west-vill-travel-v121';
 const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=49','./auth.js?v=79','./admin.js?v=72','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
