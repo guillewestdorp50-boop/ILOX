@@ -121,6 +121,7 @@ jobs:
           mkdir -p app/src/main/res/raw
           python3 scripts/create_notification_sound.py app/src/main/res/raw/westvill_pichon.wav
           test -s app/src/main/res/raw/westvill_pichon.wav
+        working-directory: west-vill-android
 
       - name: Build signed APK
         run: gradle --no-daemon :app:assembleRelease
