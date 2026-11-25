@@ -45,20 +45,64 @@ jobs:
           gradle-version: '8.9'
 
       - name: Prepare permanent signing key
+        id: signing
         env:
           WV_ANDROID_KEYSTORE_BASE64: ${{ secrets.WV_ANDROID_KEYSTORE_BASE64 }}
           WV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.WV_ANDROID_KEYSTORE_PASSWORD }}
           WV_ANDROID_KEY_ALIAS: ${{ secrets.WV_ANDROID_KEY_ALIAS }}
           WV_ANDROID_KEY_PASSWORD: ${{ secrets.WV_ANDROID_KEY_PASSWORD }}
         run: |
-          # Normalize accidental spaces/labels around the Base64 payload, then validate the recovered JKS.
-          printf '%s' "$WV_ANDROID_KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' | base64 --decode > "$RUNNER_TEMP/west-vill-release.jks"
-          keytool -list -keystore "$RUNNER_TEMP/west-vill-release.jks" -storepass "$WV_ANDROID_KEYSTORE_PASSWORD" -alias "$WV_ANDROID_KEY_ALIAS" >/dev/null
-          echo "Permanent Android signing key decoded and validated."
-          echo "WV_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/west-vill-release.jks" >> "$GITHUB_ENV"
-          echo "WV_ANDROID_KEYSTORE_PASSWORD=$WV_ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "WV_ANDROID_KEY_ALIAS=$WV_ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "WV_ANDROID_KEY_PASSWORD=$WV_ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import os, re, base64, binascii, pathlib, subprocess, sys
+          raw = os.environ["WV_ANDROID_KEYSTORE_BASE64"]
+          cleaned = re.sub(r"[^A-Za-z0-9+/=]", "", raw)
+          report = [
+              "WEST-VILL Android signing diagnostics",
+              f"Secret present: {bool(raw)}",
+              f"Original character count: {len(raw)}",
+              f"Base64 character count after cleanup: {len(cleaned)}",
+              f"Base64 length remainder modulo 4: {len(cleaned) % 4}",
+              f"Padding characters: {cleaned.count('=')}",
+          ]
+          try:
+              if not cleaned:
+                  raise ValueError("The Base64 secret is empty after cleanup.")
+              if "=" in cleaned[:-2]:
+                  raise ValueError("Base64 padding appears before the end of the value.")
+              padded = cleaned + ("=" * ((-len(cleaned)) % 4))
+              data = base64.b64decode(padded, validate=True)
+              if len(data) < 100:
+                  raise ValueError(f"Decoded data is only {len(data)} bytes; this is not a plausible Android keystore.")
+              path = pathlib.Path(os.environ["RUNNER_TEMP"]) / "west-vill-release.jks"
+              path.write_bytes(data)
+              check = subprocess.run(
+                  ["keytool", "-list", "-keystore", str(path),
+                   "-storepass", os.environ["WV_ANDROID_KEYSTORE_PASSWORD"],
+                   "-alias", os.environ["WV_ANDROID_KEY_ALIAS"]],
+                  text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+              )
+              if check.returncode:
+                  report.append("Keystore decode: SUCCESS")
+                  report.append("Keystore validation: FAILED (password, alias, or keystore format mismatch)")
+                  report.append("keytool diagnostic: " + check.stdout.strip()[-1200:])
+                  raise RuntimeError("The decoded file is not accepted with the configured password and alias.")
+              report.append(f"Decoded keystore size: {len(data)} bytes")
+              report.append("Keystore decode: SUCCESS")
+              report.append("Keystore validation: SUCCESS")
+              with open(os.environ["GITHUB_ENV"], "a") as f:
+                  f.write(f"WV_ANDROID_KEYSTORE_PATH={path}\n")
+                  f.write(f"WV_ANDROID_KEYSTORE_PASSWORD={os.environ['WV_ANDROID_KEYSTORE_PASSWORD']}\n")
+                  f.write(f"WV_ANDROID_KEY_ALIAS={os.environ['WV_ANDROID_KEY_ALIAS']}\n")
+                  f.write(f"WV_ANDROID_KEY_PASSWORD={os.environ['WV_ANDROID_KEY_PASSWORD']}\n")
+          except (ValueError, binascii.Error, RuntimeError) as e:
+              report.append("RESULT: FAILED")
+              report.append("Reason: " + str(e))
+              pathlib.Path("west-vill-signing-diagnostic.txt").write_text("\n".join(report) + "\n")
+              print("\n".join(report))
+              sys.exit(1)
+          pathlib.Path("west-vill-signing-diagnostic.txt").write_text("\n".join(report) + "\n")
+          print("\n".join(report))
+          PY
 
       - name: Build signed APK
         run: gradle --no-daemon :app:assembleRelease
@@ -74,4 +118,13 @@ jobs:
           name: west-vill-android-release
           path: west-vill-android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: west-vill-android-failure-diagnostics
+          path: west-vill-signing-diagnostic.txt
+          if-no-files-found: ignore
           retention-days: 30
