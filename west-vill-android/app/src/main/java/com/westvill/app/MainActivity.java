@@ -2,6 +2,8 @@ package com.westvill.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.media.MediaPlayer;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,6 +13,11 @@ import android.net.Uri;
 import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -42,6 +49,9 @@ public class MainActivity extends Activity {
     private static final String SUPABASE_PUBLIC_KEY = "sb_publishable_CmPT-xSeIUUtTUArdIYDgA_jhXY8nuZ";
     static final String EXTRA_TARGET_URL = "westvill_target_url";
     private static final int REQUEST_POST_NOTIFICATIONS = 701;
+    private static final String PREF_SOUND_ID = "notification_sound_id";
+    private static final String[] SOUND_IDS = {"pichon"};
+    private static final String[] SOUND_NAMES = {"Pichón de WEST-VILL"};
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private WebView webView;
 
@@ -53,33 +63,7 @@ public class MainActivity extends Activity {
                     network.execute(() -> registerFcmToken(accessToken, fcmToken)));
         }
 
-        @JavascriptInterface
-        public void testNotificationSound() {
-            runOnUiThread(() -> {
-                if (Build.VERSION.SDK_INT >= 33 &&
-                        ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.POST_NOTIFICATIONS)
-                                != PackageManager.PERMISSION_GRANTED) {
-                    requestNotificationPermission();
-                    return;
-                }
-                NotificationManager manager = getSystemService(NotificationManager.class);
-                if (manager == null) return;
-                createNotificationChannel();
-                Uri sound = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon);
-                Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                        ? new Notification.Builder(MainActivity.this, "westvill_alerts_v2")
-                        : new Notification.Builder(MainActivity.this)
-                                .setSound(sound)
-                                .setVibrate(new long[]{0, 180, 90, 180})
-                                .setPriority(Notification.PRIORITY_HIGH);
-                builder.setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle("WEST-VILL")
-                        .setContentText("Prueba del sonido Pichón")
-                        .setAutoCancel(true);
-                manager.notify(7801, builder.build());
-            });
-        }
-    }
+undefined    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,39 +140,111 @@ public class MainActivity extends Activity {
         webView.evaluateJavascript(script, null);
     }
 
-    private void adaptNativeNotificationsUi(WebView view) {
-        String script = "(function(){if(window.__wvNativeUiInstalled)return;window.__wvNativeUiInstalled=true;"
-                + "var apply=function(){"
-                + "var b=document.getElementById('wv-push-enable');"
-                + "var preview=document.getElementById('wv-sound-preview');"
-                + "var s=document.getElementById('wv-push-status');"
-                + "if(b){var row=b.closest('.btn-row');if(row)row.remove();else b.remove();}"
-                + "if(preview)preview.remove();"
-                + "if(s){var msg='Esta APK utiliza alertas nativas de Android. No necesitás activar las notificaciones de Chrome.';if(s.textContent!==msg)s.textContent=msg;"
-                + "var test=document.getElementById('wv-native-sound-test');"
-                + "if(!test){test=document.createElement('button');test.id='wv-native-sound-test';test.type='button';test.className='btn secondary';test.textContent='PROBAR SONIDO DE LA APK';"
-                + "test.addEventListener('click',function(){try{if(window.WestVillPushBridge)window.WestVillPushBridge.testNotificationSound();}catch(e){console.warn('Prueba de sonido nativo:',e);}});"
-                + "s.insertAdjacentElement('afterend',test);}}"
-                + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
-        view.evaluateJavascript(script, null);
+undefined
+    static String selectedSoundId(android.content.Context context) {
+        return context.getSharedPreferences("westvill_fcm", MODE_PRIVATE)
+                .getString(PREF_SOUND_ID, "pichon");
+    }
+
+    static String notificationChannelId(String soundId) {
+        return "westvill_alerts_sound_" + soundId + "_v1";
+    }
+
+    static int soundResourceId(android.content.Context context, String soundId) {
+        if ("pichon".equals(soundId)) return R.raw.westvill_pichon;
+        return R.raw.westvill_pichon;
+    }
+
+    private void showSoundPicker() {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        content.setPadding(pad, pad / 2, pad, 0);
+
+        TextView description = new TextView(this);
+        description.setText("Escuchá cada sonido y elegí cuál querés para tus alertas de viajes.");
+        description.setTextSize(15);
+        content.addView(description);
+
+        String selected = selectedSoundId(this);
+        for (int i = 0; i < SOUND_IDS.length; i++) {
+            final String soundId = SOUND_IDS[i];
+            final String soundName = SOUND_NAMES[i];
+            LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.VERTICAL);
+            item.setPadding(0, pad / 2, 0, pad / 2);
+
+            TextView name = new TextView(this);
+            name.setText(soundName + (soundId.equals(selected) ? "  ✓ SELECCIONADO" : ""));
+            name.setTextSize(16);
+            name.setTypeface(null, android.graphics.Typeface.BOLD);
+            item.addView(name);
+
+            LinearLayout actions = new LinearLayout(this);
+            actions.setOrientation(LinearLayout.HORIZONTAL);
+            Button listen = new Button(this);
+            listen.setText("ESCUCHAR");
+            Button choose = new Button(this);
+            choose.setText("ELEGIR");
+            actions.addView(listen, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            actions.addView(choose, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            item.addView(actions);
+            content.addView(item);
+
+            listen.setOnClickListener(v -> playSoundPreview(soundId));
+            choose.setOnClickListener(v -> {
+                getSharedPreferences("westvill_fcm", MODE_PRIVATE).edit()
+                        .putString(PREF_SOUND_ID, soundId).apply();
+                createNotificationChannel();
+                Toast.makeText(this, soundName + " seleccionado", Toast.LENGTH_SHORT).show();
+                ((android.app.Dialog) content.getTag()).dismiss();
+            });
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("SONIDOS WEST-VILL")
+                .setView(content)
+                .setNegativeButton("CERRAR", null)
+                .create();
+        content.setTag(dialog);
+        dialog.show();
+    }
+
+    private void playSoundPreview(String soundId) {
+        try {
+            MediaPlayer player = MediaPlayer.create(this, soundResourceId(this, soundId));
+            if (player == null) return;
+            player.setOnCompletionListener(MediaPlayer::release);
+            player.setOnErrorListener((mp, what, extra) -> {
+                mp.release();
+                return true;
+            });
+            player.start();
+        } catch (Exception error) {
+            Toast.makeText(this, "No se pudo reproducir el sonido", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null && manager.getNotificationChannel("westvill_alerts_v2") == null) {
-            NotificationChannel channel = new NotificationChannel(
-                    "westvill_alerts_v2", "Alertas de WEST-VILL", NotificationManager.IMPORTANCE_HIGH);
-            channel.setDescription("Mensajes y avisos de viajes de WEST-VILL");
-            channel.enableVibration(true);
-            channel.setSound(
-                    Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon),
-                    new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build());
-            manager.createNotificationChannel(channel);
-        }
+        if (manager == null) return;
+        String soundId = selectedSoundId(this);
+        String channelId = notificationChannelId(soundId);
+        if (manager.getNotificationChannel(channelId) != null) return;
+        NotificationChannel channel = new NotificationChannel(
+                channelId, "Alertas WEST-VILL — " + soundId, NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("Mensajes y avisos de viajes de WEST-VILL");
+        channel.enableVibration(true);
+        channel.setSound(
+                Uri.parse("android.resource://" + getPackageName() + "/" + soundResourceId(this, soundId)),
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+        manager.createNotificationChannel(channel);
     }
 
     private void requestNotificationPermission() {
