@@ -202,12 +202,25 @@ async function renderSchoolPasses(page){
 async function renderPassengerCalculator(page){
  const {data:config,error}=await sb.from('westvill_tariff_config').select('price_per_km_one_way,price_per_km_round_trip,wait_hour_price,free_wait_hours').eq('id',1).single();
  if(error){page.innerHTML=panel('Calculadora de viajes','<p class="client-muted">No pudimos cargar el tarifario. Intentá nuevamente en unos instantes.</p>');return;}
- const oneWayPrice=Number(config.price_per_km_one_way||0),roundTripPrice=Number(config.price_per_km_round_trip||0),waitPrice=Number(config.wait_hour_price||10000),freeWaitHours=Number(config.free_wait_hours??1);
+ let oneWayPrice=Number(config.price_per_km_one_way||0),roundTripPrice=Number(config.price_per_km_round_trip||0),waitPrice=Number(config.wait_hour_price||10000),freeWaitHours=Number(config.free_wait_hours??1);
  const currency=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
+ const refreshTariff=async()=>{
+  const {data,error}=await sb.from('westvill_tariff_config').select('price_per_km_one_way,price_per_km_round_trip,wait_hour_price,free_wait_hours').eq('id',1).single();
+  if(error)throw error;
+  if(!data)throw new Error('Administración todavía no configuró el tarifario.');
+  oneWayPrice=Number(data.price_per_km_one_way||0);
+  roundTripPrice=Number(data.price_per_km_round_trip||0);
+  waitPrice=Number(data.wait_hour_price??10000);
+  freeWaitHours=Number(data.free_wait_hours??1);
+  const note=$('.fare-wait-note');
+  if(note)note.innerHTML='<span>✨ '+(freeWaitHours===1?'Primera hora incluida':'Horas incluidas: '+freeWaitHours)+'</span><b>Desde la hora adicional: '+currency(waitPrice)+' por hora</b>';
+  footnote.textContent='Tarifa solo ida: '+currency(oneWayPrice)+' por km · Ida y vuelta: '+currency(roundTripPrice)+' por km.';
+ };
+
  page.innerHTML='<section class="fare-calculator"><div class="fare-hero"><span class="fare-kicker">WEST-VILL · VIAJÁ TRANQUILO</span><h2>Calculá tu viaje</h2><p>Elegí solo ida o ida y vuelta. El cálculo usa la tarifa correspondiente definida por Administración.</p><span class="fare-hero-mark">🚖</span></div><div class="fare-calc-fields"><label class="fare-field"><span>📍 DISTANCIA DE IDA</span><div class="fare-input-wrap"><input id="fare-km" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Ej.: 60" aria-label="Distancia de ida en kilómetros"><b>KM</b></div></label><label class="fare-field"><span>🔁 TIPO DE RECORRIDO</span><select id="fare-trip-type"><option value="one_way">Solo ida</option><option value="round_trip">Ida y vuelta (regreso dentro de 1 hora)</option></select></label><label class="fare-field"><span>⏱ HORAS TOTALES DE ESPERA</span><input id="fare-wait-hours" type="number" min="0" max="24" step="1" value="0"></label></div><button id="fare-calculate" class="btn" type="button" style="display:block;width:100%;margin:14px 0;padding:16px;font-weight:800;font-size:16px">CALCULAR PRECIO</button><div class="fare-wait-note"><span>✨ Primera hora incluida en ida y vuelta</span><b>Desde la segunda hora: '+currency(waitPrice)+' por hora adicional</b></div><div class="fare-output" id="fare-output" aria-live="polite" hidden></div><p class="fare-footnote" id="fare-footnote">Tarifa solo ida: '+currency(oneWayPrice)+' por km · Ida y vuelta: '+currency(roundTripPrice)+' por km.</p></section>';
  const kmInput=$('#fare-km'),typeInput=$('#fare-trip-type'),waitInput=$('#fare-wait-hours'),output=$('#fare-output'),footnote=$('#fare-footnote');
  const update=()=>{
-  const raw=String(kmInput.value??'').trim(),normalized=raw.replace(',','.'),km=/^\\d+(?:\\.\\d{1,2})?$/.test(normalized)?Number(normalized):NaN,wait=Number(waitInput.value),isRoundTrip=typeInput.value==='round_trip',rate=isRoundTrip?roundTripPrice:oneWayPrice;
+  const raw=String(kmInput.value??'').trim(),normalized=raw.replace(',','.'),km=/^\d+(?:\.\d{1,2})?$/.test(normalized)?Number(normalized):NaN,wait=Number(waitInput.value),isRoundTrip=typeInput.value==='round_trip',rate=isRoundTrip?roundTripPrice:oneWayPrice;
   footnote.textContent='Tarifa seleccionada: '+currency(rate)+' por km '+(isRoundTrip?'sobre los kilómetros totales de ida y vuelta.':'de ida.');
   output.hidden=false;if(!Number.isFinite(km)||km<=0){output.innerHTML='<span class="fare-output-label">REVISÁ LA DISTANCIA</span><strong>Ingresá los kilómetros de ida</strong>';return;}
   if(!(rate>0)){output.innerHTML='<span class="fare-output-label">TARIFA PENDIENTE</span><strong>Consultá con Administración</strong><small>El precio de este recorrido todavía no fue configurado.</small>';return;}
@@ -215,7 +228,7 @@ async function renderPassengerCalculator(page){
   const chargedKm=km*(isRoundTrip?2:1),base=chargedKm*rate,billableWait=Math.max(0,wait-freeWaitHours),extra=billableWait*waitPrice,total=base+extra;
   output.innerHTML='<span class="fare-output-label">TU PRECIO ESTIMADO</span><strong class="fare-total">'+currency(total)+'</strong><div class="fare-breakdown"><span>'+km.toLocaleString('es-AR')+' km de ida · '+(isRoundTrip?'Ida y vuelta ('+chargedKm.toLocaleString('es-AR')+' km totales)':'Solo ida')+'</span><b>'+currency(base)+'</b>'+(wait?'<span>'+wait+' hora(s) de espera ('+billableWait+' cobrable(s))</span><b>'+currency(extra)+'</b>':'')+'</div>'+(isRoundTrip&&wait>4?'<small style="display:block;margin-top:10px">⚠️ Con más de 4 horas de espera, conviene solicitar un nuevo viaje cuando estés listo para regresar.</small>':'')+'<small>'+currency(rate)+' por km · Tarifa configurada por Administración</small>';
  };
- const calculateButton=$('#fare-calculate');calculateButton.addEventListener('click',event=>{event.preventDefault();calculateButton.disabled=true;calculateButton.textContent='CALCULANDO…';try{update();calculateButton.textContent='CALCULAR PRECIO';output.scrollIntoView({behavior:'smooth',block:'center'});}catch(err){output.hidden=false;output.innerHTML='<span class="fare-output-label">NO SE PUDO CALCULAR</span><strong>Intentá nuevamente</strong><small>'+esc(err?.message||'Revisá los datos ingresados.')+'</small>';calculateButton.textContent='REINTENTAR CÁLCULO';}finally{calculateButton.disabled=false;}});
+ const calculateButton=$('#fare-calculate');calculateButton.addEventListener('click',async event=>{event.preventDefault();calculateButton.disabled=true;calculateButton.textContent='ACTUALIZANDO TARIFARIO…';try{await refreshTariff();update();calculateButton.textContent='CALCULAR PRECIO';output.scrollIntoView({behavior:'smooth',block:'center'});}catch(err){output.hidden=false;output.innerHTML='<span class="fare-output-label">NO SE PUDO CALCULAR</span><strong>Revisá la conexión</strong><small>'+esc(err?.message||'No pudimos actualizar el tarifario de Administración.')+'</small>';calculateButton.textContent='REINTENTAR CÁLCULO';}finally{calculateButton.disabled=false;}});
 }
 async function clientTab(tab){activeTab=tab;document.querySelectorAll('[data-client-tab]').forEach(b=>b.classList.toggle('active',b.dataset.clientTab===tab));const page=$('#client-page');page.innerHTML=panel('Cargando…','<span class="client-muted">Conectando con WEST-VILL.</span>');try{
  if(tab==='calculadora'&&profile.role==='pasajero'){await renderPassengerCalculator(page);}
