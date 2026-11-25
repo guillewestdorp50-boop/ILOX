@@ -131,6 +131,9 @@ jobs:
           grep -q "versionName '1.1.5'" app/build.gradle
         working-directory: west-vill-android
 
+      - name: Install image tooling for launcher icon generation
+        run: python3 -m pip install --user Pillow
+
       - name: Generate Android launcher icons from the exact PWA icon
         run: |
           python3 west-vill-android/scripts/generate_icons.py
