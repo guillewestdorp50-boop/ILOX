@@ -423,3 +423,37 @@ body.theme-day.client-mode .client-live-clock{
 .school-pass-summary>div{color:#dce9f6}
 body.theme-day .school-pass-summary{background:#e6f3fa!important;border:1px solid #b9d9e8!important;color:#183d55!important;box-shadow:0 3px 14px #20364b12!important}
 body.theme-day .school-pass-summary>div{color:#183d55!important}
+
+
+/* WEST-VILL · Ajuste tipográfico inicial: solo títulos, secciones y marca (-3 px).
+   DM Sans usa tamaños CSS explícitos; no altera textos de chats, botones ni campos. */
+body.admin-mode .page-head-title h1{
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  font-size:clamp(23px,calc(3vw - 3px),32px)!important;
+}
+body.client-mode .client-heading-line h1{
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  font-size:clamp(17px,calc(4.2vw - 3px),27px)!important;
+}
+.auth-card h1{
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  font-size:24px!important;
+}
+.panel h2{font-family:'DM Sans',system-ui,sans-serif!important;font-size:12px!important}
+.client-panel h2{font-family:'DM Sans',system-ui,sans-serif!important;font-size:13px!important}
+.invite-card h2{font-family:'DM Sans',system-ui,sans-serif!important;font-size:16px!important}
+.nav-item{font-family:'DM Sans',system-ui,sans-serif!important;font-size:13px!important}
+.side-label{font-family:'DM Sans',system-ui,sans-serif!important;font-size:13px!important}
+.client-tabs button{font-family:'DM Sans',system-ui,sans-serif!important;font-size:13px!important}
+.brand-mark{font-family:'DM Sans',system-ui,sans-serif!important;font-size:12px!important}
+.auth-mark{font-family:'DM Sans',system-ui,sans-serif!important;font-size:13px!important}
+.brand strong,.auth-brand strong{
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  font-size:13px!important;
+}
+@media(max-width:420px){
+  body.client-mode .client-heading-line h1{font-size:clamp(15px,calc(5vw - 3px),19px)!important}
+}
+@media(max-width:350px){
+  body.client-mode .client-heading-line h1{font-size:14px!important}
+}
