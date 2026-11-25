@@ -531,3 +531,96 @@ body.admin-mode button,body.admin-mode input,body.admin-mode select,body.admin-m
  body.admin-mode .page-head h1,body.client-mode .client-heading h1{font-size:clamp(23px,5.5vw,29px)!important}
  body.admin-mode .metric-value{font-size:19px!important}
 }
+
+
+/* WEST-VILL Android APK: tipografía general un punto más compacta.
+   Solo afecta a la interfaz remota abierta por el APK (native=1).
+   No modifica datos, lógica, botones ni tamaños de los paneles. */
+html.wv-native-ui-scale body.admin-mode .field label,
+html.wv-native-ui-scale body.admin-mode .field input,
+html.wv-native-ui-scale body.admin-mode .field select,
+html.wv-native-ui-scale body.admin-mode .field textarea,
+html.wv-native-ui-scale body.admin-mode .auth-fields label,
+html.wv-native-ui-scale body.admin-mode .auth-fields input,
+html.wv-native-ui-scale body.admin-mode .invite-card label,
+html.wv-native-ui-scale body.admin-mode .invite-card select,
+html.wv-native-ui-scale body.admin-mode .auth-subtitle,
+html.wv-native-ui-scale body.admin-mode .auth-switch,
+html.wv-native-ui-scale body.admin-mode .auth-back,
+html.wv-native-ui-scale body.admin-mode .auth-error,
+html.wv-native-ui-scale body.admin-mode .client-form label,
+html.wv-native-ui-scale body.admin-mode .client-form input,
+html.wv-native-ui-scale body.admin-mode .client-form textarea,
+html.wv-native-ui-scale body.admin-mode .client-form select,
+html.wv-native-ui-scale body.admin-mode .client-chat select,
+html.wv-native-ui-scale body.admin-mode .client-chat input,
+html.wv-native-ui-scale body.admin-mode .chat-bubble,
+html.wv-native-ui-scale body.admin-mode .notice-row p,
+html.wv-native-ui-scale body.admin-mode .client-muted,
+html.wv-native-ui-scale body.admin-mode .client-row,
+html.wv-native-ui-scale body.admin-mode .client-user,
+html.wv-native-ui-scale body.admin-mode .client-heading p,
+html.wv-native-ui-scale body.admin-mode .pad-note-label,
+html.wv-native-ui-scale body.admin-mode .pad-note-label input,
+html.wv-native-ui-scale body.admin-mode .pad-current,
+html.wv-native-ui-scale body.admin-mode .request-received p,
+html.wv-native-ui-scale body.client-mode .client-form label,
+html.wv-native-ui-scale body.client-mode .client-form input,
+html.wv-native-ui-scale body.client-mode .client-form textarea,
+html.wv-native-ui-scale body.client-mode .client-form select,
+html.wv-native-ui-scale body.client-mode .client-row,
+html.wv-native-ui-scale body.client-mode .client-muted,
+html.wv-native-ui-scale body.client-mode .client-user,
+html.wv-native-ui-scale body.client-mode .client-heading p,
+html.wv-native-ui-scale .auth-screen .auth-subtitle,
+html.wv-native-ui-scale .auth-screen .role-choice b,
+html.wv-native-ui-scale .auth-screen .role-choice small {
+  font-size:13px!important;
+}
+html.wv-native-ui-scale body.admin-mode .muted,
+html.wv-native-ui-scale body.admin-mode .empty-inline,
+html.wv-native-ui-scale body.admin-mode .metric-top,
+html.wv-native-ui-scale body.admin-mode .metric-note,
+html.wv-native-ui-scale body.admin-mode .date-chip,
+html.wv-native-ui-scale body.admin-mode .crumb,
+html.wv-native-ui-scale body.admin-mode .nav-item,
+html.wv-native-ui-scale body.admin-mode .nav-item i,
+html.wv-native-ui-scale body.admin-mode .sidebar-foot,
+html.wv-native-ui-scale body.admin-mode .sidebar-foot small,
+html.wv-native-ui-scale body.admin-mode .btn,
+html.wv-native-ui-scale body.admin-mode .tag,
+html.wv-native-ui-scale body.admin-mode th,
+html.wv-native-ui-scale body.admin-mode td,
+html.wv-native-ui-scale body.admin-mode .client-tabs button,
+html.wv-native-ui-scale body.admin-mode .client-panel p,
+html.wv-native-ui-scale body.admin-mode .client-panel li,
+html.wv-native-ui-scale body.admin-mode .text-action,
+html.wv-native-ui-scale body.admin-mode .assign-row select,
+html.wv-native-ui-scale body.admin-mode .toast,
+html.wv-native-ui-scale body.admin-mode .invite-result,
+html.wv-native-ui-scale body.admin-mode .role-choice small,
+html.wv-native-ui-scale body.admin-mode .role-choice b,
+html.wv-native-ui-scale body.admin-mode .side-label,
+html.wv-native-ui-scale body.admin-mode .panel-head .muted,
+html.wv-native-ui-scale body.client-mode .client-tabs button,
+html.wv-native-ui-scale body.client-mode .client-panel p,
+html.wv-native-ui-scale body.client-mode .client-panel li,
+html.wv-native-ui-scale body.client-mode .text-action,
+html.wv-native-ui-scale body.client-mode .toast {
+  font-size:13px!important;
+}
+html.wv-native-ui-scale body.admin-mode .admin-chat-message,
+html.wv-native-ui-scale body.client-mode .chat-bubble {
+  font-size:15px!important;
+}
+html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip,
+html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip strong,
+html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip span,
+html.wv-native-ui-scale body.client-mode .client-live-clock,
+html.wv-native-ui-scale body.client-mode .client-live-clock strong,
+html.wv-native-ui-scale body.client-mode .client-live-clock span {
+  font-size:13px!important;
+}
+@media(max-width:600px){
+  html.wv-native-ui-scale body.client-mode .chat-bubble{font-size:15px!important}
+}
