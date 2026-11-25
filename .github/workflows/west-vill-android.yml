@@ -127,9 +127,15 @@ jobs:
 
       - name: Validate release version
         run: |
-          grep -q "versionCode 17" app/build.gradle
-          grep -q "versionName '1.1.4'" app/build.gradle
+          grep -q "versionCode 18" app/build.gradle
+          grep -q "versionName '1.1.5'" app/build.gradle
         working-directory: west-vill-android
+
+      - name: Generate Android launcher icons from the exact PWA icon
+        run: |
+          python3 west-vill-android/scripts/generate_icons.py
+          test -s west-vill-android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -s west-vill-android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Build signed APK
         run: gradle --no-daemon :app:assembleRelease
