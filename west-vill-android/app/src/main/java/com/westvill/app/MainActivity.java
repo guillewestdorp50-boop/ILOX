@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
                 + "var apply=function(){var b=document.getElementById('wv-push-enable');"
                 + "var s=document.getElementById('wv-push-status');"
                 + "if(b){b.hidden=true;b.style.display='none';b.setAttribute('aria-hidden','true');}"
-                + "if(s){s.textContent='Esta APK utiliza alertas nativas de WEST-VILL. No necesitás activar las notificaciones de Chrome.';}"
+                + "if(s){var msg='Esta APK utiliza alertas nativas de WEST-VILL. No necesitás activar las notificaciones de Chrome.';if(s.textContent!==msg)s.textContent=msg;}"
                 + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
         view.evaluateJavascript(script, null);
     }
