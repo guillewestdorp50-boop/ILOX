@@ -145,19 +145,26 @@ public class MainActivity extends Activity {
     }
 
     private void adaptNativeNotificationsUi(WebView view) {
-        String script = "(function(){if(window.__wvNativeUiInstalled)return;window.__wvNativeUiInstalled=true;var apply=function(){"
+        // Aplicar la adaptación aunque el estado de notificaciones no exista todavía:
+        // el botón nativo se ancla al contenedor real del control que sí esté presente.
+        String script = "(function(){if(window.__wvNativeUiObserver)return;window.__wvNativeUiObserver=true;"
+                + "var apply=function(){"
                 + "var b=document.getElementById('wv-push-enable');"
                 + "var preview=document.getElementById('wv-sound-preview');"
                 + "var status=document.getElementById('wv-push-status');"
                 + "var old=document.getElementById('wv-native-sound-picker');"
-                + "if(b)b.remove();"
-                + "if(preview)preview.remove();"
-                + "if(status){var parent=status.parentNode;var next=status.nextSibling;status.remove();"
-                + "if(!old){var choose=document.createElement('button');choose.id='wv-native-sound-picker';"
+                + "var host=(status&&status.parentNode)||(preview&&preview.parentNode)||(b&&b.parentNode);"
+                + "if(b)b.remove();if(preview)preview.remove();if(status)status.remove();"
+                + "if(old||!host)return;"
+                + "var choose=document.createElement('button');choose.id='wv-native-sound-picker';"
                 + "choose.type='button';choose.className='btn secondary';choose.textContent='ELEGIR SONIDO';"
-                + "choose.addEventListener('click',function(){try{if(window.WestVillPushBridge)window.WestVillPushBridge.openSoundPicker();}catch(e){console.warn('Selector de sonido:',e);}});"
-                + "if(parent)parent.insertBefore(choose,next);}}"
-                + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
+                + "choose.style.display='block';choose.style.width='100%';choose.style.marginTop='10px';"
+                + "choose.addEventListener('click',function(){try{if(window.WestVillPushBridge){window.WestVillPushBridge.openSoundPicker();}}catch(e){console.warn('Selector de sonido:',e);}});"
+                + "host.appendChild(choose);"
+                + "};"
+                + "var observer=new MutationObserver(apply);"
+                + "observer.observe(document.documentElement,{childList:true,subtree:true});"
+                + "apply();})();";
         view.evaluateJavascript(script, null);
     }
 
