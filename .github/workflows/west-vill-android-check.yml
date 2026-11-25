@@ -32,6 +32,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Generate notification sound for Android compile check
+        run: |
+          mkdir -p app/src/main/res/raw
+          python3 scripts/create_notification_sound.py app/src/main/res/raw/westvill_pichon.wav
+        working-directory: west-vill-android
       - name: Compile debug build (not for distribution)
         run: gradle --no-daemon :app:assembleDebug
         working-directory: west-vill-android
