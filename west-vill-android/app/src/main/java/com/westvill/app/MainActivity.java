@@ -145,22 +145,19 @@ public class MainActivity extends Activity {
     }
 
     private void adaptNativeNotificationsUi(WebView view) {
-        // Aplicar la adaptación aunque el estado de notificaciones no exista todavía:
-        // el botón nativo se ancla al contenedor real del control que sí esté presente.
+        // En Android se usa el selector nativo. Ocultar el aviso y la activación
+        // push de navegador, pero conservar el botón original de sonido.
         String script = "(function(){if(window.__wvNativeUiObserver)return;window.__wvNativeUiObserver=true;"
                 + "var apply=function(){"
-                + "var b=document.getElementById('wv-push-enable');"
-                + "var preview=document.getElementById('wv-sound-preview');"
-                + "var status=document.getElementById('wv-push-status');"
-                + "var old=document.getElementById('wv-native-sound-picker');"
-                + "var host=(status&&status.parentNode)||(preview&&preview.parentNode)||(b&&b.parentNode);"
-                + "if(b)b.remove();if(preview)preview.remove();if(status)status.remove();"
-                + "if(old||!host)return;"
-                + "var choose=document.createElement('button');choose.id='wv-native-sound-picker';"
-                + "choose.type='button';choose.className='btn secondary';choose.textContent='ELEGIR SONIDO';"
-                + "choose.style.display='block';choose.style.width='100%';choose.style.marginTop='10px';"
-                + "choose.addEventListener('click',function(){try{if(window.WestVillPushBridge){window.WestVillPushBridge.openSoundPicker();}}catch(e){console.warn('Selector de sonido:',e);}});"
-                + "host.appendChild(choose);"
+                + "var status=document.getElementById('wv-admin-push-status');"
+                + "var enable=document.getElementById('wv-admin-push-enable');"
+                + "var sound=document.getElementById('wv-admin-sound-preview');"
+                + "if(status)status.style.display='none';"
+                + "if(enable)enable.style.display='none';"
+                + "if(sound){sound.textContent='ESCUCHAR Y SELECCIONAR SONIDO';"
+                + "sound.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();"
+                + "try{if(window.WestVillPushBridge)window.WestVillPushBridge.openSoundPicker();}"
+                + "catch(err){console.warn('Selector de sonido nativo:',err);}},true);}"
                 + "};"
                 + "var observer=new MutationObserver(apply);"
                 + "observer.observe(document.documentElement,{childList:true,subtree:true});"
