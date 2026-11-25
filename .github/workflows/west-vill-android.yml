@@ -127,8 +127,8 @@ jobs:
 
       - name: Validate release version
         run: |
-          grep -q "versionCode 18" app/build.gradle
-          grep -q "versionName '1.1.5'" app/build.gradle
+          grep -q "versionCode 19" app/build.gradle
+          grep -q "versionName '1.1.6'" app/build.gradle
         working-directory: west-vill-android
 
       - name: Install image tooling for launcher icon generation
