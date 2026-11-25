@@ -720,3 +720,7 @@ html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip .w
 html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip small{font-size:8px!important}
 html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip b{font-size:17px!important}
 @media(max-width:380px){html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip{min-width:140px}}
+
+
+/* APK: alinear el borde superior de fecha/hora con el saldo disponible. */
+html.wv-native-ui-scale body.admin-mode .page-head-tools > .date-chip{margin-top:27px!important}
