@@ -1,87 +1,74 @@
 #!/usr/bin/env python3
-"""Create WEST-VILL's original PDA-radio travel alert (no sampled or borrowed audio)."""
+"""Generate WEST-VILL's original high-register industrial scanner travel alert."""
 import math
 import struct
 import sys
 import wave
 
 RATE = 44100
-DURATION = 3.45
+DURATION = 2.35
 COUNT = int(RATE * DURATION)
 audio = [0.0] * COUNT
 
-def envelope(i, start, length, attack=0.012, release=0.16):
-    t = i / RATE - start
-    if t < 0 or t > length:
-        return 0.0
-    return min(1.0, t / attack) * min(1.0, (length - t) / release)
+def sweep(start, length, low, high, gain, bend=0.0, flutter=0.0, phase_offset=0.0):
+    begin = int(start * RATE)
+    end = min(COUNT, int((start + length) * RATE))
+    phase = phase_offset
+    for i in range(begin, end):
+        p = (i - begin) / max(1, end - begin - 1)
+        # Smooth rising scanner glide, with a subtle acceleration near the end.
+        curve = p + bend * p * (1.0 - p)
+        hz = low + (high - low) * curve
+        local = (i - begin) / RATE
+        hz *= 1.0 + flutter * math.sin(2 * math.pi * 17.0 * local)
+        phase += 2 * math.pi * hz / RATE
+        attack = min(1.0, p / 0.055)
+        release = min(1.0, (1.0 - p) / 0.12)
+        env = max(0.0, attack * release)
+        # Bright metallic partials, restrained so the upper register stays smooth.
+        voice = (math.sin(phase)
+                 + 0.24 * math.sin(2 * phase + 0.22)
+                 + 0.075 * math.sin(3 * phase + 0.51))
+        audio[i] += gain * voice * env
 
-def add_tone(start, length, freq, gain, harmonics=(1.0, 0.32, 0.12), sweep=0.0, wobble=0.0):
+def chirp_cluster(start, length, low, high, gain, pulses=5):
     begin = int(start * RATE)
     end = min(COUNT, int((start + length) * RATE))
     phase = 0.0
     for i in range(begin, end):
-        local = i / RATE - start
-        hz = freq + sweep * local + wobble * math.sin(2 * math.pi * 4.1 * local)
+        p = (i - begin) / max(1, end - begin - 1)
+        hz = low + (high - low) * (p ** 0.82)
         phase += 2 * math.pi * hz / RATE
-        tone = 0.0
-        for h, level in enumerate(harmonics, 1):
-            tone += level * math.sin(h * phase + 0.035 * h * math.sin(phase * 0.13))
-        audio[i] += gain * tone * envelope(i, start, length)
+        # Rapid amplitude flutter creates the articulated "Tri-Ri-Ri" scan,
+        # not separate musical notes.
+        gate = 0.72 + 0.28 * math.sin(2 * math.pi * pulses * p) ** 2
+        env = min(1.0, p / 0.035) * min(1.0, (1.0 - p) / 0.09)
+        carrier = math.sin(phase) + 0.18 * math.sin(2 * phase + 0.3)
+        audio[i] += gain * carrier * gate * max(0.0, env)
 
-def add_static(start, length, gain, seed, decay=0.0):
-    state = seed & 0x7fffffff
-    begin = int(start * RATE)
-    end = min(COUNT, int((start + length) * RATE))
-    # Filtered, irregular radio-noise bursts: deterministic and reproducible.
-    low = 0.0
-    for i in range(begin, end):
-        state = (1103515245 * state + 12345) & 0x7fffffff
-        white = (state / 1073741824.0) - 1.0
-        low = 0.78 * low + 0.22 * white
-        local = i / RATE - start
-        fade = math.exp(-decay * local) if decay else 1.0
-        audio[i] += gain * (0.72 * white + 0.28 * low) * fade * envelope(i, start, length, 0.004, 0.07)
+# Three tightly connected scan articulations climb in pitch, then resolve
+# into one long, bright electronic carrier: "TriRiRirieeeee".
+chirp_cluster(0.04, 0.36, 1850, 2850, 0.46, pulses=4)
+chirp_cluster(0.32, 0.40, 2250, 3450, 0.43, pulses=5)
+chirp_cluster(0.63, 0.43, 2650, 3900, 0.40, pulses=6)
 
-def add_thump(start, freq, gain, length=0.24):
-    begin = int(start * RATE)
-    end = min(COUNT, int((start + length) * RATE))
-    for i in range(begin, end):
-        local = (i - begin) / RATE
-        audio[i] += gain * math.sin(2 * math.pi * freq * local) * math.exp(-local * 17)
+# Industrial scanner lock: sustained high glide with a fine metallic shimmer.
+sweep(0.98, 1.05, 2850, 4250, 0.39, bend=0.18, flutter=0.0025)
+sweep(1.10, 0.88, 3420, 4480, 0.13, bend=-0.10, flutter=0.0015, phase_offset=0.7)
 
-# Low powered-device hum: the sound has weight, not a musical three-note motif.
-add_tone(0.00, 3.30, 57, 0.20, (1.0, 0.42, 0.16), sweep=2.0, wobble=1.8)
-add_tone(0.05, 2.95, 113, 0.105, (1.0, 0.28, 0.08), sweep=-1.5)
+# A tiny high-frequency confirmation tick and a soft, short tail.
+sweep(1.88, 0.23, 4050, 3650, 0.20, bend=0.0)
+sweep(2.08, 0.20, 3200, 2850, 0.10, bend=0.0)
 
-# Device wakes up; a short burst of radio static opens the channel.
-add_static(0.08, 0.36, 0.19, 431, decay=2.0)
-add_thump(0.12, 48, 0.22, 0.30)
-add_tone(0.40, 0.34, 690, 0.10, (1.0, 0.24), sweep=-210)
-add_tone(0.54, 0.48, 385, 0.17, (1.0, 0.42, 0.15), sweep=42, wobble=3.0)
-
-# Radio carrier sweeps through interference, then locks onto a signal.
-add_static(0.91, 0.24, 0.17, 992, decay=1.0)
-add_tone(1.02, 0.62, 248, 0.18, (1.0, 0.48, 0.16), sweep=24)
-add_tone(1.18, 0.25, 820, 0.075, (1.0, 0.20), sweep=-360)
-add_static(1.68, 0.20, 0.13, 1729, decay=3.0)
-
-# Final confirmed signal: broad, slightly distorted midrange plus a deep tactile pulse.
-add_tone(1.92, 0.88, 294, 0.21, (1.0, 0.52, 0.20, 0.07), sweep=-12, wobble=1.4)
-add_tone(2.08, 0.62, 440, 0.095, (1.0, 0.30, 0.10), sweep=-18)
-add_thump(2.00, 64, 0.25, 0.38)
-add_static(2.88, 0.18, 0.075, 2718, decay=5.0)
-add_tone(3.00, 0.31, 174, 0.15, (1.0, 0.34, 0.12), sweep=-18)
-
-# Soft edge fades and gentle saturation keep it present without a harsh peak.
-frames = bytearray()
 peak = max(0.001, max(abs(x) for x in audio))
-scale = 0.91 / peak
+scale = 0.88 / peak
+frames = bytearray()
 fade_in = int(0.012 * RATE)
-fade_out = int(0.20 * RATE)
+fade_out = int(0.16 * RATE)
 for i, sample in enumerate(audio):
     edge = min(1.0, i / fade_in, (COUNT - 1 - i) / fade_out)
-    shaped = math.tanh(sample * 1.22) * scale * max(0.0, edge)
+    # Soft saturation tames peaks without dulling the high register.
+    shaped = math.tanh(sample * 1.05) * scale * max(0.0, edge)
     frames.extend(struct.pack("<h", int(max(-1.0, min(1.0, shaped)) * 32767)))
 
 target = sys.argv[1] if len(sys.argv) > 1 else "app/src/main/res/raw/westvill_viaje.wav"
@@ -90,4 +77,4 @@ with wave.open(target, "wb") as wav:
     wav.setsampwidth(2)
     wav.setframerate(RATE)
     wav.writeframes(frames)
-print("Created original WEST-VILL PDA radio alert: %s (%d bytes)" % (target, len(frames)))
+print("Created original WEST-VILL high-register scanner alert: %s (%d bytes)" % (target, len(frames)))
