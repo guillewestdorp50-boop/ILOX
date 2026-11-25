@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WestVillMessagingService extends FirebaseMessagingService {
-    private static final String CHANNEL_ID = "westvill_alerts_v2";
     private static final AtomicInteger NEXT_ID = new AtomicInteger(1000);
 
     @Override
@@ -54,7 +53,8 @@ public class WestVillMessagingService extends FirebaseMessagingService {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+        String channelId = MainActivity.notificationChannelId(MainActivity.selectedSoundId(this));
+        Notification notification = new NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(body)
@@ -68,13 +68,16 @@ public class WestVillMessagingService extends FirebaseMessagingService {
     }
 
     private void createChannel(NotificationManager manager) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
-                manager.getNotificationChannel(CHANNEL_ID) != null) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        String soundId = MainActivity.selectedSoundId(this);
+        String channelId = MainActivity.notificationChannelId(soundId);
+        if (manager.getNotificationChannel(channelId) != null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "Alertas de WEST-VILL", NotificationManager.IMPORTANCE_HIGH);
+                channelId, "Alertas WEST-VILL — " + soundId, NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription("Mensajes y avisos de viajes de WEST-VILL");
         channel.enableVibration(true);
-        channel.setSound(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.westvill_pichon),
+        channel.setSound(Uri.parse("android.resource://" + getPackageName() + "/" +
+                        MainActivity.soundResourceId(this, soundId)),
                 new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
