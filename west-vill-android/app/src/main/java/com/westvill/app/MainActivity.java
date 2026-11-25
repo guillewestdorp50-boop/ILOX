@@ -145,20 +145,20 @@ public class MainActivity extends Activity {
     }
 
     private void adaptNativeNotificationsUi(WebView view) {
-        // En Android se usa el selector nativo. Ocultar el aviso y la activación
-        // push de navegador, pero conservar el botón original de sonido.
+        // Android usa FCM y canales nativos en los tres perfiles. La elección
+        // de sonido debe estar disponible tanto para Administración como para
+        // Conductor y Pasajero; no se usa la suscripción Web Push del navegador.
         String script = "(function(){if(window.__wvNativeUiObserver)return;window.__wvNativeUiObserver=true;"
                 + "var apply=function(){"
-                + "var status=document.getElementById('wv-admin-push-status');"
-                + "var enable=document.getElementById('wv-admin-push-enable');"
-                + "var sound=document.getElementById('wv-admin-sound-preview');"
-                + "if(status)status.style.display='none';"
-                + "if(enable)enable.style.display='none';"
-                + "if(sound){if(sound.textContent!=='ESCUCHAR Y SELECCIONAR SONIDO')sound.textContent='ESCUCHAR Y SELECCIONAR SONIDO';"
+                + "['wv-admin-push-status','wv-push-status'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});"
+                + "['wv-admin-push-enable','wv-push-enable'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});"
+                + "['wv-admin-sound-preview','wv-sound-preview'].forEach(function(id){"
+                + "var sound=document.getElementById(id);if(!sound)return;"
+                + "sound.textContent='ESCUCHAR Y SELECCIONAR SONIDO';"
                 + "if(sound.dataset.wvNativeSoundBound!=='1'){sound.dataset.wvNativeSoundBound='1';"
                 + "sound.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();"
                 + "try{if(window.WestVillPushBridge)window.WestVillPushBridge.openSoundPicker();}"
-                + "catch(err){console.warn('Selector de sonido nativo:',err);}},true);}}"
+                + "catch(err){console.warn('Selector de sonido nativo:',err);}},true);}});"
                 + "};"
                 + "var observer=new MutationObserver(apply);"
                 + "observer.observe(document.documentElement,{childList:true,subtree:true});"
