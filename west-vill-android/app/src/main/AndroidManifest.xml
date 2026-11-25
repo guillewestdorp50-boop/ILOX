@@ -12,7 +12,7 @@
         android:supportsRtl="true">
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="westvill_alerts_v1" />
+            android:value="westvill_alerts_v2" />
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
