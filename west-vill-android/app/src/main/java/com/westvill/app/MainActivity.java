@@ -139,7 +139,8 @@ public class MainActivity extends Activity {
         splashView = new ImageView(this);
         splashView.setBackgroundColor(Color.rgb(10, 24, 45));
         splashView.setImageResource(R.drawable.westvill_splash);
-        splashView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        // FIT_CENTER conserva el escudo completo y su proporción; el fondo azul rellena los márgenes.
+        splashView.setScaleType(ImageView.ScaleType.FIT_CENTER);
         splashView.setContentDescription("WEST-VILL - Logística de viajes");
         appRoot.addView(splashView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
