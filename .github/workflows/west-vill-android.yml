@@ -1,4 +1,5 @@
 name: WEST-VILL Android APK
+# Build 20: splash uses FIT_CENTER to preserve the complete shield
 
 on:
   workflow_dispatch:
