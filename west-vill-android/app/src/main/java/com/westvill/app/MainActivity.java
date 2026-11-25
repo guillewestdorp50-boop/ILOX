@@ -63,7 +63,11 @@ public class MainActivity extends Activity {
                     network.execute(() -> registerFcmToken(accessToken, fcmToken)));
         }
 
-undefined    }
+        @JavascriptInterface
+        public void openSoundPicker() {
+            runOnUiThread(() -> MainActivity.this.showSoundPicker());
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,7 +144,23 @@ undefined    }
         webView.evaluateJavascript(script, null);
     }
 
-undefined
+    private void adaptNativeNotificationsUi(WebView view) {
+        String script = "(function(){var apply=function(){"
+                + "var b=document.getElementById('wv-push-enable');"
+                + "var preview=document.getElementById('wv-sound-preview');"
+                + "var status=document.getElementById('wv-push-status');"
+                + "var old=document.getElementById('wv-native-sound-test');"
+                + "if(b){var row=b.closest('.btn-row');if(row)row.remove();else b.remove();}"
+                + "if(preview)preview.remove();"
+                + "if(status){var parent=status.parentNode;var next=status.nextSibling;status.remove();"
+                + "if(!old){var choose=document.createElement('button');choose.id='wv-native-sound-picker';"
+                + "choose.type='button';choose.className='btn secondary';choose.textContent='ELEGIR SONIDO';"
+                + "choose.addEventListener('click',function(){try{if(window.WestVillPushBridge)window.WestVillPushBridge.openSoundPicker();}catch(e){console.warn('Selector de sonido:',e);}});"
+                + "if(parent)parent.insertBefore(choose,next);}}"
+                + "};new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});apply();})();";
+        view.evaluateJavascript(script, null);
+    }
+
     static String selectedSoundId(android.content.Context context) {
         return context.getSharedPreferences("westvill_fcm", MODE_PRIVATE)
                 .getString(PREF_SOUND_ID, "pichon");
