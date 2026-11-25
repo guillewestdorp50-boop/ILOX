@@ -733,3 +733,70 @@ html.wv-native-ui-scale body.admin-mode .page-head-tools > .admin-home-profile{p
 
 /* APK: mantener el título Solicitudes de pasajeros en una sola línea. */
 html.wv-native-ui-scale body.admin-mode #page-title.admin-requests-title{font-family:'DM Sans',system-ui,sans-serif!important;font-size:18px!important;line-height:1.2!important;letter-spacing:-.045em!important;white-space:nowrap!important;}
+
+
+/* APK WEST-VILL · Viajes: título centrado y saldo/reloj enfrentados en los laterales. */
+html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:12px!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-title{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page #admin-center-label{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page #page-title{
+  display:block!important;
+  width:100%!important;
+  margin:2px auto 0!important;
+  text-align:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  width:100%!important;
+  min-width:0!important;
+  gap:8px!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .admin-wallet-chip{
+  display:inline-flex!important;
+  flex:0 1 48%!important;
+  width:48%!important;
+  min-width:0!important;
+  max-width:48%!important;
+  min-height:66px!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+  justify-content:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .date-chip{
+  display:flex!important;
+  flex:0 1 48%!important;
+  width:48%!important;
+  min-width:0!important;
+  max-width:48%!important;
+  min-height:66px!important;
+  margin:0!important;
+  padding:8px 9px!important;
+  box-sizing:border-box!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  text-align:right!important;
+}
