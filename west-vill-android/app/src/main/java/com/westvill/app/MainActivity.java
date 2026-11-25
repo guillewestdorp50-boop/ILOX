@@ -145,7 +145,7 @@ public class MainActivity extends Activity {
     }
 
     private void adaptNativeNotificationsUi(WebView view) {
-        String script = "(function(){var apply=function(){"
+        String script = "(function(){if(window.__wvNativeUiInstalled)return;window.__wvNativeUiInstalled=true;var apply=function(){"
                 + "var b=document.getElementById('wv-push-enable');"
                 + "var preview=document.getElementById('wv-sound-preview');"
                 + "var status=document.getElementById('wv-push-status');"
