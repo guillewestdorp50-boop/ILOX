@@ -911,3 +911,37 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap .tag{
 /* APK WEST-VILL · Clientes: quitar por completo la leyenda CENTRO DE OPERACIONES y dar más aire al título. */
 html.wv-native-ui-scale body.admin-mode.admin-clients-page #admin-center-label{display:none!important;}
 html.wv-native-ui-scale body.admin-mode.admin-clients-page #page-title{font-size:clamp(16px,5vw,21px)!important;}
+
+
+/* APK WEST-VILL · Conductores: encabezado limpio, sin Centro de Operaciones, saldo, reloj ni perfil WV. */
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page #admin-center-label,
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page #admin-profile-open,
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-tools > .admin-wallet-chip,
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-tools > .date-chip{
+  display:none!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head{
+  justify-content:center!important;
+  align-items:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-title{
+  display:flex!important;
+  flex:1 1 100%!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+html.wv-native-ui-scale body.admin-mode.admin-drivers-page #page-title{
+  display:block!important;
+  width:100%!important;
+  margin:0 auto!important;
+  text-align:center!important;
+  text-transform:uppercase!important;
+  font-size:clamp(16px,5vw,21px)!important;
+  line-height:1.2!important;
+  letter-spacing:.01em!important;
+  white-space:nowrap!important;
+}
