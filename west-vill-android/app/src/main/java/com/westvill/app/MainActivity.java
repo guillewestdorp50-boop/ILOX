@@ -50,8 +50,8 @@ public class MainActivity extends Activity {
     static final String EXTRA_TARGET_URL = "westvill_target_url";
     private static final int REQUEST_POST_NOTIFICATIONS = 701;
     private static final String PREF_SOUND_ID = "notification_sound_id";
-    private static final String[] SOUND_IDS = {"pichon", "madre"};
-    private static final String[] SOUND_NAMES = {"Pichón de WEST-VILL", "Madre de WEST-VILL"};
+    private static final String[] SOUND_IDS = {"pichon"};
+    private static final String[] SOUND_NAMES = {"Pichón de WEST-VILL"};
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private WebView webView;
 
@@ -176,7 +176,6 @@ public class MainActivity extends Activity {
     }
 
     static int soundResourceId(android.content.Context context, String soundId) {
-        if ("madre".equals(soundId)) return R.raw.westvill_madre;
         return R.raw.westvill_pichon;
     }
 
