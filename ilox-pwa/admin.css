@@ -658,3 +658,39 @@ body.client-mode .client-heading-line h1{
 @media(max-width:350px){
   body.client-mode .client-heading-line h1{font-size:14px!important}
 }
+
+
+/* WEST-VILL · Calculadora de viajes alegre, clara y exclusiva para pasajeros */
+body.client-mode .client-tabs [data-client-tab="calculadora"]{background:linear-gradient(120deg,#00b9c7,#3276ef 58%,#8b5cf6);color:#fff;border:1px solid #8beaff;box-shadow:0 4px 15px #168bd955;font-weight:900}
+body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:linear-gradient(120deg,#ff9d36,#ff5d76 55%,#9c52dc);color:#fff;border-color:#ffd38a;box-shadow:0 4px 18px #ff8c4b66}
+.fare-calculator{overflow:hidden;border:1px solid #315d7e;border-radius:24px;background:linear-gradient(155deg,#10263e 0%,#132e4b 52%,#25234c 100%);box-shadow:0 16px 38px #07162966;margin:8px 0 20px;color:#f7fbff}
+.fare-hero{position:relative;overflow:hidden;padding:25px 22px 23px;background:linear-gradient(118deg,#04b7c8 0%,#2877df 52%,#8752d9 100%);color:#fff}
+.fare-hero:after{content:"";position:absolute;width:210px;height:210px;border:25px solid #ffffff20;border-radius:50%;right:-68px;top:-82px}
+.fare-kicker{font-size:10px;font-weight:950;letter-spacing:.16em;color:#eaffff}
+.fare-hero h2{font-size:clamp(27px,7vw,38px);font-weight:950;letter-spacing:-.045em;margin:10px 0 6px;color:#fff}
+.fare-hero p{max-width:330px;margin:0;color:#f0fbff;font-size:13px;line-height:1.5;font-weight:650}
+.fare-hero-mark{position:absolute;right:18px;bottom:14px;font-size:46px;filter:drop-shadow(0 5px 4px #12284a66)}
+.fare-calc-fields{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:19px 18px 12px}
+.fare-field{display:grid;gap:8px;min-width:0;color:#c6eaff;font-size:10px;font-weight:950;letter-spacing:.08em}
+.fare-field:first-child{grid-column:1/-1}
+.fare-field input,.fare-field select{width:100%;min-width:0;min-height:54px;border:2px solid #3e7298;border-radius:14px;padding:12px 14px;background:#091b30;color:#fff;font:800 17px/1.2 'DM Sans',system-ui,sans-serif;outline:none}
+.fare-field input:focus,.fare-field select:focus{border-color:#49d6e6;box-shadow:0 0 0 3px #36d5e633}
+.fare-input-wrap{position:relative}
+.fare-input-wrap input{padding-right:52px}
+.fare-input-wrap b{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:13px;color:#5fe1ed}
+.fare-wait-note{display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px;margin:0 18px 16px;padding:12px 14px;border:1px solid #e9b84e88;border-radius:13px;background:linear-gradient(110deg,#59451e66,#75432155);color:#ffe6a2;font-size:11px}
+.fare-wait-note b{color:#fff;font-size:12px}
+.fare-output{margin:0 18px 16px;padding:18px 16px 15px;border:1px solid #52d5ce88;border-radius:18px;background:linear-gradient(135deg,#063e4a,#0c5660 48%,#17436b);text-align:center;box-shadow:inset 0 1px 0 #ffffff20,0 7px 20px #061a2b66}
+.fare-output-label{display:block;color:#a9f4ed;font-size:10px;font-weight:950;letter-spacing:.16em}
+.fare-output>strong{display:block;margin:9px 0 4px;color:#fff;font-size:clamp(23px,7vw,36px);font-weight:950;letter-spacing:-.035em}
+.fare-output>strong.fare-total{font-size:clamp(35px,10vw,48px);color:#fff1a8;text-shadow:0 3px 14px #f7c84a44}
+.fare-output small{display:block;margin-top:9px;color:#c3e5ef;font-size:11px;line-height:1.45}
+.fare-breakdown{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:14px auto 0;max-width:340px;padding-top:12px;border-top:1px solid #ffffff30;text-align:left;color:#d8f5f6;font-size:12px}
+.fare-breakdown b{color:#fff;text-align:right}
+.fare-footnote{margin:0;padding:0 18px 18px;color:#a9bfd3;font-size:10px;line-height:1.5;text-align:center}
+.tariff-band-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:13px;margin:12px 0;border:1px solid #315575;border-radius:13px;background:#0d1c2d}
+.tariff-band-row label{display:grid;gap:6px;color:#a9c4dd;font-size:10px;font-weight:800}
+.tariff-band-row input{width:100%;min-width:0;padding:10px 8px;border:1px solid #3b5874;border-radius:8px;background:#071527;color:#fff;font:700 13px 'DM Sans',system-ui,sans-serif}
+.tariff-band-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.tariff-band-new{border:1px dashed #3e8bba;background:#102b42}
+@media(max-width:540px){.fare-calc-fields{grid-template-columns:1fr;padding:16px 14px 10px}.fare-field:first-child{grid-column:auto}.fare-hero{padding:22px 18px}.fare-hero-mark{font-size:37px;right:12px}.fare-wait-note,.fare-output{margin-left:14px;margin-right:14px}.fare-band-row{grid-template-columns:1fr 1fr}.tariff-band-row{grid-template-columns:1fr 1fr}.tariff-band-actions{grid-column:1/-1}.fare-footnote{padding-left:14px;padding-right:14px}}
