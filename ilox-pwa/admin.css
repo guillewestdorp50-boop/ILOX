@@ -1386,3 +1386,26 @@ html.wv-pwa-ui-scale body.client-mode #wv-push-status{font-size:29px!important;l
 @media(max-width:350px){
  html.wv-pwa-ui-scale body.client-mode #wv-push-status{font-size:22px!important;line-height:1.16!important}
 }
+
+
+/* WEST-VILL PWA · Aviso de suscripción: permitir salto entre palabras sin cortar la marca. */
+html.wv-pwa-ui-scale body.client-mode #wv-push-status{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  hyphens:none!important;
+  text-align:center!important;
+}
+html.wv-pwa-ui-scale body.client-mode #wv-push-status *{
+  white-space:normal!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  hyphens:none!important;
+}
