@@ -1447,3 +1447,22 @@ html.wv-pwa-ui-scale body.client-mode #client-page .client-panel:has(button[data
     line-height:1.35!important;
   }
 }
+
+
+/* WEST-VILL PWA · Subtítulo «Solicitá viajes y mantené…»: un punto menos que el texto orientativo anterior. */
+html.wv-pwa-ui-scale body.client-mode #client-subtitle{
+  font-size:19px!important;
+  line-height:1.35!important;
+}
+@media(max-width:600px){
+  html.wv-pwa-ui-scale body.client-mode #client-subtitle{
+    font-size:17px!important;
+    line-height:1.35!important;
+  }
+}
+@media(max-width:350px){
+  html.wv-pwa-ui-scale body.client-mode #client-subtitle{
+    font-size:15px!important;
+    line-height:1.35!important;
+  }
+}
