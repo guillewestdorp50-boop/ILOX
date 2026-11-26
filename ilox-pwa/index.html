@@ -62,7 +62,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=84" defer></script><script src="./admin.js?v=83" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=85" defer></script><script src="./admin.js?v=83" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -92,7 +92,7 @@ if('serviceWorker' in navigator){
  let wvRefreshing=false;
  const updateWorker=async()=>{
   try{
-   const registration=await navigator.serviceWorker.register('./sw.js?v=92',{updateViaCache:'none'});
+   const registration=await navigator.serviceWorker.register('./sw.js?v=93',{updateViaCache:'none'});
    await registration.update().catch(()=>{});
   }catch(error){console.warn('Actualización de WEST-VILL pendiente:',error);}
  };
