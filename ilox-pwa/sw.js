@@ -1,16 +1,48 @@
-const CACHE='west-vill-travel-v143';
+const CACHE='west-vill-travel-v144';
 const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=73','./auth.js?v=86','./admin.js?v=83','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  const url=new URL(event.request.url);
-  if(url.origin!==location.origin)return;
-  event.respondWith(fetch(event.request,{cache:'no-cache'}).then(response=>{
-    if(response.ok)caches.open(CACHE).then(cache=>cache.put(event.request,response.clone()));
-    return response;
-  }).catch(()=>caches.match(event.request).then(response=>response||caches.match('./index.html'))));
+
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE);
+    await cache.addAll(CORE);
+    await self.skipWaiting();
+  })());
 });
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(key=>key.startsWith('west-vill-travel-')&&key!==CACHE).map(key=>caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('message',event=>{
+  if(event.data==='WEST_VILL_SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('fetch',event=>{
+  const request=event.request;
+  if(request.method!=='GET') return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin) return;
+  event.respondWith((async()=>{
+    try{
+      const response=await fetch(request,{cache:'no-store'});
+      if(response&&response.ok){
+        const cache=await caches.open(CACHE);
+        await cache.put(request,response.clone());
+      }
+      return response;
+    }catch(error){
+      const cached=await caches.match(request);
+      if(cached)return cached;
+      if(request.mode==='navigate')return caches.match('./index.html');
+      throw error;
+    }
+  })());
+});
+
 self.addEventListener('push',event=>{
  let data={};try{data=event.data?event.data.json():{};}catch{}
  const options={body:data.body||'Administración te asignó un viaje.',icon:'./west-vill-logistica.jpg?v=7',badge:'./west-vill-logistica.jpg?v=7',tag:data.tag||('westvill-'+Date.now()),renotify:true,requireInteraction:false,silent:false,vibrate:[120,70,120,70,180],data:{url:data.url||'./?tab=viajes',trip_id:data.trip_id||null}};
