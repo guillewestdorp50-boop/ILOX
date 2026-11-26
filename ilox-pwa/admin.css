@@ -632,9 +632,16 @@ body.admin-mode .page-head-title h1{
   font-family:'DM Sans',system-ui,sans-serif!important;
   font-size:clamp(23px,calc(3vw - 3px),32px)!important;
 }
-body.client-mode .client-heading-line h1{
-  font-family:'DM Sans',system-ui,sans-serif!important;
-  font-size:clamp(17px,calc(4.2vw - 3px),27px)!important;
+body.client-mode .client-heading-line #client-title{
+  font-family:'Manrope','DM Sans',system-ui,sans-serif!important;
+  font-size:30px!important;
+  line-height:1.2!important;
+}
+@media(max-width:600px){
+  body.client-mode .client-heading-line #client-title{
+    font-size:25px!important;
+    line-height:1.2!important;
+  }
 }
 .auth-card h1{
   font-family:'DM Sans',system-ui,sans-serif!important;
@@ -653,10 +660,10 @@ body.client-mode .client-heading-line h1{
   font-size:13px!important;
 }
 @media(max-width:420px){
-  body.client-mode .client-heading-line h1{font-size:clamp(15px,calc(5vw - 3px),19px)!important}
+  body.client-mode .client-heading-line #client-title{font-size:25px!important}
 }
 @media(max-width:350px){
-  body.client-mode .client-heading-line h1{font-size:14px!important}
+  body.client-mode .client-heading-line #client-title{font-size:23px!important}
 }
 
 
