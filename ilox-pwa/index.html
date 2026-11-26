@@ -2,10 +2,10 @@
 <html lang="es-AR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<script>if(new URLSearchParams(location.search).get("native")==="1")document.documentElement.classList.add("wv-native-ui-scale");</script>
+<script>(function(){const root=document.documentElement;const nativeApk=new URLSearchParams(location.search).get("native")==="1";const standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;if(nativeApk)root.classList.add("wv-native-ui-scale");else if(standalone)root.classList.add("wv-pwa-ui-scale");})();</script>
 <meta name="theme-color" content="#101e35"><meta name="HandheldFriendly" content="true"><style>html,body{touch-action:pan-x pan-y;overscroll-behavior:contain}*{ -webkit-tap-highlight-color:transparent }</style><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="WEST-VILL"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Aplicación de logística de viajes WEST-VILL">
 <link rel="manifest" href="./manifest.webmanifest?v=7"><link rel="icon" type="image/jpeg" href="./west-vill-logistica.jpg?v=7"><link rel="apple-touch-icon" href="./west-vill-logistica.jpg?v=7">
-<link rel="stylesheet" href="./admin.css?v=60"><style>html.wv-native-ui-scale body.admin-mode.admin-requests-page .page-head-tools{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-requests-page .page-head-title{width:100%;max-width:100%;flex:1 1 100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-requests-page #page-title{width:100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-requests-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-canceled-page .page-head-tools{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-canceled-page .page-head-title{width:100%;max-width:100%;flex:1 1 100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-canceled-page #page-title{width:100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-canceled-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-trips-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-title{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1 1 auto;min-width:0}html.wv-native-ui-scale body.admin-mode.admin-trips-page #page-title{width:100%;text-align:center;margin-inline:auto}</style><title>WEST-VILL · Logística de viajes</title>
+<link rel="stylesheet" href="./admin.css?v=62"><style>html.wv-native-ui-scale body.admin-mode.admin-requests-page .page-head-tools{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-requests-page .page-head-title{width:100%;max-width:100%;flex:1 1 100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-requests-page #page-title{width:100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-requests-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-canceled-page .page-head-tools{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-canceled-page .page-head-title{width:100%;max-width:100%;flex:1 1 100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-canceled-page #page-title{width:100%;text-align:center;margin-inline:auto}html.wv-native-ui-scale body.admin-mode.admin-canceled-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-trips-page #admin-profile-open{display:none!important}html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-title{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1 1 auto;min-width:0}html.wv-native-ui-scale body.admin-mode.admin-trips-page #page-title{width:100%;text-align:center;margin-inline:auto}</style><title>WEST-VILL · Logística de viajes</title>
 </head>
 <body>
 
@@ -62,7 +62,7 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=81" defer></script><script src="./admin.js?v=81" defer></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./auth.js?v=82" defer></script><script src="./admin.js?v=83" defer></script><script>
 /* En Android, si el equipo está apaisado, el primer toque activa pantalla completa
    y solicita orientación vertical. En modo instalado, el manifiesto también la fija. */
 (function(){
@@ -92,7 +92,7 @@ if('serviceWorker' in navigator){
  let wvRefreshing=false;
  const updateWorker=async()=>{
   try{
-   const registration=await navigator.serviceWorker.register('./sw.js?v=79',{updateViaCache:'none'});
+   const registration=await navigator.serviceWorker.register('./sw.js?v=80',{updateViaCache:'none'});
    await registration.update().catch(()=>{});
   }catch(error){console.warn('Actualización de WEST-VILL pendiente:',error);}
  };
