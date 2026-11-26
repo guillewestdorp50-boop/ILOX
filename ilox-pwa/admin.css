@@ -1409,3 +1409,22 @@ html.wv-pwa-ui-scale body.client-mode #wv-push-status *{
   word-break:normal!important;
   hyphens:none!important;
 }
+
+
+/* WEST-VILL PWA · Título «¿Qué necesitás hacer?» en Inicio: misma escala que el aviso de suscripción. */
+html.wv-pwa-ui-scale body.client-mode #client-page .client-panel:has(button[data-jump="solicitudes"])>h2{
+  font-size:29px!important;
+  line-height:1.16!important;
+}
+@media(max-width:600px){
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel:has(button[data-jump="solicitudes"])>h2{
+    font-size:24px!important;
+    line-height:1.16!important;
+  }
+}
+@media(max-width:350px){
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel:has(button[data-jump="solicitudes"])>h2{
+    font-size:22px!important;
+    line-height:1.16!important;
+  }
+}
