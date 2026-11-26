@@ -1,5 +1,5 @@
-const CACHE='west-vill-travel-v144';
-const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=73','./auth.js?v=86','./admin.js?v=83','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
+const CACHE='west-vill-travel-v145';
+const CORE=['./','./index.html','./manifest.webmanifest?v=7','./admin.css?v=74','./auth.js?v=86','./admin.js?v=83','./theme.js?v=2','./west-vill-logistica.jpg?v=7'];
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
