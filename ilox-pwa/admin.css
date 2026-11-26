@@ -1254,62 +1254,98 @@ body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:
   white-space:nowrap!important;
 }
 
-
-/* WEST-VILL PWA · Legibilidad: conserva la tipografía y jerarquía del APK,
-   pero evita que los rótulos secundarios queden por debajo de un tamaño cómodo. */
-html.wv-pwa-ui-scale body.admin-mode{
-  font-family:'DM Sans',system-ui,sans-serif!important;
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
-}
-html.wv-pwa-ui-scale body.admin-mode .panel h2,
-html.wv-pwa-ui-scale body.admin-mode .client-panel h2,
-html.wv-pwa-ui-scale body.admin-mode .page-head-title h1{
-  font-family:'Manrope','DM Sans',system-ui,sans-serif!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .panel h2{font-size:16px!important;line-height:1.3!important}
-html.wv-pwa-ui-scale body.admin-mode .muted,
-html.wv-pwa-ui-scale body.admin-mode .panel p,
-html.wv-pwa-ui-scale body.admin-mode .empty,
-html.wv-pwa-ui-scale body.admin-mode .empty-inline,
-html.wv-pwa-ui-scale body.admin-mode .client-row,
-html.wv-pwa-ui-scale body.admin-mode .text-action,
+/* WEST-VILL PWA · Réplica tipográfica exacta de APK Build 17.
+   Misma familia, escala, pesos y excepciones; no se inventa una escala paralela. */
+html.wv-pwa-ui-scale,
+html.wv-pwa-ui-scale body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.wv-pwa-ui-scale .auth-card,
+html.wv-pwa-ui-scale .app-shell,
+html.wv-pwa-ui-scale .client-screen{font-family:'DM Sans',system-ui,sans-serif!important}
 html.wv-pwa-ui-scale body.admin-mode .field label,
 html.wv-pwa-ui-scale body.admin-mode .field input,
 html.wv-pwa-ui-scale body.admin-mode .field select,
-html.wv-pwa-ui-scale body.admin-mode .field textarea{
-  font-size:14px!important;
-  line-height:1.4!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .table-wrap th{
-  font-size:11px!important;
-  line-height:1.3!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .table-wrap td{
+html.wv-pwa-ui-scale body.admin-mode .field textarea,
+html.wv-pwa-ui-scale body.admin-mode .auth-fields label,
+html.wv-pwa-ui-scale body.admin-mode .auth-fields input,
+html.wv-pwa-ui-scale body.admin-mode .invite-card label,
+html.wv-pwa-ui-scale body.admin-mode .invite-card select,
+html.wv-pwa-ui-scale body.admin-mode .auth-subtitle,
+html.wv-pwa-ui-scale body.admin-mode .auth-switch,
+html.wv-pwa-ui-scale body.admin-mode .auth-back,
+html.wv-pwa-ui-scale body.admin-mode .auth-error,
+html.wv-pwa-ui-scale body.admin-mode .client-form label,
+html.wv-pwa-ui-scale body.admin-mode .client-form input,
+html.wv-pwa-ui-scale body.admin-mode .client-form textarea,
+html.wv-pwa-ui-scale body.admin-mode .client-form select,
+html.wv-pwa-ui-scale body.admin-mode .client-chat select,
+html.wv-pwa-ui-scale body.admin-mode .client-chat input,
+html.wv-pwa-ui-scale body.admin-mode .chat-bubble,
+html.wv-pwa-ui-scale body.admin-mode .notice-row p,
+html.wv-pwa-ui-scale body.admin-mode .client-muted,
+html.wv-pwa-ui-scale body.admin-mode .client-row,
+html.wv-pwa-ui-scale body.admin-mode .client-user,
+html.wv-pwa-ui-scale body.admin-mode .client-heading p,
+html.wv-pwa-ui-scale body.admin-mode .pad-note-label,
+html.wv-pwa-ui-scale body.admin-mode .pad-note-label input,
+html.wv-pwa-ui-scale body.admin-mode .pad-current,
+html.wv-pwa-ui-scale body.admin-mode .request-received p,
+html.wv-pwa-ui-scale body.client-mode .client-form label,
+html.wv-pwa-ui-scale body.client-mode .client-form input,
+html.wv-pwa-ui-scale body.client-mode .client-form textarea,
+html.wv-pwa-ui-scale body.client-mode .client-form select,
+html.wv-pwa-ui-scale body.client-mode .client-row,
+html.wv-pwa-ui-scale body.client-mode .client-muted,
+html.wv-pwa-ui-scale body.client-mode .client-user,
+html.wv-pwa-ui-scale body.client-mode .client-heading p,
+html.wv-pwa-ui-scale .auth-screen .auth-subtitle,
+html.wv-pwa-ui-scale .auth-screen .role-choice b,
+html.wv-pwa-ui-scale .auth-screen .role-choice small {
   font-size:13px!important;
-  line-height:1.35!important;
 }
-html.wv-pwa-ui-scale body.admin-mode .table-wrap .tag,
-html.wv-pwa-ui-scale body.admin-mode .tag{
-  font-size:11px!important;
-  line-height:1.25!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .metrics>.metric .metric-top{
-  font-size:11px!important;
-  line-height:1.25!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .metrics>.metric .metric-value{
-  font-size:16px!important;
-  line-height:1.25!important;
-}
-html.wv-pwa-ui-scale body.admin-mode .btn,
-html.wv-pwa-ui-scale body.admin-mode .nav-item,
+html.wv-pwa-ui-scale body.admin-mode .muted,
+html.wv-pwa-ui-scale body.admin-mode .empty-inline,
+html.wv-pwa-ui-scale body.admin-mode .metric-top,
+html.wv-pwa-ui-scale body.admin-mode .metric-note,
 html.wv-pwa-ui-scale body.admin-mode .date-chip,
-html.wv-pwa-ui-scale body.admin-mode .crumb{
+html.wv-pwa-ui-scale body.admin-mode .crumb,
+html.wv-pwa-ui-scale body.admin-mode .nav-item,
+html.wv-pwa-ui-scale body.admin-mode .nav-item i,
+html.wv-pwa-ui-scale body.admin-mode .sidebar-foot,
+html.wv-pwa-ui-scale body.admin-mode .sidebar-foot small,
+html.wv-pwa-ui-scale body.admin-mode .btn,
+html.wv-pwa-ui-scale body.admin-mode .tag,
+html.wv-pwa-ui-scale body.admin-mode th,
+html.wv-pwa-ui-scale body.admin-mode td,
+html.wv-pwa-ui-scale body.admin-mode .client-tabs button,
+html.wv-pwa-ui-scale body.admin-mode .client-panel p,
+html.wv-pwa-ui-scale body.admin-mode .client-panel li,
+html.wv-pwa-ui-scale body.admin-mode .text-action,
+html.wv-pwa-ui-scale body.admin-mode .assign-row select,
+html.wv-pwa-ui-scale body.admin-mode .toast,
+html.wv-pwa-ui-scale body.admin-mode .invite-result,
+html.wv-pwa-ui-scale body.admin-mode .role-choice small,
+html.wv-pwa-ui-scale body.admin-mode .role-choice b,
+html.wv-pwa-ui-scale body.admin-mode .side-label,
+html.wv-pwa-ui-scale body.admin-mode .panel-head .muted,
+html.wv-pwa-ui-scale body.client-mode .client-tabs button,
+html.wv-pwa-ui-scale body.client-mode .client-panel p,
+html.wv-pwa-ui-scale body.client-mode .client-panel li,
+html.wv-pwa-ui-scale body.client-mode .text-action,
+html.wv-pwa-ui-scale body.client-mode .toast {
   font-size:13px!important;
 }
-html.wv-pwa-ui-scale body.admin-mode .page-head-title #page-title{
-  font-family:'Manrope','DM Sans',system-ui,sans-serif!important;
-  line-height:1.22!important;
+html.wv-pwa-ui-scale body.admin-mode .admin-chat-message,
+html.wv-pwa-ui-scale body.client-mode .chat-bubble {
+  font-size:15px!important;
 }
-/* No se fuerzan mayúsculas globales: se conserva el casing escrito por cada pantalla. */
+html.wv-pwa-ui-scale body.admin-mode .page-head-tools .date-chip,
+html.wv-pwa-ui-scale body.admin-mode .page-head-tools .date-chip strong,
+html.wv-pwa-ui-scale body.admin-mode .page-head-tools .date-chip span,
+html.wv-pwa-ui-scale body.client-mode .client-live-clock,
+html.wv-pwa-ui-scale body.client-mode .client-live-clock strong,
+html.wv-pwa-ui-scale body.client-mode .client-live-clock span {
+  font-size:13px!important;
+}
+@media(max-width:600px){
+  html.wv-pwa-ui-scale body.client-mode .chat-bubble{font-size:15px!important}
+}
