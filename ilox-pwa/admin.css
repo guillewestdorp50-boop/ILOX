@@ -1376,3 +1376,13 @@ html.wv-pwa-ui-scale .app-shell .nav-item>span,html.wv-pwa-ui-scale .app-shell .
 html.wv-pwa-ui-scale .client-screen .client-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;}
 html.wv-pwa-ui-scale .client-screen .client-tabs button{flex:0 0 auto!important;width:max-content!important;min-width:max-content!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:keep-all!important;}
 html.wv-pwa-ui-scale .app-shell button,html.wv-pwa-ui-scale .client-screen button{overflow-wrap:normal!important;word-break:keep-all!important;}
+
+
+/* WEST-VILL PWA · Aviso de suscripción en Inicio: 1 px menos que Hola Juan. */
+html.wv-pwa-ui-scale body.client-mode #wv-push-status{font-size:29px!important;line-height:1.16!important}
+@media(max-width:600px){
+ html.wv-pwa-ui-scale body.client-mode #wv-push-status{font-size:24px!important;line-height:1.16!important}
+}
+@media(max-width:350px){
+ html.wv-pwa-ui-scale body.client-mode #wv-push-status{font-size:22px!important;line-height:1.16!important}
+}
