@@ -1466,3 +1466,67 @@ html.wv-pwa-ui-scale body.client-mode #client-subtitle{
     line-height:1.35!important;
   }
 }
+
+
+/* WEST-VILL PWA · Escala legible uniforme en todas las secciones de pasajero, conductor y administración.
+   Solo PWA: no modifica la interfaz ni la escala del APK nativo. */
+html.wv-pwa-ui-scale body.client-mode #client-page .client-panel h2,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel-head h2,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .page-head-title,
+html.wv-pwa-ui-scale body.admin-mode .app-shell #page-title{
+  font-size:29px!important;
+  line-height:1.16!important;
+}
+html.wv-pwa-ui-scale body.client-mode #client-page .client-panel p,
+html.wv-pwa-ui-scale body.client-mode #client-page .client-panel li,
+html.wv-pwa-ui-scale body.client-mode #client-page .client-muted,
+html.wv-pwa-ui-scale body.client-mode #client-page .client-row,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel p,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel li,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .muted,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .empty-inline,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .metric-note,
+html.wv-pwa-ui-scale body.admin-mode .app-shell .notice-row p{
+  font-size:20px!important;
+  line-height:1.35!important;
+}
+@media(max-width:600px){
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel h2,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel-head h2,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .page-head-title,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell #page-title{
+    font-size:24px!important;
+  }
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel p,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel li,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-muted,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-row,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel p,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel li,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .muted,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .empty-inline,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .metric-note,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .notice-row p{
+    font-size:18px!important;
+  }
+}
+@media(max-width:350px){
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel h2,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel-head h2,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .page-head-title,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell #page-title{
+    font-size:22px!important;
+  }
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel p,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-panel li,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-muted,
+  html.wv-pwa-ui-scale body.client-mode #client-page .client-row,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel p,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel li,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .muted,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .empty-inline,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .panel .metric-note,
+  html.wv-pwa-ui-scale body.admin-mode .app-shell .notice-row p{
+    font-size:16px!important;
+  }
+}
