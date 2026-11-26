@@ -426,96 +426,96 @@ body.theme-day .school-pass-summary>div{color:#183d55!important}
 
 
 /* WEST-VILL Android nativo: misma DM Sans/Manrope de la PWA, escala compacta solo en la app instalada. */
-html.wv-native-ui-scale,html.wv-native-ui-scale body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html.wv-native-ui-scale .auth-card,
-html.wv-native-ui-scale .app-shell,
-html.wv-native-ui-scale .client-screen{font-family:'DM Sans',system-ui,sans-serif!important}
-html.wv-native-ui-scale body.admin-mode .field label,
-html.wv-native-ui-scale body.admin-mode .field input,
-html.wv-native-ui-scale body.admin-mode .field select,
-html.wv-native-ui-scale body.admin-mode .field textarea,
-html.wv-native-ui-scale body.admin-mode .auth-fields label,
-html.wv-native-ui-scale body.admin-mode .auth-fields input,
-html.wv-native-ui-scale body.admin-mode .invite-card label,
-html.wv-native-ui-scale body.admin-mode .invite-card select,
-html.wv-native-ui-scale body.admin-mode .auth-subtitle,
-html.wv-native-ui-scale body.admin-mode .auth-switch,
-html.wv-native-ui-scale body.admin-mode .auth-back,
-html.wv-native-ui-scale body.admin-mode .auth-error,
-html.wv-native-ui-scale body.admin-mode .client-form label,
-html.wv-native-ui-scale body.admin-mode .client-form input,
-html.wv-native-ui-scale body.admin-mode .client-form textarea,
-html.wv-native-ui-scale body.admin-mode .client-form select,
-html.wv-native-ui-scale body.admin-mode .client-chat select,
-html.wv-native-ui-scale body.admin-mode .client-chat input,
-html.wv-native-ui-scale body.admin-mode .chat-bubble,
-html.wv-native-ui-scale body.admin-mode .notice-row p,
-html.wv-native-ui-scale body.admin-mode .client-muted,
-html.wv-native-ui-scale body.admin-mode .client-row,
-html.wv-native-ui-scale body.admin-mode .client-user,
-html.wv-native-ui-scale body.admin-mode .client-heading p,
-html.wv-native-ui-scale body.admin-mode .pad-note-label,
-html.wv-native-ui-scale body.admin-mode .pad-note-label input,
-html.wv-native-ui-scale body.admin-mode .pad-current,
-html.wv-native-ui-scale body.admin-mode .request-received p,
-html.wv-native-ui-scale body.client-mode .client-form label,
-html.wv-native-ui-scale body.client-mode .client-form input,
-html.wv-native-ui-scale body.client-mode .client-form textarea,
-html.wv-native-ui-scale body.client-mode .client-form select,
-html.wv-native-ui-scale body.client-mode .client-row,
-html.wv-native-ui-scale body.client-mode .client-muted,
-html.wv-native-ui-scale body.client-mode .client-user,
-html.wv-native-ui-scale body.client-mode .client-heading p{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale),:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .auth-card,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .app-shell,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .client-screen{font-family:'DM Sans',system-ui,sans-serif!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-fields label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-fields input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-card label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-card select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-subtitle,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-switch,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-back,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-error,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-chat select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-chat input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .chat-bubble,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .notice-row p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-row,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-user,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-heading p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-note-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-note-label input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-current,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .request-received p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-row,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-user,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-heading p{
   font-size:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode .muted,
-html.wv-native-ui-scale body.admin-mode .empty-inline,
-html.wv-native-ui-scale body.admin-mode .metric-top,
-html.wv-native-ui-scale body.admin-mode .metric-note,
-html.wv-native-ui-scale body.admin-mode .date-chip,
-html.wv-native-ui-scale body.admin-mode .crumb,
-html.wv-native-ui-scale body.admin-mode .nav-item,
-html.wv-native-ui-scale body.admin-mode .nav-item i,
-html.wv-native-ui-scale body.admin-mode .sidebar-foot,
-html.wv-native-ui-scale body.admin-mode .sidebar-foot small,
-html.wv-native-ui-scale body.admin-mode .btn,
-html.wv-native-ui-scale body.admin-mode .tag,
-html.wv-native-ui-scale body.admin-mode th,
-html.wv-native-ui-scale body.admin-mode td,
-html.wv-native-ui-scale body.admin-mode .client-tabs button,
-html.wv-native-ui-scale body.admin-mode .client-panel p,
-html.wv-native-ui-scale body.admin-mode .client-panel li,
-html.wv-native-ui-scale body.admin-mode .text-action,
-html.wv-native-ui-scale body.admin-mode .assign-row select,
-html.wv-native-ui-scale body.admin-mode .toast,
-html.wv-native-ui-scale body.admin-mode .invite-result,
-html.wv-native-ui-scale body.admin-mode .role-choice small,
-html.wv-native-ui-scale body.admin-mode .role-choice b,
-html.wv-native-ui-scale body.admin-mode .side-label,
-html.wv-native-ui-scale body.admin-mode .panel-head .muted,
-html.wv-native-ui-scale body.client-mode .client-tabs button,
-html.wv-native-ui-scale body.client-mode .client-panel p,
-html.wv-native-ui-scale body.client-mode .client-panel li,
-html.wv-native-ui-scale body.client-mode .text-action,
-html.wv-native-ui-scale body.client-mode .toast{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .empty-inline,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .metric-top,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .metric-note,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .date-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .crumb,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .nav-item,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .nav-item i,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .sidebar-foot,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .sidebar-foot small,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .btn,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .tag,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode th,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode td,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-tabs button,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-panel p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-panel li,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .text-action,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .assign-row select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .toast,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-result,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .role-choice small,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .role-choice b,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .side-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .panel-head .muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-tabs button,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-panel p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-panel li,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .text-action,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .toast{
   font-size:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode .admin-chat-message,
-html.wv-native-ui-scale body.client-mode .chat-bubble{font-size:16px!important}
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip,
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip strong,
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip span,
-html.wv-native-ui-scale body.client-mode .client-live-clock,
-html.wv-native-ui-scale body.client-mode .client-live-clock strong,
-html.wv-native-ui-scale body.client-mode .client-live-clock span{font-size:14px!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .admin-chat-message,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .chat-bubble{font-size:16px!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip strong,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip span,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock strong,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock span{font-size:14px!important}
 @media(max-width:600px){
- html.wv-native-ui-scale body.client-mode .chat-bubble{font-size:16px!important}
- html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip,
- html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip strong,
- html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip span,
- html.wv-native-ui-scale body.client-mode .client-live-clock,
- html.wv-native-ui-scale body.client-mode .client-live-clock strong,
- html.wv-native-ui-scale body.client-mode .client-live-clock span{font-size:14px!important}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .chat-bubble{font-size:16px!important}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip strong,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip span,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock strong,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock span{font-size:14px!important}
 }
 
 
@@ -536,93 +536,93 @@ body.admin-mode button,body.admin-mode input,body.admin-mode select,body.admin-m
 /* WEST-VILL Android APK: tipografía general un punto más compacta.
    Solo afecta a la interfaz remota abierta por el APK (native=1).
    No modifica datos, lógica, botones ni tamaños de los paneles. */
-html.wv-native-ui-scale body.admin-mode .field label,
-html.wv-native-ui-scale body.admin-mode .field input,
-html.wv-native-ui-scale body.admin-mode .field select,
-html.wv-native-ui-scale body.admin-mode .field textarea,
-html.wv-native-ui-scale body.admin-mode .auth-fields label,
-html.wv-native-ui-scale body.admin-mode .auth-fields input,
-html.wv-native-ui-scale body.admin-mode .invite-card label,
-html.wv-native-ui-scale body.admin-mode .invite-card select,
-html.wv-native-ui-scale body.admin-mode .auth-subtitle,
-html.wv-native-ui-scale body.admin-mode .auth-switch,
-html.wv-native-ui-scale body.admin-mode .auth-back,
-html.wv-native-ui-scale body.admin-mode .auth-error,
-html.wv-native-ui-scale body.admin-mode .client-form label,
-html.wv-native-ui-scale body.admin-mode .client-form input,
-html.wv-native-ui-scale body.admin-mode .client-form textarea,
-html.wv-native-ui-scale body.admin-mode .client-form select,
-html.wv-native-ui-scale body.admin-mode .client-chat select,
-html.wv-native-ui-scale body.admin-mode .client-chat input,
-html.wv-native-ui-scale body.admin-mode .chat-bubble,
-html.wv-native-ui-scale body.admin-mode .notice-row p,
-html.wv-native-ui-scale body.admin-mode .client-muted,
-html.wv-native-ui-scale body.admin-mode .client-row,
-html.wv-native-ui-scale body.admin-mode .client-user,
-html.wv-native-ui-scale body.admin-mode .client-heading p,
-html.wv-native-ui-scale body.admin-mode .pad-note-label,
-html.wv-native-ui-scale body.admin-mode .pad-note-label input,
-html.wv-native-ui-scale body.admin-mode .pad-current,
-html.wv-native-ui-scale body.admin-mode .request-received p,
-html.wv-native-ui-scale body.client-mode .client-form label,
-html.wv-native-ui-scale body.client-mode .client-form input,
-html.wv-native-ui-scale body.client-mode .client-form textarea,
-html.wv-native-ui-scale body.client-mode .client-form select,
-html.wv-native-ui-scale body.client-mode .client-row,
-html.wv-native-ui-scale body.client-mode .client-muted,
-html.wv-native-ui-scale body.client-mode .client-user,
-html.wv-native-ui-scale body.client-mode .client-heading p,
-html.wv-native-ui-scale .auth-screen .auth-subtitle,
-html.wv-native-ui-scale .auth-screen .role-choice b,
-html.wv-native-ui-scale .auth-screen .role-choice small {
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .field textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-fields label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-fields input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-card label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-card select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-subtitle,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-switch,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-back,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .auth-error,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-form select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-chat select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-chat input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .chat-bubble,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .notice-row p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-row,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-user,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-heading p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-note-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-note-label input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .pad-current,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .request-received p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form input,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form textarea,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-form select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-row,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-user,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-heading p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .auth-screen .auth-subtitle,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .auth-screen .role-choice b,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) .auth-screen .role-choice small {
   font-size:13px!important;
 }
-html.wv-native-ui-scale body.admin-mode .muted,
-html.wv-native-ui-scale body.admin-mode .empty-inline,
-html.wv-native-ui-scale body.admin-mode .metric-top,
-html.wv-native-ui-scale body.admin-mode .metric-note,
-html.wv-native-ui-scale body.admin-mode .date-chip,
-html.wv-native-ui-scale body.admin-mode .crumb,
-html.wv-native-ui-scale body.admin-mode .nav-item,
-html.wv-native-ui-scale body.admin-mode .nav-item i,
-html.wv-native-ui-scale body.admin-mode .sidebar-foot,
-html.wv-native-ui-scale body.admin-mode .sidebar-foot small,
-html.wv-native-ui-scale body.admin-mode .btn,
-html.wv-native-ui-scale body.admin-mode .tag,
-html.wv-native-ui-scale body.admin-mode th,
-html.wv-native-ui-scale body.admin-mode td,
-html.wv-native-ui-scale body.admin-mode .client-tabs button,
-html.wv-native-ui-scale body.admin-mode .client-panel p,
-html.wv-native-ui-scale body.admin-mode .client-panel li,
-html.wv-native-ui-scale body.admin-mode .text-action,
-html.wv-native-ui-scale body.admin-mode .assign-row select,
-html.wv-native-ui-scale body.admin-mode .toast,
-html.wv-native-ui-scale body.admin-mode .invite-result,
-html.wv-native-ui-scale body.admin-mode .role-choice small,
-html.wv-native-ui-scale body.admin-mode .role-choice b,
-html.wv-native-ui-scale body.admin-mode .side-label,
-html.wv-native-ui-scale body.admin-mode .panel-head .muted,
-html.wv-native-ui-scale body.client-mode .client-tabs button,
-html.wv-native-ui-scale body.client-mode .client-panel p,
-html.wv-native-ui-scale body.client-mode .client-panel li,
-html.wv-native-ui-scale body.client-mode .text-action,
-html.wv-native-ui-scale body.client-mode .toast {
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .empty-inline,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .metric-top,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .metric-note,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .date-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .crumb,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .nav-item,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .nav-item i,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .sidebar-foot,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .sidebar-foot small,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .btn,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .tag,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode th,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode td,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-tabs button,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-panel p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .client-panel li,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .text-action,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .assign-row select,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .toast,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .invite-result,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .role-choice small,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .role-choice b,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .side-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .panel-head .muted,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-tabs button,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-panel p,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-panel li,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .text-action,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .toast {
   font-size:13px!important;
 }
-html.wv-native-ui-scale body.admin-mode .admin-chat-message,
-html.wv-native-ui-scale body.client-mode .chat-bubble {
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .admin-chat-message,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .chat-bubble {
   font-size:15px!important;
 }
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip,
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip strong,
-html.wv-native-ui-scale body.admin-mode .page-head-tools .date-chip span,
-html.wv-native-ui-scale body.client-mode .client-live-clock,
-html.wv-native-ui-scale body.client-mode .client-live-clock strong,
-html.wv-native-ui-scale body.client-mode .client-live-clock span {
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip strong,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools .date-chip span,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock strong,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .client-live-clock span {
   font-size:13px!important;
 }
 @media(max-width:600px){
-  html.wv-native-ui-scale body.client-mode .chat-bubble{font-size:15px!important}
+  :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .chat-bubble{font-size:15px!important}
 }
 
 
@@ -697,52 +697,52 @@ body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:
 
 
 /* WEST-VILL APK: ajuste aislado para Android WebView (la PWA web no cambia). */
-html.wv-native-ui-scale,html.wv-native-ui-scale body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html.wv-native-ui-scale body.admin-mode .ledger-heading,
-html.wv-native-ui-scale body.client-mode .ledger-heading{display:inline-block;font-size:clamp(14px,5vw,20px);line-height:1.12;letter-spacing:0;white-space:nowrap}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale),:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-heading,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-heading{display:inline-block;font-size:clamp(14px,5vw,20px);line-height:1.12;letter-spacing:0;white-space:nowrap}
 @media(max-width:600px){
- html.wv-native-ui-scale body.admin-mode .ledger-income-metrics,
- html.wv-native-ui-scale body.client-mode .ledger-income-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important;width:100%;min-width:0}
- html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric,
- html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric{box-sizing:border-box;min-width:0;width:100%;padding:9px 3px!important;min-height:96px;overflow:visible}
- html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric-top,
- html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric-top{display:block;min-width:0;width:100%;font-size:8px!important;line-height:1.15;letter-spacing:-.35px;white-space:nowrap;text-align:center}
- html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .metric-value,
- html.wv-native-ui-scale body.client-mode .ledger-income-metrics .metric-value{display:block;width:100%;min-width:0;font-size:13px!important;line-height:1.2;letter-spacing:-.075em;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}
- html.wv-native-ui-scale body.admin-mode .ledger-income-metrics .ledger-movement-label,
- html.wv-native-ui-scale body.client-mode .ledger-income-metrics .ledger-movement-label{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif!important;font-size:8px!important;font-weight:800;line-height:1.15;white-space:nowrap;letter-spacing:-.55px;font-stretch:condensed}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-income-metrics,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-income-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important;width:100%;min-width:0}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-income-metrics .metric,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-income-metrics .metric{box-sizing:border-box;min-width:0;width:100%;padding:9px 3px!important;min-height:96px;overflow:visible}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-income-metrics .metric-top,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-income-metrics .metric-top{display:block;min-width:0;width:100%;font-size:8px!important;line-height:1.15;letter-spacing:-.35px;white-space:nowrap;text-align:center}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-income-metrics .metric-value,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-income-metrics .metric-value{display:block;width:100%;min-width:0;font-size:13px!important;line-height:1.2;letter-spacing:-.075em;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .ledger-income-metrics .ledger-movement-label,
+ :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.client-mode .ledger-income-metrics .ledger-movement-label{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif!important;font-size:8px!important;font-weight:800;line-height:1.15;white-space:nowrap;letter-spacing:-.55px;font-stretch:condensed}
 }
 
 
 /* APK: el saldo se ubica debajo de CENTRO DE OPERACIONES sin alterar sus dimensiones. */
-html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip{display:inline-flex!important;min-width:158px;max-width:46vw;min-height:66px;padding:10px 11px!important;gap:6px;justify-content:center;margin-top:8px}
-html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip .wallet-symbol{font-size:26px!important}
-html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip small{font-size:8px!important}
-html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip b{font-size:17px!important}
-@media(max-width:380px){html.wv-native-ui-scale body.admin-mode .page-head-title > .admin-wallet-chip{min-width:140px}}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-title > .admin-wallet-chip{display:inline-flex!important;min-width:158px;max-width:46vw;min-height:66px;padding:10px 11px!important;gap:6px;justify-content:center;margin-top:8px}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-title > .admin-wallet-chip .wallet-symbol{font-size:26px!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-title > .admin-wallet-chip small{font-size:8px!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-title > .admin-wallet-chip b{font-size:17px!important}
+@media(max-width:380px){:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-title > .admin-wallet-chip{min-width:140px}}
 
 
 /* APK: alinear el borde superior de fecha/hora con el saldo disponible. */
-html.wv-native-ui-scale body.admin-mode .page-head-tools > .date-chip{margin-top:27px!important}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools > .date-chip{margin-top:27px!important}
 
 
 /* APK: el logotipo WV ocupa el espacio libre sobre fecha y hora en Inicio de Administración. */
-html.wv-native-ui-scale body.admin-mode .page-head-tools{position:relative}
-html.wv-native-ui-scale body.admin-mode .page-head-tools > .admin-home-profile{position:absolute;top:0;right:0;width:24px;height:24px;min-width:24px;padding:0;border-radius:8px;font-size:9px;z-index:1}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools{position:relative}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode .page-head-tools > .admin-home-profile{position:absolute;top:0;right:0;width:24px;height:24px;min-width:24px;padding:0;border-radius:8px;font-size:9px;z-index:1}
 
 
 /* APK: mantener el título Solicitudes de pasajeros en una sola línea. */
-html.wv-native-ui-scale body.admin-mode #page-title.admin-requests-title{font-family:'DM Sans',system-ui,sans-serif!important;font-size:18px!important;line-height:1.2!important;letter-spacing:-.045em!important;white-space:nowrap!important;}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode #page-title.admin-requests-title{font-family:'DM Sans',system-ui,sans-serif!important;font-size:18px!important;line-height:1.2!important;letter-spacing:-.045em!important;white-space:nowrap!important;}
 
 
 /* APK WEST-VILL · Viajes: título centrado y saldo/reloj enfrentados en los laterales. */
-html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:stretch!important;
   gap:12px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page .page-head-title{
   display:flex!important;
   flex:0 0 auto!important;
   flex-direction:column!important;
@@ -752,20 +752,20 @@ html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-title{
   max-width:100%!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page #admin-center-label{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page #admin-center-label{
   display:block!important;
   width:100%!important;
   max-width:100%!important;
   text-align:center!important;
   white-space:nowrap!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page #page-title{
   display:block!important;
   width:100%!important;
   margin:2px auto 0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page .page-head-tools{
   display:flex!important;
   flex:0 0 auto!important;
   flex-direction:row!important;
@@ -775,7 +775,7 @@ html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools{
   min-width:0!important;
   gap:8px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .admin-wallet-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page .page-head-tools > .admin-wallet-chip{
   display:inline-flex!important;
   flex:0 1 48%!important;
   width:48%!important;
@@ -786,7 +786,7 @@ html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .adm
   box-sizing:border-box!important;
   justify-content:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-trips-page .page-head-tools > .date-chip{
   display:flex!important;
   flex:0 1 48%!important;
   width:48%!important;
@@ -803,19 +803,19 @@ html.wv-native-ui-scale body.admin-mode.admin-trips-page .page-head-tools > .dat
 
 
 /* APK WEST-VILL · Viajes completos: contador compacto, sin perfil WV ni reloj; conserva saldo. */
-html.wv-native-ui-scale body.admin-mode.admin-completed-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-completed-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-completed-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-completed-page .page-head-tools{
   display:flex!important;
   align-items:center!important;
   justify-content:flex-start!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-completed-page .page-head-tools > .admin-wallet-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-completed-page .page-head-tools > .admin-wallet-chip{
   display:inline-flex!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-completed-page .completed-count{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-completed-page .completed-count{
   display:inline-block!important;
   box-sizing:border-box!important;
   max-width:100%!important;
@@ -828,20 +828,20 @@ html.wv-native-ui-scale body.admin-mode.admin-completed-page .completed-count{
 
 
 /* APK WEST-VILL · Clientes: quitar saldo y fecha/hora solo en esta sección. */
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .page-head-tools > .date-chip{
   display:none!important;
 }
 
 
 /* APK WEST-VILL · Clientes: encabezado centrado, sin iniciales y padrón compacto sin desplazamiento horizontal. */
-html.wv-native-ui-scale body.admin-mode.admin-clients-page #admin-profile-open{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page #admin-profile-open{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .page-head{
   justify-content:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   width:100%!important;
@@ -851,7 +851,7 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page .page-head-title{
   justify-content:center!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page #page-title{
   width:100%!important;
   text-align:center!important;
   text-transform:uppercase!important;
@@ -860,19 +860,19 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page #page-title{
   letter-spacing:.01em!important;
   white-space:nowrap!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap{
   width:100%!important;
   max-width:100%!important;
   overflow-x:hidden!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap table{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap table{
   width:100%!important;
   min-width:0!important;
   table-layout:fixed!important;
   font-size:9px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th,
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap td{
   padding:7px 3px!important;
   font-size:9px!important;
   line-height:1.2!important;
@@ -881,26 +881,26 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td{
   overflow-wrap:anywhere!important;
   word-break:break-word!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th{
   font-size:8px!important;
   letter-spacing:0!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th:nth-child(1),
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td:nth-child(1){width:28%}
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th:nth-child(2),
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td:nth-child(2){width:24%}
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th:nth-child(3),
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td:nth-child(3){width:24%}
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap th:nth-child(4),
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap td:nth-child(4){width:24%}
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap .text-action{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th:nth-child(1),
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap td:nth-child(1){width:28%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th:nth-child(2),
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap td:nth-child(2){width:24%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th:nth-child(3),
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap td:nth-child(3){width:24%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap th:nth-child(4),
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap td:nth-child(4){width:24%}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap .text-action{
   max-width:100%!important;
   white-space:normal!important;
   overflow-wrap:anywhere!important;
   font-size:9px!important;
   line-height:1.2!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap .tag{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page .table-wrap .tag{
   padding:3px 4px!important;
   font-size:8px!important;
   line-height:1.1!important;
@@ -909,22 +909,22 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-page .table-wrap .tag{
 
 
 /* APK WEST-VILL · Clientes: quitar por completo la leyenda CENTRO DE OPERACIONES y dar más aire al título. */
-html.wv-native-ui-scale body.admin-mode.admin-clients-page #admin-center-label{display:none!important;}
-html.wv-native-ui-scale body.admin-mode.admin-clients-page #page-title{font-size:clamp(16px,5vw,21px)!important;}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page #admin-center-label{display:none!important;}
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-page #page-title{font-size:clamp(16px,5vw,21px)!important;}
 
 
 /* APK WEST-VILL · Conductores: encabezado limpio, sin Centro de Operaciones, saldo, reloj ni perfil WV. */
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .page-head{
   justify-content:center!important;
   align-items:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   width:100%!important;
@@ -934,7 +934,7 @@ html.wv-native-ui-scale body.admin-mode.admin-drivers-page .page-head-title{
   justify-content:center!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
@@ -985,13 +985,13 @@ html.wv-native-ui-scale body.admin-mode.admin-drivers-page #page-title{
 
 
 /* WEST-VILL · Conductores: filtros en una sola fila, alineados y del mismo ancho. */
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .filter-row{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .filter-row{
   display:flex!important;
   flex-wrap:nowrap!important;
   align-items:stretch!important;
   gap:7px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-drivers-page .filter-row>.btn{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-drivers-page .filter-row>.btn{
   flex:1 1 0!important;
   min-width:0!important;
   padding:10px 5px!important;
@@ -1002,13 +1002,13 @@ html.wv-native-ui-scale body.admin-mode.admin-drivers-page .filter-row>.btn{
 
 
 /* APK WEST-VILL · Mensajes: encabezado despejado y título centrado en mayúsculas. */
-html.wv-native-ui-scale body.admin-mode.admin-messages-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-messages-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -1017,7 +1017,7 @@ html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head{
   width:100%!important;
   margin-bottom:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   align-items:center!important;
@@ -1027,7 +1027,7 @@ html.wv-native-ui-scale body.admin-mode.admin-messages-page .page-head-title{
   min-width:0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-messages-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-messages-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
@@ -1041,13 +1041,13 @@ html.wv-native-ui-scale body.admin-mode.admin-messages-page #page-title{
 
 
 /* APK WEST-VILL · Ingresos: encabezado despejado y título centrado en mayúsculas. */
-html.wv-native-ui-scale body.admin-mode.admin-income-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-income-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -1056,7 +1056,7 @@ html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head{
   width:100%!important;
   margin-bottom:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   align-items:center!important;
@@ -1066,7 +1066,7 @@ html.wv-native-ui-scale body.admin-mode.admin-income-page .page-head-title{
   min-width:0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-income-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-income-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
@@ -1080,13 +1080,13 @@ html.wv-native-ui-scale body.admin-mode.admin-income-page #page-title{
 
 
 /* APK WEST-VILL · Gastos: encabezado despejado y título centrado en mayúsculas. */
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -1095,7 +1095,7 @@ html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head{
   width:100%!important;
   margin-bottom:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   align-items:center!important;
@@ -1105,7 +1105,7 @@ html.wv-native-ui-scale body.admin-mode.admin-expenses-page .page-head-title{
   min-width:0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-expenses-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-expenses-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
@@ -1119,30 +1119,30 @@ html.wv-native-ui-scale body.admin-mode.admin-expenses-page #page-title{
 
 
 /* APK WEST-VILL · Balance: quitar Centro de operaciones, perfil WV, saldo y fecha/hora. */
-html.wv-native-ui-scale body.admin-mode.admin-balance-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-balance-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .page-head-tools > .date-chip{
   display:none!important;
 }
 
 
 /* APK WEST-VILL · Balance: mantener textos e importes completos dentro de los tres marcos. */
 @media(max-width:700px){
-  html.wv-native-ui-scale body.admin-mode.admin-balance-page .metrics{
+  :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .metrics{
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
     gap:6px!important;
     width:100%!important;
     min-width:0!important;
   }
-  html.wv-native-ui-scale body.admin-mode.admin-balance-page .metrics>.metric{
+  :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .metrics>.metric{
     box-sizing:border-box!important;
     min-width:0!important;
     width:100%!important;
     padding:12px 5px!important;
     overflow:hidden!important;
   }
-  html.wv-native-ui-scale body.admin-mode.admin-balance-page .metrics>.metric .metric-top{
+  :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .metrics>.metric .metric-top{
     display:flex!important;
     align-items:center!important;
     justify-content:center!important;
@@ -1157,7 +1157,7 @@ html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .d
     line-height:1.12!important;
     letter-spacing:0!important;
   }
-  html.wv-native-ui-scale body.admin-mode.admin-balance-page .metrics>.metric .metric-value{
+  :is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-balance-page .metrics>.metric .metric-value{
     display:block!important;
     width:100%!important;
     min-width:0!important;
@@ -1178,14 +1178,14 @@ html.wv-native-ui-scale body.admin-mode.admin-balance-page .page-head-tools > .d
 
 
 /* APK WEST-VILL · Clientes en línea: encabezado limpio y título centrado. */
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #page-subtitle,
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page #page-subtitle,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -1194,7 +1194,7 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head{
   width:100%!important;
   margin-bottom:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   align-items:center!important;
@@ -1204,7 +1204,7 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-online-page .page-head-tit
   min-width:0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-clients-online-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
@@ -1216,14 +1216,14 @@ html.wv-native-ui-scale body.admin-mode.admin-clients-online-page #page-title{
   white-space:nowrap!important;
 }
 
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page #admin-center-label,
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page #page-subtitle,
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page #admin-profile-open,
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-tools > .admin-wallet-chip,
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-tools > .date-chip{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page #admin-center-label,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page #page-subtitle,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page #admin-profile-open,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page .page-head-tools > .admin-wallet-chip,
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page .page-head-tools > .date-chip{
   display:none!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page .page-head{
   display:flex!important;
   flex-direction:column!important;
   align-items:center!important;
@@ -1232,7 +1232,7 @@ html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head{
   width:100%!important;
   margin-bottom:14px!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page .page-head-title{
   display:flex!important;
   flex:1 1 100%!important;
   align-items:center!important;
@@ -1242,7 +1242,7 @@ html.wv-native-ui-scale body.admin-mode.admin-tariff-page .page-head-title{
   min-width:0!important;
   text-align:center!important;
 }
-html.wv-native-ui-scale body.admin-mode.admin-tariff-page #page-title{
+:is(html.wv-native-ui-scale,html.wv-pwa-ui-scale) body.admin-mode.admin-tariff-page #page-title{
   display:block!important;
   width:100%!important;
   margin:0 auto!important;
