@@ -1,15 +1,6 @@
 name: WEST-VILL Android APK
 
 on:
-  push:
-    branches: [production]
-    paths:
-      - '.github/workflows/android-apk.yml'
-      - 'ilox-pwa/**'
-      - 'app/**'
-      - 'build.gradle'
-      - 'settings.gradle'
-      - 'gradle.properties'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +13,11 @@ concurrency:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    env:
+      WV_ANDROID_KEYSTORE_BASE64: ${{ secrets.WV_ANDROID_KEYSTORE_BASE64 }}
+      WV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.WV_ANDROID_KEYSTORE_PASSWORD }}
+      WV_ANDROID_KEY_ALIAS: ${{ secrets.WV_ANDROID_KEY_ALIAS }}
+      WV_ANDROID_KEY_PASSWORD: ${{ secrets.WV_ANDROID_KEY_PASSWORD }}
     steps:
       - name: Obtener código
         uses: actions/checkout@v4
@@ -76,11 +72,31 @@ jobs:
       - name: Compilar APK Android
         run: gradle --no-daemon assembleDebug
 
-      - name: Publicar APK WEST-VILL
+      - name: Firmar APK con la clave estable de WEST-VILL
+        if: env.WV_ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          echo "$WV_ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/west-vill-signing.jks
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+            --ks /tmp/west-vill-signing.jks \
+            --ks-key-alias "$WV_ANDROID_KEY_ALIAS" \
+            --ks-pass "pass:$WV_ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass "pass:$WV_ANDROID_KEY_PASSWORD" \
+            --out app/build/outputs/apk/debug/app-release.apk \
+            app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Guardar APK de diagnóstico (no publicar sin firma estable)
+        if: env.WV_ANDROID_KEYSTORE_BASE64 == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: west-vill-apk-debug-not-for-update
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publicar APK WEST-VILL firmado
+        if: env.WV_ANDROID_KEYSTORE_BASE64 != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: west-vill-v105-android
           name: WEST-VILL V105 — Instalador Android
-          body: WEST-VILL V105. Corrección del campo de kilómetros de la calculadora para Android WebView; se conserva la identidad de paquete com.ilox.game.
-          files: app/build/outputs/apk/debug/app-debug.apk
+          body: WEST-VILL V105. APK firmado con la clave estable de WEST-VILL.
+          files: app/build/outputs/apk/debug/app-release.apk
           make_latest: true
