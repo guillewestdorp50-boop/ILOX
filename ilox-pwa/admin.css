@@ -1356,3 +1356,15 @@ html.wv-pwa-ui-scale body.client-mode .client-live-clock span {
 @media(max-width:600px){
   html.wv-pwa-ui-scale body.client-mode .chat-bubble{font-size:15px!important}
 }
+
+
+/* WEST-VILL PWA: nombres de botones legibles desde Inicio hasta Abonos escolares. Solo PWA; APK nativo intacto. */
+html.wv-pwa-ui-scale .app-shell button:not(.menu-btn):not(.profile-button):not(.theme-toggle),
+html.wv-pwa-ui-scale .client-screen button:not(.client-profile-button):not(.theme-toggle){
+  font-size:16px!important; line-height:1.25!important; min-height:48px!important;
+  padding:12px 15px!important; white-space:normal!important; overflow-wrap:anywhere!important;
+}
+html.wv-pwa-ui-scale .app-shell .nav-item{min-height:54px!important;padding:13px 14px!important;gap:12px!important;font-size:16px!important;}
+html.wv-pwa-ui-scale .client-screen .client-tabs button{min-height:50px!important;padding:12px 16px!important;font-size:16px!important;line-height:1.2!important;}
+html.wv-pwa-ui-scale .app-shell .btn,html.wv-pwa-ui-scale .client-screen .btn{min-height:48px!important;padding:12px 16px!important;font-size:15px!important;}
+html.wv-pwa-ui-scale .app-shell .driver-pad-button{min-height:72px!important;padding:13px 10px!important;font-size:15px!important;}
