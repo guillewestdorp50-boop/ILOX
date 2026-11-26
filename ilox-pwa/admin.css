@@ -1253,3 +1253,63 @@ body.client-mode .client-tabs [data-client-tab="calculadora"].active{background:
   letter-spacing:.02em!important;
   white-space:nowrap!important;
 }
+
+
+/* WEST-VILL PWA · Legibilidad: conserva la tipografía y jerarquía del APK,
+   pero evita que los rótulos secundarios queden por debajo de un tamaño cómodo. */
+html.wv-pwa-ui-scale body.admin-mode{
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+html.wv-pwa-ui-scale body.admin-mode .panel h2,
+html.wv-pwa-ui-scale body.admin-mode .client-panel h2,
+html.wv-pwa-ui-scale body.admin-mode .page-head-title h1{
+  font-family:'Manrope','DM Sans',system-ui,sans-serif!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .panel h2{font-size:16px!important;line-height:1.3!important}
+html.wv-pwa-ui-scale body.admin-mode .muted,
+html.wv-pwa-ui-scale body.admin-mode .panel p,
+html.wv-pwa-ui-scale body.admin-mode .empty,
+html.wv-pwa-ui-scale body.admin-mode .empty-inline,
+html.wv-pwa-ui-scale body.admin-mode .client-row,
+html.wv-pwa-ui-scale body.admin-mode .text-action,
+html.wv-pwa-ui-scale body.admin-mode .field label,
+html.wv-pwa-ui-scale body.admin-mode .field input,
+html.wv-pwa-ui-scale body.admin-mode .field select,
+html.wv-pwa-ui-scale body.admin-mode .field textarea{
+  font-size:14px!important;
+  line-height:1.4!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .table-wrap th{
+  font-size:11px!important;
+  line-height:1.3!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .table-wrap td{
+  font-size:13px!important;
+  line-height:1.35!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .table-wrap .tag,
+html.wv-pwa-ui-scale body.admin-mode .tag{
+  font-size:11px!important;
+  line-height:1.25!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .metrics>.metric .metric-top{
+  font-size:11px!important;
+  line-height:1.25!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .metrics>.metric .metric-value{
+  font-size:16px!important;
+  line-height:1.25!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .btn,
+html.wv-pwa-ui-scale body.admin-mode .nav-item,
+html.wv-pwa-ui-scale body.admin-mode .date-chip,
+html.wv-pwa-ui-scale body.admin-mode .crumb{
+  font-size:13px!important;
+}
+html.wv-pwa-ui-scale body.admin-mode .page-head-title #page-title{
+  font-family:'Manrope','DM Sans',system-ui,sans-serif!important;
+  line-height:1.22!important;
+}
+/* No se fuerzan mayúsculas globales: se conserva el casing escrito por cada pantalla. */
